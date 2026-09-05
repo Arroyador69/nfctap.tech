@@ -1,0 +1,91 @@
+import { isAdmin } from "@/lib/auth";
+import { productLabel } from "@/lib/catalog";
+import { euros, ZONE_LABEL } from "@/lib/shipping";
+import { getShipping, listOrders } from "@/lib/store";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { ShippingForm } from "./shipping-form";
+
+export const dynamic = "force-dynamic";
+export const metadata = { title: "Dashboard" };
+
+export default async function DashboardPage() {
+  if (!(await isAdmin())) redirect("/dashboard/login");
+  const orders = listOrders();
+  const shipping = getShipping();
+  const paid = orders.filter((o) => o.status !== "cancelado" && o.status !== "pendiente_pago");
+  const revenue = paid.reduce((s, o) => s + o.total, 0);
+  const pending = orders.filter((o) => o.status === "pagado" || o.status === "en_impresion");
+
+  return (
+    <div className="mx-auto max-w-6xl px-5 py-10">
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <h1 className="font-[family-name:var(--font-display)] text-3xl">Pedidos</h1>
+          <p className="text-sm text-[#6f675c]">Lo que entra por la web, listo para imprimir y enviar.</p>
+        </div>
+        <a href="/api/auth/logout" className="text-sm text-[#7a7266] hover:text-[#1c1915]">
+          Salir
+        </a>
+      </div>
+
+      <div className="mt-8 grid gap-4 sm:grid-cols-3">
+        <Stat label="Pedidos" value={String(orders.length)} />
+        <Stat label="En cola" value={String(pending.length)} />
+        <Stat label="Cobrado" value={euros(revenue)} />
+      </div>
+
+      <div className="mt-10 overflow-x-auto rounded-3xl border border-[#e6ddd0] bg-white">
+        <table className="w-full min-w-[720px] text-left text-sm">
+          <thead className="bg-[#faf6ee] text-[#7a7266]">
+            <tr>
+              <th className="px-4 py-3">Ref</th>
+              <th className="px-4 py-3">Cliente</th>
+              <th className="px-4 py-3">Producto</th>
+              <th className="px-4 py-3">Zona</th>
+              <th className="px-4 py-3">Total</th>
+              <th className="px-4 py-3">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {orders.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-4 py-10 text-center text-[#8a8173]">
+                  Aún no hay pedidos. El primero llegará desde /personalizar.
+                </td>
+              </tr>
+            )}
+            {orders.map((o) => (
+              <tr key={o.id} className="border-t border-[#eee6da]">
+                <td className="px-4 py-3">
+                  <Link href={`/dashboard/pedidos/${o.id}`} className="text-[#9a7420]">
+                    {o.id.slice(0, 14)}
+                  </Link>
+                </td>
+                <td className="px-4 py-3">
+                  <div>{o.address.name}</div>
+                  <div className="text-xs text-[#8a8173]">{o.address.city}</div>
+                </td>
+                <td className="px-4 py-3">{productLabel(o.kind, o.qty)}</td>
+                <td className="px-4 py-3">{ZONE_LABEL[o.address.zone]}</td>
+                <td className="px-4 py-3">{euros(o.total)}</td>
+                <td className="px-4 py-3 capitalize">{o.status.replace("_", " ")}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <ShippingForm shipping={shipping} />
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-3xl border border-[#e6ddd0] bg-white p-5">
+      <p className="text-xs uppercase tracking-wider text-[#8a8173]">{label}</p>
+      <p className="mt-2 text-2xl font-semibold">{value}</p>
+    </div>
+  );
+}

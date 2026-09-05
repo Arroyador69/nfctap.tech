@@ -1,0 +1,8 @@
+node_modules
+web/node_modules
+web/.next
+web/.env
+web/.env.local
+web/.vercel
+web/data/store.json
+.DS_Store

@@ -1,0 +1,16 @@
+{
+  "nombre": "demo-tira-clasica",
+  "ancho": 86.0,
+  "alto": 54.0,
+  "grosor": 3.6,
+  "radio": 4.0,
+  "nfc": "tira_45x15",
+  "nfc_desde_base": 1.2,
+  "relieve": 0.4,
+  "colores": {
+    "cuerpo": "negro",
+    "estrellas": "amarillo-oro",
+    "texto": "blanco",
+    "icono": "blanco"
+  }
+}

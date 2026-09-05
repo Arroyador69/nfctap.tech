@@ -1,0 +1,21 @@
+{
+  "cliente": "Nombre del negocio",
+  "producto": "tarjeta-clasica",
+  "nfc": "tira_45x15",
+  "texto": {
+    "linea1": "TOCA PARA",
+    "linea2": "RESENA"
+  },
+  "colores": {
+    "cuerpo": "negro",
+    "estrellas": "oro",
+    "texto": "blanco",
+    "icono": "blanco"
+  },
+  "google": {
+    "place_id": "ChIJ................",
+    "enlace_resena": "https://g.page/r/XXXXXXXX/review"
+  },
+  "unidades": 3,
+  "notas": "Medir la tira NFC real antes de generar el STL."
+}
