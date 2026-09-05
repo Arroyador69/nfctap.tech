@@ -5,8 +5,8 @@ import { euros } from "@/lib/shipping";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Envíos" };
 
-export default function EnviosPage() {
-  const s = getShipping();
+export default async function EnviosPage() {
+  const s = await getShipping();
   return (
     <div className="mx-auto max-w-2xl px-5 py-16">
       <h1 className="font-[family-name:var(--font-display)] text-3xl">Envíos a España</h1>

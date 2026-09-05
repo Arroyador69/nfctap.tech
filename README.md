@@ -14,6 +14,15 @@ Deploy Vercel: root directory = `web`. Polar se conecta después (env en `web/.e
 
 Cada push a GitHub lanza **Actions → CI** (lint + build de `web/`).
 
+### De un pedido al STL
+
+1. Cliente (o tú en `/dashboard/nuevo`) diseña y guarda.
+2. En el pedido: **Descargar ZIP para Orca** (STL + colores + pausa NFC + URL).
+3. Orca-Flashforge → importar 01–05 → ensamblar → color por pieza → pausa → imprimir.
+4. Local, si quieres regenerar: `python3 disenos/generar_tarjetas.py --pedido pedido.json`
+
+En Vercel, crea un Blob Store y pon `BLOB_READ_WRITE_TOKEN` para que los pedidos no se pierdan.
+
 ---
 
 # Impresora Flashforge AD5X

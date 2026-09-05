@@ -11,6 +11,7 @@ export function drawCardFace(
 ) {
   const w = CARD_W;
   const h = CARD_H;
+  const generic = design.kind === "generica";
   const body = BODY_COLORS.find((c) => c.id === design.bodyColor)?.hex ?? "#171513";
   const light = design.bodyColor === "blanco";
   const ink = light ? "#1c1915" : "#f6f1e7";
@@ -23,59 +24,97 @@ export function drawCardFace(
   ctx.fillStyle = body;
   ctx.fill();
 
-  ctx.fillStyle = light ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)";
-  ctx.fillRect(0, 0, w, 8);
-
-  const starY = design.template === "minimal" ? 168 : 150;
   for (let i = 0; i < 5; i++) {
-    star(ctx, w / 2 + (i - 2) * 78, starY, 22, accent);
+    star(ctx, w / 2 + (i - 2) * 78, 168, 22, accent);
   }
 
-  const logoY = design.template === "barra" ? 340 : 390;
-  if (logo) {
-    const s = 168;
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(w / 2, logoY, s / 2 + 8, 0, Math.PI * 2);
-    ctx.clip();
-    grayscale(ctx, logo, w / 2 - s / 2, logoY - s / 2, s, s, light);
-    ctx.restore();
+  if (generic) {
+    drawGoogleMark(ctx, w / 2, 470, 210);
+    ctx.textAlign = "center";
+    ctx.fillStyle = ink;
+    ctx.font = "700 44px Outfit, Arial, sans-serif";
+    wrap(ctx, "TOCA PARA DEJAR TU RESEÑA", w / 2, 720, w - 100, 52);
   } else {
-    ctx.beginPath();
-    ctx.arc(w / 2, logoY, 74, 0, Math.PI * 2);
-    ctx.strokeStyle = ink;
-    ctx.lineWidth = 5;
-    ctx.stroke();
-    star(ctx, w / 2, logoY, 36, accent);
+    const logoY = 400;
+    if (logo) {
+      const s = 188;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(w / 2, logoY, s / 2 + 6, 0, Math.PI * 2);
+      ctx.clip();
+      grayscale(ctx, logo, w / 2 - s / 2, logoY - s / 2, s, s, light);
+      ctx.restore();
+    } else {
+      ctx.beginPath();
+      ctx.arc(w / 2, logoY, 86, 0, Math.PI * 2);
+      ctx.strokeStyle = muted;
+      ctx.setLineDash([10, 8]);
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = muted;
+      ctx.textAlign = "center";
+      ctx.font = "600 22px Outfit, Arial, sans-serif";
+      ctx.fillText("LOGO", w / 2, logoY + 8);
+    }
+
+    ctx.textAlign = "center";
+    ctx.fillStyle = ink;
+    ctx.font = "700 50px Outfit, Arial, sans-serif";
+    wrap(ctx, (design.line1 || "TU NEGOCIO").toUpperCase(), w / 2, 620, w - 100, 56);
+
+    ctx.fillStyle = muted;
+    ctx.font = "500 28px Outfit, Arial, sans-serif";
+    wrap(ctx, (design.line2 || "TOCA PARA DEJAR TU RESEÑA").toUpperCase(), w / 2, 760, w - 120, 36);
   }
-
-  ctx.textAlign = "center";
-  ctx.fillStyle = ink;
-  ctx.font = "700 54px Outfit, Arial, sans-serif";
-  ctx.fillText((design.line1 || "TU NEGOCIO").toUpperCase(), w / 2, 640);
-
-  ctx.fillStyle = muted;
-  ctx.font = "500 28px Outfit, Arial, sans-serif";
-  const sub =
-    design.template === "minimal"
-      ? (design.line2 || "TOCA Y OPINA").toUpperCase()
-      : (design.line2 || "TOCA PARA DEJAR TU RESEÑA").toUpperCase();
-  wrap(ctx, sub, w / 2, 710, w - 120, 36);
 
   ctx.strokeStyle = accent;
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.moveTo(w / 2 - 40, 820);
-  ctx.lineTo(w / 2 + 40, 820);
+  ctx.moveTo(w / 2 - 40, 890);
+  ctx.lineTo(w / 2 + 40, 890);
   ctx.stroke();
 
+  ctx.textAlign = "center";
   ctx.fillStyle = accent;
   ctx.font = "600 22px Outfit, Arial, sans-serif";
-  ctx.fillText("ACERCA EL MÓVIL", w / 2, 900);
+  ctx.fillText("ACERCA EL MÓVIL", w / 2, 950);
 
   ctx.fillStyle = muted;
   ctx.font = "500 18px Outfit, Arial, sans-serif";
   ctx.fillText(BRAND.domain, w / 2, h - 70);
+}
+
+/** G de cuatro colores (marca de reseñas). No es el archivo oficial de Google. */
+function drawGoogleMark(ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number) {
+  const outer = size / 2;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, outer + 16, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+
+  const line = outer * 0.22;
+  const r = outer - line / 2;
+  ctx.lineWidth = line;
+  ctx.lineCap = "butt";
+
+  const arcs: [number, number, string][] = [
+    [-28, 52, "#4285F4"],
+    [52, 138, "#34A853"],
+    [138, 214, "#FBBC05"],
+    [214, 292, "#EA4335"],
+  ];
+  for (const [a0, a1, color] of arcs) {
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.arc(cx, cy, r, (a0 * Math.PI) / 180, (a1 * Math.PI) / 180);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = "#4285F4";
+  ctx.fillRect(cx - 2, cy - line / 2, r + line * 0.12, line);
+  ctx.restore();
 }
 
 function grayscale(

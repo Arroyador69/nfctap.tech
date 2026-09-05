@@ -361,23 +361,43 @@ def card_stars(cfg: dict) -> Mesh:
     t = cfg["grosor"]
     relief = cfg["relieve"]
     n = 5
-    gap = 9.0
-    y = cfg["alto"] / 2 - 10.0
+    vertical = cfg["alto"] > cfg["ancho"]
+    gap = 11.0 if vertical else 9.0
+    y = cfg["alto"] / 2 - (12.0 if vertical else 10.0)
     m = Mesh()
     for i in range(n):
         x = (i - (n - 1) / 2) * gap
-        m.extend(extrude(star(x, y, 3.6), t, t + relief))
+        m.extend(extrude(star(x, y, 4.1 if vertical else 3.6), t, t + relief))
     return m
 
 
 def card_icon(cfg: dict) -> Mesh:
-    """Badge circular con una estrella (icono genérico de reseña, no logo de Google)."""
+    """Logo en relieve, G de reseña, o badge."""
     t = cfg["grosor"]
     relief = cfg["relieve"]
-    cx, cy = -cfg["ancho"] / 2 + 14.0, 0.0
+    vertical = cfg["alto"] > cfg["ancho"]
+    cy = 10.0 if vertical else 0.0
+    cx = 0.0 if vertical else -cfg["ancho"] / 2 + 14.0
+    mask = "".join(ch for ch in str(cfg.get("logoMask") or "") if ch in "01")
+    n = int(len(mask) ** 0.5)
+    if n >= 8:
+        cell = 28.0 / n
+        m = Mesh()
+        for row in range(n):
+            for col in range(n):
+                if mask[row * n + col] != "1":
+                    continue
+                x = (col - n / 2 + 0.5) * cell + cx
+                y = (n / 2 - row - 0.5) * cell + cy
+                m.extend(extrude(rectangle(cell * 0.95, cell * 0.95, x, y), t, t + relief))
+        return m
     m = Mesh()
-    m.extend(extrude_ring(circle(cx, cy, 8.2, 36), circle(cx, cy, 6.6, 36), t, t + relief))
-    m.extend(extrude(star(cx, cy, 4.4), t, t + relief))
+    if cfg.get("kind") == "generica":
+        m.extend(extrude_ring(circle(cx, cy, 14.0, 40), circle(cx, cy, 10.6, 40), t, t + relief))
+        m.extend(shifted(text_mesh("G", pixel=2.1, height=relief, z0=t), cx, cy))
+        return m
+    m.extend(extrude_ring(circle(cx, cy, 8.2 if not vertical else 12.0, 36), circle(cx, cy, 6.6 if not vertical else 9.6, 36), t, t + relief))
+    m.extend(extrude(star(cx, cy, 4.4 if not vertical else 6.2), t, t + relief))
     return m
 
 
@@ -385,6 +405,10 @@ def card_text(cfg: dict) -> Mesh:
     t = cfg["grosor"]
     relief = cfg["relieve"]
     m = Mesh()
+    if cfg["alto"] > cfg["ancho"]:
+        m.extend(shifted(text_mesh(cfg.get("linea1", "TOCA PARA")[:16], pixel=1.05, height=relief, z0=t), 0.0, -8.0))
+        m.extend(shifted(text_mesh(cfg.get("linea2", "DEJAR TU RESENA")[:22], pixel=0.72, height=relief, z0=t), 0.0, -22.0))
+        return m
     m.extend(shifted(text_mesh(cfg.get("linea1", "TOCA PARA"), pixel=1.05, height=relief, z0=t), 6.0, 4.5))
     m.extend(shifted(text_mesh(cfg.get("linea2", "RESENA"), pixel=1.35, height=relief, z0=t), 6.0, -6.5))
     return m
@@ -485,6 +509,11 @@ def generate(cfg: dict) -> None:
     stand(cfg).write_stl(dest / "05_soporte.stl", "soporte")
     write_pause_note(cfg, dest / "PAUSA_NFC.txt")
     (dest / "config.json").write_text(json.dumps(cfg, indent=2, ensure_ascii=False), encoding="utf-8")
+    if cfg.get("googleUrl"):
+        (dest / "NFC.txt").write_text(
+            f"URL a grabar (NFC Tools → URL):\n{cfg['googleUrl']}\n",
+            encoding="utf-8",
+        )
     print(f"  -> {dest}")
 
 
@@ -493,6 +522,7 @@ def main() -> None:
 
     p = argparse.ArgumentParser(description="Genera STL de tarjetas NFC para reseñas.")
     p.add_argument("--nombre", help="Nombre del cliente / carpeta de salida")
+    p.add_argument("--pedido", help="pedido.json bajado del dashboard (mismo modelo que el editor)")
     p.add_argument("--linea1", default="TOCA PARA")
     p.add_argument("--linea2", default="RESENA")
     p.add_argument("--nfc", default="tira_45x15", choices=sorted(PRESETS_NFC))
@@ -501,6 +531,28 @@ def main() -> None:
     p.add_argument("--grosor", type=float)
     p.add_argument("--todas", action="store_true", help="Genera las 3 variantes demo")
     args = p.parse_args()
+
+    if args.pedido:
+        spec = json.loads(Path(args.pedido).read_text(encoding="utf-8"))
+        cfg = {
+            **DEFAULTS,
+            "nombre": spec.get("nombre") or "pedido-web",
+            "ancho": spec.get("ancho", 70),
+            "alto": spec.get("alto", 112),
+            "grosor": spec.get("grosor", 4),
+            "radio": spec.get("radio", 6),
+            "nfc": spec.get("nfc", "tira_45x15"),
+            "nfc_desde_base": spec.get("nfc_desde_base", 1.2),
+            "relieve": spec.get("relieve", 0.4),
+            "linea1": spec.get("linea1", "TOCA PARA"),
+            "linea2": spec.get("linea2", "DEJAR TU RESENA"),
+            "kind": spec.get("kind", "personalizada"),
+            "logoMask": spec.get("logoMask"),
+            "googleUrl": spec.get("googleUrl", ""),
+            "colores": spec.get("colores", DEFAULTS["colores"]),
+        }
+        generate(cfg)
+        return
 
     if args.nombre:
         cfg = {**DEFAULTS, "nombre": args.nombre, "nfc": args.nfc, "linea1": args.linea1, "linea2": args.linea2}

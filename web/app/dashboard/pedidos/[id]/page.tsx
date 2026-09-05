@@ -1,7 +1,9 @@
 export const dynamic = "force-dynamic";
 
+import { DashboardNav } from "@/components/DashboardNav";
 import { isAdmin } from "@/lib/auth";
 import { productLabel } from "@/lib/catalog";
+import { orderToSpec, pauseLayer } from "@/lib/print-spec";
 import { euros, ZONE_LABEL } from "@/lib/shipping";
 import { getOrder } from "@/lib/store";
 import Link from "next/link";
@@ -15,18 +17,33 @@ export default async function OrderPage({
 }) {
   if (!(await isAdmin())) redirect("/dashboard/login");
   const { id } = await params;
-  const order = getOrder(id);
+  const order = await getOrder(id);
   if (!order) notFound();
+  const spec = orderToSpec(order);
+  const pause = pauseLayer(spec);
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-10">
+      <DashboardNav />
       <Link href="/dashboard" className="text-sm text-[#7a7266] hover:text-[#1c1915]">
         ← Pedidos
       </Link>
       <h1 className="mt-4 text-2xl font-semibold">{order.id}</h1>
       <p className="text-[#6f675c]">
         {productLabel(order.kind, order.qty)} · {euros(order.total)} ·{" "}
-        {ZONE_LABEL[order.address.zone]}
+        {order.handover === "mano" ? "En mano" : ZONE_LABEL[order.address.zone]} ·{" "}
+        {order.source === "admin" ? "Admin" : "Web"}
+      </p>
+
+      <a
+        href={`/api/orders/${order.id}/print`}
+        className="mt-6 inline-flex min-h-12 items-center rounded-full bg-[#1c1915] px-5 font-semibold text-[#f6f1e7]"
+      >
+        Descargar ZIP para Orca
+      </a>
+      <p className="mt-2 text-sm text-[#6f675c]">
+        STL del modelo + colores + pausa NFC capa {pause.layer} ({pause.z.toFixed(2)} mm) + URL del
+        chip. Lo que se editó es lo que se imprime.
       </p>
 
       {order.previewDataUrl && (
@@ -44,12 +61,16 @@ export default async function OrderPage({
         <Item k="Teléfono" v={order.address.phone || "—"} />
         <Item
           k="Dirección"
-          v={`${order.address.line1}, ${order.address.postalCode} ${order.address.city} (${order.address.province})`}
+          v={
+            order.handover === "mano"
+              ? "Entrega en mano"
+              : `${order.address.line1}, ${order.address.postalCode} ${order.address.city} (${order.address.province})`
+          }
         />
-        <Item k="Texto" v={`${order.design.line1} / ${order.design.line2}`} />
-        <Item k="Google" v={order.design.googleUrl || "Pendiente de pedir"} />
-        <Item k="Cuerpo" v={order.design.bodyColor} />
-        <Item k="Acento" v={order.design.accentColor} />
+        <Item k="Texto" v={`${order.design.line1 || "Genérica"} / ${order.design.line2}`} />
+        <Item k="Google / NFC" v={order.design.googleUrl || "Pendiente"} />
+        <Item k="Cuerpo" v={spec.colores.cuerpo} />
+        <Item k="Estrellas" v={spec.colores.estrellas} />
         <Item k="Envío" v={euros(order.shippingPrice)} />
         <Item k="Estado" v={order.status} />
       </dl>

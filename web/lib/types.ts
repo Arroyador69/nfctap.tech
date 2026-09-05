@@ -12,13 +12,18 @@ export type OrderStatus =
   | "entregado"
   | "cancelado";
 
+export type OrderSource = "web" | "admin";
+export type Handover = "envio" | "mano";
+
 export type CardDesign = {
+  kind?: ProductKind;
   template: TemplateId;
   bodyColor: BodyColor;
   accentColor: AccentColor;
   line1: string;
   line2: string;
   logoDataUrl?: string;
+  logoMask?: string;
   googleUrl: string;
 };
 
@@ -45,6 +50,8 @@ export type Order = {
   shippingPrice: number;
   total: number;
   status: OrderStatus;
+  source?: OrderSource;
+  handover?: Handover;
   previewDataUrl?: string;
   polarCheckoutId?: string;
   notes?: string;

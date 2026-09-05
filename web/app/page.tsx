@@ -56,7 +56,7 @@ export default function HomePage() {
           <article className="rounded-[28px] border border-[#e6ddd0] bg-white p-6">
             <h3 className="text-xl font-semibold">Genérica</h3>
             <p className="mt-2 text-sm text-[#6f675c]">
-              Diseño NFCTab, programada a tu enlace. Lista para barra.
+              G de Google al centro y «Toca para dejar tu reseña». Programada a tu enlace.
             </p>
             <p className="mt-6 text-4xl font-semibold">{euros(PRICES.generica[1])}</p>
             <p className="text-sm text-[#8a8173]">una · dos {euros(PRICES.generica[2])}</p>

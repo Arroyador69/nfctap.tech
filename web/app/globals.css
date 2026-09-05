@@ -31,3 +31,14 @@ select:focus {
   outline: none;
   box-shadow: 0 0 0 3px rgba(196, 160, 86, 0.28);
 }
+
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+.select-none {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+}

@@ -21,10 +21,10 @@ export function CardFace({ design, className, onReady }: Props) {
 
     const paint = (logo?: HTMLImageElement) => {
       drawCardFace(ctx, design, logo);
-      onReady?.(canvas.toDataURL("image/png"));
+      onReady?.(canvas.toDataURL("image/jpeg", 0.72));
     };
 
-    if (design.logoDataUrl) {
+    if (design.logoDataUrl && design.kind !== "generica") {
       const img = new Image();
       img.onload = () => paint(img);
       img.src = design.logoDataUrl;
@@ -38,9 +38,10 @@ export function CardFace({ design, className, onReady }: Props) {
       ref={ref}
       width={CARD_W}
       height={CARD_H}
-      className={className ?? "h-auto w-full max-w-[340px]"}
+      className={className ?? "pointer-events-none h-auto w-full max-w-[340px]"}
       style={{ aspectRatio: `${CARD_W} / ${CARD_H}` }}
-      aria-label="Vista de la tarjeta vertical"
+      aria-hidden
+      onContextMenu={(e) => e.preventDefault()}
     />
   );
 }

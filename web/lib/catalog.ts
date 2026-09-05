@@ -50,10 +50,11 @@ export function productLabel(kind: ProductKind, qty: Qty) {
 
 export function defaultDesign(kind: ProductKind) {
   return {
+    kind,
     template: "clasica" as const,
     bodyColor: "negro" as const,
     accentColor: "oro" as const,
-    line1: kind === "generica" ? "NFCTab" : "Tu negocio",
+    line1: kind === "generica" ? "" : "Tu negocio",
     line2: "Toca para dejar tu reseña",
     googleUrl: "",
   };

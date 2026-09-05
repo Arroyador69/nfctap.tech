@@ -18,7 +18,7 @@ export async function GET(
 ) {
   if (!(await isAdmin())) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   const { id } = await params;
-  const order = getOrder(id);
+  const order = await getOrder(id);
   if (!order) return NextResponse.json({ error: "No existe" }, { status: 404 });
   return NextResponse.json({ order });
 }
@@ -34,7 +34,7 @@ export async function PATCH(
   if (STATUSES.includes(body.status)) patch.status = body.status;
   if (typeof body.tracking === "string") patch.tracking = body.tracking;
   if (typeof body.notes === "string") patch.notes = body.notes;
-  const order = updateOrder(id, patch);
+  const order = await updateOrder(id, patch);
   if (!order) return NextResponse.json({ error: "No existe" }, { status: 404 });
   return NextResponse.json({ order });
 }

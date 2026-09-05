@@ -10,7 +10,7 @@ export default async function OkPage({
   searchParams: Promise<{ id?: string; demo?: string }>;
 }) {
   const { id } = await searchParams;
-  const order = id ? getOrder(id) : null;
+  const order = id ? await getOrder(id) : null;
 
   return (
     <div className="mx-auto max-w-xl px-5 py-20 text-center">

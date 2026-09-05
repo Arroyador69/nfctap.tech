@@ -10,7 +10,7 @@ export async function POST(req: Request) {
   const orderId = payload?.data?.metadata?.orderId ?? payload?.metadata?.orderId;
   const type = String(payload?.type ?? "");
   if (typeof orderId === "string" && (type.includes("order") || type.includes("checkout"))) {
-    updateOrder(orderId, { status: "pagado" });
+    await updateOrder(orderId, { status: "pagado" });
   }
 
   return NextResponse.json({ ok: true });
