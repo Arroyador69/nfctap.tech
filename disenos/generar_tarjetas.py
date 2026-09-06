@@ -287,7 +287,7 @@ FONT: dict[str, list[str]] = {
 }
 
 
-def text_pixels(text: str) -> list[tuple[int, int]]:
+def text_pixels(text: str, advance: int = 6) -> list[tuple[int, int]]:
     pixels = []
     x = 0
     for ch in text.upper():
@@ -296,12 +296,26 @@ def text_pixels(text: str) -> list[tuple[int, int]]:
             for col, bit in enumerate(line):
                 if bit == "1":
                     pixels.append((x + col, 6 - row))
-        x += 6
+        x += advance
     return pixels
 
 
-def text_mesh(text: str, pixel: float, height: float, z0: float = 0.0, center: bool = True) -> Mesh:
-    pix = text_pixels(text)
+def text_width(text: str, pixel: float, advance: int = 6) -> float:
+    pix = text_pixels(text, advance=advance)
+    if not pix:
+        return 0.0
+    return (max(p[0] for p in pix) + 1) * pixel
+
+
+def text_mesh(
+    text: str,
+    pixel: float,
+    height: float,
+    z0: float = 0.0,
+    center: bool = True,
+    advance: int = 6,
+) -> Mesh:
+    pix = text_pixels(text, advance=advance)
     if not pix:
         return Mesh()
     xs = [p[0] for p in pix]
@@ -316,6 +330,90 @@ def text_mesh(text: str, pixel: float, height: float, z0: float = 0.0, center: b
         y0 = oy + row * pixel
         m.extend(extrude(rectangle(pixel * 0.92, pixel * 0.92, x0 + pixel / 2, y0 + pixel / 2), z0, z0 + height))
     return m
+
+
+def slanted_bar(x0: float, y0: float, x1: float, y1: float, sw: float) -> list[tuple[float, float]]:
+    dx, dy = x1 - x0, y1 - y0
+    length = math.hypot(dx, dy) or 1.0
+    nx, ny = -dy / length * sw / 2, dx / length * sw / 2
+    return [
+        (x0 + nx, y0 + ny),
+        (x1 + nx, y1 + ny),
+        (x1 - nx, y1 - ny),
+        (x0 - nx, y0 - ny),
+    ]
+
+
+def stroke_arc(cx: float, cy: float, r: float, a0: float, a1: float, sw: float, segs: int = 22) -> list[tuple[float, float]]:
+    outer, inner = r + sw / 2, max(0.15, r - sw / 2)
+    pts: list[tuple[float, float]] = []
+    for i in range(segs + 1):
+        a = math.radians(a0 + (a1 - a0) * i / segs)
+        pts.append((cx + outer * math.cos(a), cy + outer * math.sin(a)))
+    for i in range(segs + 1):
+        a = math.radians(a1 + (a0 - a1) * i / segs)
+        pts.append((cx + inner * math.cos(a), cy + inner * math.sin(a)))
+    return pts
+
+
+def wordmark_nfctap(cx: float, cy: float, h: float, sw: float, gap: float, z0: float, z1: float) -> Mesh:
+    """NFCTAP geométrico, tracking amplio. Origen de cada letra = esquina inf. izq."""
+    def vert(x, y0, y1):
+        return rectangle(sw, y1 - y0, x, (y0 + y1) / 2)
+
+    def horz(x0, x1, y):
+        return rectangle(x1 - x0, sw, (x0 + x1) / 2, y)
+
+    def letter_n(w):
+        return [vert(sw / 2, 0, h), vert(w - sw / 2, 0, h), slanted_bar(sw, h - sw * 0.35, w - sw, sw * 0.35, sw)]
+
+    def letter_f(w):
+        return [vert(sw / 2, 0, h), horz(0, w, h - sw / 2), horz(0, w * 0.72, h * 0.56)]
+
+    def letter_c(w):
+        return [stroke_arc(w / 2, h / 2, h / 2 - sw / 2, 48, 312, sw)]
+
+    def letter_t(w):
+        return [horz(0, w, h - sw / 2), vert(w / 2, 0, h - sw)]
+
+    def letter_a(w):
+        return [
+            slanted_bar(sw * 0.15, sw * 0.1, w / 2, h - sw * 0.1, sw),
+            slanted_bar(w - sw * 0.15, sw * 0.1, w / 2, h - sw * 0.1, sw),
+            horz(w * 0.22, w * 0.78, h * 0.34),
+        ]
+
+    def letter_p(w):
+        return [
+            vert(sw / 2, 0, h),
+            horz(0, w - sw * 0.2, h - sw / 2),
+            horz(0, w - sw * 0.2, h * 0.50),
+            vert(w - sw / 2, h * 0.50, h),
+        ]
+
+    specs = [
+        (5.35, letter_n),
+        (4.55, letter_f),
+        (5.05, letter_c),
+        (4.95, letter_t),
+        (5.55, letter_a),
+        (4.55, letter_p),
+    ]
+    scale = h / 6.4
+    widths = [w * scale for w, _ in specs]
+    total = sum(widths) + gap * (len(specs) - 1)
+    x = cx - total / 2
+    y = cy - h / 2
+    m = Mesh()
+    for width, (_raw, builder) in zip(widths, specs):
+        for poly in builder(width):
+            m.extend(extrude([(px + x, py + y) for px, py in poly], z0, z1))
+        x += width + gap
+    return m
+
+
+def gold_dot(cx: float, cy: float, r: float, z0: float, z1: float) -> Mesh:
+    return extrude(circle(cx, cy, r, 28), z0, z1)
 
 
 # ---------------------------------------------------------------------------
@@ -340,6 +438,42 @@ def nfc_hole(preset: dict, extra_clear: float = 0.4) -> list[tuple[float, float]
     return rectangle(preset["w"] + extra_clear, preset["h"] + extra_clear)
 
 
+def half_rounded_rect(w: float, h: float, r: float, side: str, overlap: float = 0.25, segs: int = 10) -> list[tuple[float, float]]:
+    """Mitad izquierda o derecha de la tarjeta, con un poco de solape en el centro."""
+    r = min(r, w / 2 - 0.01, h / 2 - 0.01)
+    if side == "left":
+        pts: list[tuple[float, float]] = [(overlap, h / 2), (-w / 2 + r, h / 2)]
+        cx, cy = -w / 2 + r, h / 2 - r
+        for i in range(segs + 1):
+            a = math.radians(90 + 90 * i / segs)
+            pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
+        cx, cy = -w / 2 + r, -h / 2 + r
+        for i in range(1, segs + 1):
+            a = math.radians(180 + 90 * i / segs)
+            pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
+        pts.append((overlap, -h / 2))
+        return pts
+    pts = [(-overlap, -h / 2), (w / 2 - r, -h / 2)]
+    cx, cy = w / 2 - r, -h / 2 + r
+    for i in range(segs + 1):
+        a = math.radians(-90 + 90 * i / segs)
+        pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
+    cx, cy = w / 2 - r, h / 2 - r
+    for i in range(1, segs + 1):
+        a = math.radians(0 + 90 * i / segs)
+        pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
+    pts.append((-overlap, h / 2))
+    return pts
+
+
+def dual_nfc_centers(cfg: dict, hole_r: float) -> tuple[float, float]:
+    w = cfg["ancho"]
+    margin = 7.2
+    left = -w / 2 + margin + hole_r
+    right = w / 2 - margin - hole_r
+    return left, right
+
+
 def card_body(cfg: dict) -> Mesh:
     w, h, t = cfg["ancho"], cfg["alto"], cfg["grosor"]
     r = cfg["radio"]
@@ -351,10 +485,17 @@ def card_body(cfg: dict) -> Mesh:
 
     outer = rounded_rect(w, h, r)
     hole = nfc_hole(nfc)
-
     body = Mesh()
     body.extend(extrude(outer, 0.0, z_floor))
-    body.extend(extrude_ring(outer, hole, z_floor, z_ceil))
+
+    if cfg.get("nfc_dual"):
+        hole_r = nfc["d"] / 2 + 0.2
+        cx_l, cx_r = dual_nfc_centers(cfg, hole_r)
+        body.extend(extrude_ring(half_rounded_rect(w, h, r, "left"), translate(hole, cx_l, 0.0), z_floor, z_ceil))
+        body.extend(extrude_ring(half_rounded_rect(w, h, r, "right"), translate(hole, cx_r, 0.0), z_floor, z_ceil))
+    else:
+        body.extend(extrude_ring(outer, hole, z_floor, z_ceil))
+
     body.extend(extrude(outer, z_ceil, t))
     return body
 
@@ -402,6 +543,59 @@ def card_icon(cfg: dict) -> Mesh:
     m.extend(extrude_ring(circle(cx, cy, 8.2 if not vertical else 12.0, 36), circle(cx, cy, 6.6 if not vertical else 9.6, 36), t, t + relief))
     m.extend(extrude(star(cx, cy, 4.4 if not vertical else 6.2), t, t + relief))
     return m
+
+
+def card_gold_cartera(cfg: dict) -> Mesh:
+    """Cara slim: wordmark centrado, punto + WA/WEB a los lados, firma abajo."""
+    t = cfg["grosor"]
+    relief = cfg["relieve"]
+    mark = cfg.get("relieve_marca", relief + 0.20)
+    z1 = t + relief
+    m = Mesh()
+    m.extend(wordmark_nfctap(0.0, 7.4, h=8.2, sw=0.96, gap=2.45, z0=t, z1=t + mark))
+    side_y = -5.2
+    dot_r = 0.80
+    gap = 1.70
+    pixel, adv = 0.46, 7
+    wa_w = text_width("WA", pixel, adv)
+    web_w = text_width("WEB", pixel, adv)
+    left_dot = -36.8
+    right_dot = 36.8
+    wa_cx = left_dot + dot_r + gap + wa_w / 2
+    web_cx = right_dot - dot_r - gap - web_w / 2
+    m.extend(gold_dot(left_dot, side_y, dot_r, t, z1))
+    m.extend(shifted(text_mesh("WA", pixel=pixel, height=relief, z0=t, advance=adv), wa_cx, side_y))
+    m.extend(shifted(text_mesh("WEB", pixel=pixel, height=relief, z0=t, advance=adv), web_cx, side_y))
+    m.extend(gold_dot(right_dot, side_y, dot_r, t, z1))
+    firma = cfg.get("firma", "DEVELOPED BY NFCTAP.TECH")
+    m.extend(shifted(text_mesh(firma, pixel=0.40, height=relief, z0=t, advance=7), 0.0, -21.6))
+    return m
+
+
+def write_cartera_preview(dest: Path) -> None:
+    dest.write_text(
+        """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 856 540" width="856" height="540">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F0D78A"/>
+      <stop offset="45%" stop-color="#C9A227"/>
+      <stop offset="100%" stop-color="#8B6914"/>
+    </linearGradient>
+    <filter id="emboss">
+      <feDropShadow dx="0" dy="1" stdDeviation="0.5" flood-color="#000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <rect width="856" height="540" rx="32" fill="#111111"/>
+  <text x="428" y="248" text-anchor="middle" fill="url(#gold)" font-family="Helvetica Neue, Arial, sans-serif" font-size="56" letter-spacing="18" font-weight="500" filter="url(#emboss)">NFCTAP</text>
+  <circle cx="62" cy="348" r="8" fill="url(#gold)"/>
+  <text x="92" y="354" fill="url(#gold)" font-family="Helvetica Neue, Arial, sans-serif" font-size="14" letter-spacing="6">WA</text>
+  <text x="764" y="354" text-anchor="end" fill="url(#gold)" font-family="Helvetica Neue, Arial, sans-serif" font-size="14" letter-spacing="6">WEB</text>
+  <circle cx="794" cy="348" r="8" fill="url(#gold)"/>
+  <text x="428" y="492" text-anchor="middle" fill="url(#gold)" font-family="Helvetica Neue, Arial, sans-serif" font-size="12" letter-spacing="3.4" filter="url(#emboss)">DEVELOPED BY NFCTAP.TECH</text>
+</svg>
+""",
+        encoding="utf-8",
+    )
 
 
 def card_text(cfg: dict) -> Mesh:
@@ -458,6 +652,66 @@ def stand(cfg: dict) -> Mesh:
 # Main
 # ---------------------------------------------------------------------------
 
+CARTERA_LEEME = """Tu primera tarjeta NFCTap (cartera slim, 2 NFC)
+================================================
+
+Que es
+------
+Tarjeta de cartera 85,6 x 54 x 3,4 mm. Cuerpo negro. Relieve oro:
+NFCTAP grande al centro (relieve 0,60 mm, un pelo mas alto),
+punto + WA / WEB a los lados (0,40 mm) y firma abajo.
+Dos huecos INTERNOS (no se ven) para Timeskey NTAG215 Ø25 mm.
+Izquierda = WhatsApp. Derecha = https://nfctap.tech
+La pausa a mitad de impresion esta calculada: capa 10 (2,00 mm).
+El NFC se lee bien a traves de ~1,4 mm de PLA (sin carbono ni metal).
+
+NO uses la web nfctap.tech/personalizar para esta pieza
+(esa web hace el atril de reseñas, otro formato).
+
+Colores (2 bobinas, lo mas facil para empezar)
+----------------------------------------------
+Canal A: PLA mate negro  -> 01_cuerpo.stl
+Canal B: PLA silk/mate oro -> 02_oro.stl
+El blanco y el rojo los guardas para el siguiente pedido.
+
+Antes de imprimir (AD5X)
+------------------------
+1. Cama PEI limpia (agua + jabon, seca).
+2. Carga negro y oro en el IFS.
+3. Abre Orca-Flashforge y elige impresora AD5X.
+4. Importa 01_cuerpo.stl y 02_oro.stl (misma carpeta).
+5. Selecciona los dos -> clic derecho -> Ensamblar.
+6. Panel Objetos: cuerpo = negro, oro = oro.
+7. Ajustes: capa 0.20 mm, 3 perimetros, relleno 15% gyroid,
+   paredes Arachne, PLA ~210/60 C (mira el carrete).
+8. Rebana. Vista previa -> slider a la CAPA 10 (2.00 mm).
+9. Clic derecho en esa capa -> Anadir pausa.
+10. Enable IFS, mapea canales, envia a la AD5X.
+
+Cuando pause
+------------
+No apagues. Coloca las dos pegatinas en los huecos,
+planas, adhesivo HACIA ABAJO (hacia la cama).
+Izquierda WA, derecha WEB. Pulsa Reanudar.
+El plastico de encima son ~1,4 mm de PLA: el movil
+lee el chip sin problema. No uses filamento de carbono.
+
+Programar (app NFC Tap Config en TestFlight)
+--------------------------------------------
+1. IZQUIERDA: WhatsApp -> 34 + tu numero + mensaje
+   (ej. Hola, soy Alberto de NFCTap).
+2. DERECHA: Cualquier enlace -> https://nfctap.tech
+3. Comprueba con otro movil, no con el que grabas.
+
+Si falla la primera
+-------------------
+Normal. Mira la primera capa: si no pega, lava la cama.
+Si el hueco queda pequeno, la pegatina entra igual con
+un poco de cuidado. Si el texto oro se ve flojo, sube
+relieve a 0.5 y regenera.
+"""
+
+
 DEFAULTS = {
     "nombre": "demo-restaurante",
     "ancho": 86.0,
@@ -480,6 +734,7 @@ def write_pause_note(cfg: dict, path: Path) -> None:
     nfc = PRESETS_NFC[cfg["nfc"]]
     z_pause = cfg["nfc_desde_base"] + nfc["t"]
     layer = round(z_pause / 0.20)
+    dual = "dos pegatinas (izquierda WA, derecha WEB)" if cfg.get("nfc_dual") else "la pegatina NFC (Ø25 mm) plana y centrada"
     path.write_text(
         (
             f"Pausa de inserción NFC\n"
@@ -493,7 +748,7 @@ def write_pause_note(cfg: dict, path: Path) -> None:
             f"3. Slider derecho -> capa {layer} (acaba el hueco).\n"
             f"4. Clic derecho -> Añadir pausa.\n"
             f"5. Vuelve a rebanar y envía a la AD5X.\n"
-            f"6. Cuando pause, coloca la pegatina NFC (Ø25 mm) plana y centrada,\n"
+            f"6. Cuando pause, coloca {dual},\n"
             f"   adhesivo hacia abajo, y pulsa Reanudar.\n"
         ),
         encoding="utf-8",
@@ -507,17 +762,33 @@ def generate(cfg: dict) -> None:
 
     print(f"\nGenerando '{name}'  ({cfg['ancho']}x{cfg['alto']}x{cfg['grosor']} mm, NFC={cfg['nfc']})")
     card_body(cfg).write_stl(dest / "01_cuerpo.stl", "cuerpo")
-    card_stars(cfg).write_stl(dest / "02_estrellas.stl", "estrellas")
-    card_text(cfg).write_stl(dest / "03_texto.stl", "texto")
-    card_icon(cfg).write_stl(dest / "04_icono.stl", "icono")
-    stand(cfg).write_stl(dest / "05_soporte.stl", "soporte")
-    write_pause_note(cfg, dest / "PAUSA_NFC.txt")
-    (dest / "config.json").write_text(json.dumps(cfg, indent=2, ensure_ascii=False), encoding="utf-8")
-    if cfg.get("googleUrl"):
+    if cfg.get("nfc_dual"):
+        card_gold_cartera(cfg).write_stl(dest / "02_oro.stl", "oro")
         (dest / "NFC.txt").write_text(
-            f"URL a grabar (NFC Tools → URL):\n{cfg['googleUrl']}\n",
+            (
+                "Dos pegatinas Timeskey Ø25 mm en la misma tarjeta.\n\n"
+                "IZQUIERDA (WA) — WhatsApp, en NFC Tap Config:\n"
+                "  Plantilla WhatsApp → prefijo 34 → tu número → mensaje\n"
+                "  Ejemplo de mensaje: Hola, soy Alberto de NFCTap.\n\n"
+                "DERECHA (WEB):\n"
+                "  Cualquier enlace → https://nfctap.tech\n"
+            ),
             encoding="utf-8",
         )
+        (dest / "LEEME_PRIMERA_IMPRESION.txt").write_text(CARTERA_LEEME, encoding="utf-8")
+        write_cartera_preview(dest / "vista-previa.svg")
+    else:
+        card_stars(cfg).write_stl(dest / "02_estrellas.stl", "estrellas")
+        card_text(cfg).write_stl(dest / "03_texto.stl", "texto")
+        card_icon(cfg).write_stl(dest / "04_icono.stl", "icono")
+        stand(cfg).write_stl(dest / "05_soporte.stl", "soporte")
+        if cfg.get("googleUrl"):
+            (dest / "NFC.txt").write_text(
+                f"URL a grabar (NFC Tools → URL):\n{cfg['googleUrl']}\n",
+                encoding="utf-8",
+            )
+    write_pause_note(cfg, dest / "PAUSA_NFC.txt")
+    (dest / "config.json").write_text(json.dumps(cfg, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"  -> {dest}")
 
 
@@ -534,7 +805,31 @@ def main() -> None:
     p.add_argument("--alto", type=float)
     p.add_argument("--grosor", type=float)
     p.add_argument("--todas", action="store_true", help="Genera las 3 variantes demo")
+    p.add_argument("--cartera", action="store_true", help="Tarjeta slim de cartera con 2 NFC (WhatsApp + web)")
     args = p.parse_args()
+
+    if args.cartera:
+        generate(
+            {
+                **DEFAULTS,
+                "nombre": "alberto-cartera",
+                "ancho": 85.6,
+                "alto": 54.0,
+                "grosor": 3.4,
+                "radio": 3.2,
+                "nfc": "moneda_25",
+                "nfc_desde_base": 1.20,
+                "nfc_dual": True,
+                "relieve": 0.40,
+                "relieve_marca": 0.60,
+                "firma": "DEVELOPED BY NFCTAP.TECH",
+                "colores": {
+                    "cuerpo": "negro mate",
+                    "oro": "oro silk/mate",
+                },
+            }
+        )
+        return
 
     if args.pedido:
         spec = json.loads(Path(args.pedido).read_text(encoding="utf-8"))

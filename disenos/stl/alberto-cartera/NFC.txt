@@ -1,0 +1,8 @@
+Dos pegatinas Timeskey Ø25 mm en la misma tarjeta.
+
+IZQUIERDA (WA) — WhatsApp, en NFC Tap Config:
+  Plantilla WhatsApp → prefijo 34 → tu número → mensaje
+  Ejemplo de mensaje: Hola, soy Alberto de NFCTap.
+
+DERECHA (WEB):
+  Cualquier enlace → https://nfctap.tech

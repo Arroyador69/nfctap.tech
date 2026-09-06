@@ -1,0 +1,57 @@
+Tu primera tarjeta NFCTap (cartera slim, 2 NFC)
+================================================
+
+Que es
+------
+Tarjeta de cartera 85,6 x 54 x 3,4 mm. Cuerpo negro. Relieve oro:
+NFCTAP grande al centro (relieve 0,60 mm, un pelo mas alto),
+punto + WA / WEB a los lados (0,40 mm) y firma abajo.
+Dos huecos INTERNOS (no se ven) para Timeskey NTAG215 Ø25 mm.
+Izquierda = WhatsApp. Derecha = https://nfctap.tech
+La pausa a mitad de impresion esta calculada: capa 10 (2,00 mm).
+El NFC se lee bien a traves de ~1,4 mm de PLA (sin carbono ni metal).
+
+NO uses la web nfctap.tech/personalizar para esta pieza
+(esa web hace el atril de reseñas, otro formato).
+
+Colores (2 bobinas, lo mas facil para empezar)
+----------------------------------------------
+Canal A: PLA mate negro  -> 01_cuerpo.stl
+Canal B: PLA silk/mate oro -> 02_oro.stl
+El blanco y el rojo los guardas para el siguiente pedido.
+
+Antes de imprimir (AD5X)
+------------------------
+1. Cama PEI limpia (agua + jabon, seca).
+2. Carga negro y oro en el IFS.
+3. Abre Orca-Flashforge y elige impresora AD5X.
+4. Importa 01_cuerpo.stl y 02_oro.stl (misma carpeta).
+5. Selecciona los dos -> clic derecho -> Ensamblar.
+6. Panel Objetos: cuerpo = negro, oro = oro.
+7. Ajustes: capa 0.20 mm, 3 perimetros, relleno 15% gyroid,
+   paredes Arachne, PLA ~210/60 C (mira el carrete).
+8. Rebana. Vista previa -> slider a la CAPA 10 (2.00 mm).
+9. Clic derecho en esa capa -> Anadir pausa.
+10. Enable IFS, mapea canales, envia a la AD5X.
+
+Cuando pause
+------------
+No apagues. Coloca las dos pegatinas en los huecos,
+planas, adhesivo HACIA ABAJO (hacia la cama).
+Izquierda WA, derecha WEB. Pulsa Reanudar.
+El plastico de encima son ~1,4 mm de PLA: el movil
+lee el chip sin problema. No uses filamento de carbono.
+
+Programar (app NFC Tap Config en TestFlight)
+--------------------------------------------
+1. IZQUIERDA: WhatsApp -> 34 + tu numero + mensaje
+   (ej. Hola, soy Alberto de NFCTap).
+2. DERECHA: Cualquier enlace -> https://nfctap.tech
+3. Comprueba con otro movil, no con el que grabas.
+
+Si falla la primera
+-------------------
+Normal. Mira la primera capa: si no pega, lava la cama.
+Si el hueco queda pequeno, la pegatina entra igual con
+un poco de cuidado. Si el texto oro se ve flojo, sube
+relieve a 0.5 y regenera.

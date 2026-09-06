@@ -97,6 +97,7 @@ disenos/
     demo-moneda-25/                ← mismo tamaño, grosor 4 mm
     mostrador-grande/              ← 110×70 mm para barra/recepción
     cliente-demo/                  ← plantilla de cliente, mismo hueco
+    alberto-cartera/               ← tu 1ª pieza: cartera slim, 2 NFC (WA + web)
 ```
 
 Cada carpeta incluye:
@@ -110,8 +111,8 @@ Cada carpeta incluye:
 | `05_soporte.stl` | Negro | Atril de mesa, se imprime aparte |
 | `PAUSA_NFC.txt` | — | Capa exacta donde pausar |
 
-**Primera tarjeta a imprimir:** `disenos/stl/demo-moneda-25/`  
-Pausa en **2,00 mm = capa 10** (capa de 0,20 mm). Hueco **Ø 28,4 × 0,8 mm** para las pegatinas Timeskey NTAG215 Ø25 mm (Amazon B08LD99GZT).
+**Tu primera tarjeta:** `disenos/stl/alberto-cartera/` (85,6×54×3,4 mm, 2 huecos).  
+Pausa en **2,00 mm = capa 10**. Lee `LEEME_PRIMERA_IMPRESION.txt`. Huecos **Ø 28,4 × 0,8 mm** para Timeskey NTAG215 Ø25 mm.
 
 ### Personalizar un cliente
 

@@ -1,0 +1,17 @@
+{
+  "nombre": "alberto-cartera",
+  "ancho": 85.6,
+  "alto": 54.0,
+  "grosor": 3.4,
+  "radio": 3.2,
+  "nfc": "moneda_25",
+  "nfc_desde_base": 1.2,
+  "relieve": 0.4,
+  "colores": {
+    "cuerpo": "negro mate",
+    "oro": "oro silk/mate"
+  },
+  "nfc_dual": true,
+  "relieve_marca": 0.6,
+  "firma": "DEVELOPED BY NFCTAP.TECH"
+}
