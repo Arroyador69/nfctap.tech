@@ -1,6 +1,6 @@
 # NFCTab.tech — tarjetas NFC de reseñas Google
 
-Marca: **nfctab.tech**. Web en `web/` (Next.js, Vercel). Diseños 3D en `disenos/`.
+Marca: **nfctab.tech**. Web en `web/` (Next.js, Vercel). App de programación NFC en `nfctap-config/` (**NFCTap Config**). Diseños 3D en `disenos/`.
 
 ```bash
 cd web && npm install && npm run dev

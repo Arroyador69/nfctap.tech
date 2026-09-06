@@ -5,4 +5,8 @@ web/.env
 web/.env.local
 web/.vercel
 web/data/store.json
+nfctap-config/node_modules
+nfctap-config/.expo
+nfctap-config/ios
+nfctap-config/android
 .DS_Store
