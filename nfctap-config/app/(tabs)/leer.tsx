@@ -1,5 +1,5 @@
 import { NfcSheet } from "@/src/NfcSheet";
-import { cancelNfc, eraseTag, readTag, type ReadResult } from "@/src/nfc";
+import { cancelNfc, eraseTag, nfcMessage, readTag, type ReadResult } from "@/src/nfc";
 import { colors } from "@/src/theme";
 import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
@@ -21,7 +21,7 @@ export default function LeerScreen() {
       setResult(await readTag());
       setOk("Leída");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo leer");
+      setError(nfcMessage(e, "No se pudo leer"));
     } finally {
       setBusy(false);
     }
@@ -37,7 +37,7 @@ export default function LeerScreen() {
       setResult(null);
       setOk("Chip vaciado. Ya puedes escribir otra vez.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo borrar");
+      setError(nfcMessage(e, "No se pudo borrar"));
     } finally {
       setBusy(false);
     }

@@ -43,7 +43,7 @@ npx expo run:android
 
 3. Configurar → Reseña Google → pegas `g.page` → acercas la pegatina Timeskey Ø25 mm.
 
-iPhone: Xcode (Archive para TestFlight). El fallo `impresora: No such file` era el espacio en la carpeta; el plugin `with-quoted-constants-script` lo corrige.
+iPhone: Xcode (Archive para TestFlight). El fallo `impresora: No such file` es el espacio en la carpeta. El plugin `with-quoted-constants-script` y `scripts/bundle-rn-ios.sh` citan las rutas.
 
 ```bash
 ./abrir-xcode.sh

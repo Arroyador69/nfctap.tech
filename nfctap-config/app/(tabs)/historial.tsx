@@ -1,5 +1,5 @@
 import { loadHistory, type HistoryItem } from "@/src/history";
-import { cancelNfc, writePayload } from "@/src/nfc";
+import { cancelNfc, nfcMessage, writePayload } from "@/src/nfc";
 import { NfcSheet } from "@/src/NfcSheet";
 import { colors } from "@/src/theme";
 import { useFocusEffect } from "expo-router";
@@ -28,7 +28,7 @@ export default function HistorialScreen() {
       await writePayload(item.payload);
       setOk("Reescrita en la pegatina.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error");
+      setError(nfcMessage(e, "No se pudo escribir"));
     } finally {
       setBusy(false);
     }

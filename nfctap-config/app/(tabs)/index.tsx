@@ -1,13 +1,13 @@
+import { WriteForm } from "@/src/WriteForm";
+import { isExpoGo } from "@/src/nfc";
 import { GROUPS, TEMPLATES } from "@/src/templates";
 import { colors } from "@/src/theme";
-import { isExpoGo } from "@/src/nfc";
-import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 
 export default function ConfigHome() {
-  const router = useRouter();
   const [q, setQ] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
     if (!s) return TEMPLATES;
@@ -15,6 +15,10 @@ export default function ConfigHome() {
       (t) => t.title.toLowerCase().includes(s) || t.blurb.toLowerCase().includes(s),
     );
   }, [q]);
+
+  if (selectedId) {
+    return <WriteForm templateId={selectedId} onBack={() => setSelectedId(null)} />;
+  }
 
   return (
     <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
@@ -25,8 +29,7 @@ export default function ConfigHome() {
         Programa la pegatina
       </Text>
       <Text style={{ marginTop: 8, color: colors.muted, lineHeight: 22 }}>
-        NDEF para NTAG y similares. El que toca no instala esta app. Chips de banco o bloqueados no se
-        escriben.
+        Elige qué grabar, pega el enlace y acerca la pegatina. El cliente solo toca: no instala esta app.
       </Text>
 
       <TextInput
@@ -52,7 +55,7 @@ export default function ConfigHome() {
         <View style={{ marginTop: 16, backgroundColor: "#fff4d6", borderRadius: 16, padding: 14 }}>
           <Text style={{ color: colors.ink, fontWeight: "600" }}>Estás en Expo Go</Text>
           <Text style={{ marginTop: 6, color: colors.muted, lineHeight: 20 }}>
-            Ves la app. Para grabar: USB al Android y <Text style={{ fontWeight: "700" }}>npx expo run:android</Text>.
+            Aquí ves plantillas y formularios. Para grabar de verdad usa la app de TestFlight.
           </Text>
         </View>
       )}
@@ -67,7 +70,7 @@ export default function ConfigHome() {
               {items.map((t) => (
                 <Pressable
                   key={t.id}
-                  onPress={() => router.push(`/write/${t.id}`)}
+                  onPress={() => setSelectedId(t.id)}
                   style={{
                     backgroundColor: colors.card,
                     borderColor: colors.line,

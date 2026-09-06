@@ -5,13 +5,41 @@ export function isExpoGo() {
   return Constants.appOwnership === "expo";
 }
 
+export function nfcMessage(e: unknown, fallback: string) {
+  const m = e instanceof Error ? e.message : String(e ?? "");
+  if (/expo go/i.test(m)) return m;
+  if (/cancel|user|invalidate|session/i.test(m)) {
+    return "Sesión NFC cancelada. Vuelve a pulsar y acerca la pegatina.";
+  }
+  if (/not support|unsupported/i.test(m)) return "Este dispositivo no tiene NFC.";
+  return m.trim() || fallback;
+}
+
+async function readyNfc() {
+  if (isExpoGo()) {
+    throw new Error("Expo Go no usa NFC. Abre NFC Tap Config instalada desde TestFlight.");
+  }
+  const mod = await import("react-native-nfc-manager");
+  const NfcManager = mod.default;
+  const ok = await NfcManager.isSupported();
+  if (!ok) throw new Error("Este iPhone no tiene NFC.");
+  await NfcManager.start();
+  return mod;
+}
+
+async function stopNfc(NfcManager: { cancelTechnologyRequest: () => Promise<void> }) {
+  try {
+    await NfcManager.cancelTechnologyRequest();
+  } catch {
+    /* no session */
+  }
+}
+
 export async function nfcSupported(): Promise<boolean> {
   if (isExpoGo()) return false;
   try {
-    const NfcManager = (await import("react-native-nfc-manager")).default;
-    const ok = await NfcManager.isSupported();
-    if (ok) await NfcManager.start();
-    return ok;
+    const { default: NfcManager } = await readyNfc();
+    return Boolean(NfcManager);
   } catch {
     return false;
   }
@@ -26,12 +54,7 @@ export type WritePayload = {
 };
 
 export async function writePayload(payload: WritePayload) {
-  if (isExpoGo()) {
-    throw new Error(
-      "Expo Go no escribe NFC. En el Mac: npx expo run:android (o run:ios) con el móvil por USB.",
-    );
-  }
-  const { default: NfcManager, NfcTech, Ndef } = await import("react-native-nfc-manager");
+  const { default: NfcManager, NfcTech, Ndef } = await readyNfc();
   const records = [];
   if (payload.uri) records.push(Ndef.uriRecord(payload.uri));
   if (payload.text) records.push(Ndef.textRecord(payload.text));
@@ -44,7 +67,7 @@ export async function writePayload(payload: WritePayload) {
   if (payload.androidId && Platform.OS === "android") {
     records.push(Ndef.androidApplicationRecord(payload.androidId));
   }
-  if (!records.length) throw new Error("Nada que escribir");
+  if (!records.length) throw new Error("Nada que escribir. Completa el enlace o el texto.");
 
   await NfcManager.requestTechnology(NfcTech.Ndef);
   try {
@@ -52,7 +75,7 @@ export async function writePayload(payload: WritePayload) {
     if (!bytes) throw new Error("No se pudo preparar el mensaje NDEF");
     await NfcManager.ndefHandler.writeNdefMessage(bytes);
   } finally {
-    NfcManager.cancelTechnologyRequest();
+    await stopNfc(NfcManager);
   }
 }
 
@@ -63,10 +86,7 @@ export type ReadResult = {
 };
 
 export async function readTag(): Promise<ReadResult> {
-  if (isExpoGo()) {
-    throw new Error("Expo Go no lee NFC. Usa el build nativo.");
-  }
-  const { default: NfcManager, NfcTech, Ndef } = await import("react-native-nfc-manager");
+  const { default: NfcManager, NfcTech, Ndef } = await readyNfc();
   await NfcManager.requestTechnology(NfcTech.Ndef);
   try {
     const tag = await NfcManager.getTag();
@@ -85,19 +105,18 @@ export async function readTag(): Promise<ReadResult> {
     });
     return { id: tag?.id, writable: tag?.isWritable, records };
   } finally {
-    NfcManager.cancelTechnologyRequest();
+    await stopNfc(NfcManager);
   }
 }
 
 export async function eraseTag() {
-  if (isExpoGo()) throw new Error("Expo Go no borra NFC. Usa el build nativo.");
-  const { default: NfcManager, NfcTech, Ndef } = await import("react-native-nfc-manager");
+  const { default: NfcManager, NfcTech, Ndef } = await readyNfc();
   await NfcManager.requestTechnology(NfcTech.Ndef);
   try {
     const bytes = Ndef.encodeMessage([Ndef.textRecord("")]);
     await NfcManager.ndefHandler.writeNdefMessage(bytes);
   } finally {
-    NfcManager.cancelTechnologyRequest();
+    await stopNfc(NfcManager);
   }
 }
 

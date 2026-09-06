@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "NFCTap Config",
+    "name": "NFC Tap Config",
     "slug": "nfctap-config",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -11,21 +11,21 @@
     "splash": {
       "image": "./assets/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#f6f1e8"
+      "backgroundColor": "#1c1915"
     },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "tech.nfctab.config",
       "infoPlist": {
         "NFCReaderUsageDescription": "NFCTap Config lee y escribe tus pegatinas NFC para reseñas, menús y enlaces.",
-        "com.apple.developer.nfc.readersession.formats": ["NDEF", "TAG"]
+        "com.apple.developer.nfc.readersession.formats": ["TAG"]
       }
     },
     "android": {
       "package": "tech.nfctab.config",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#f6f1e8"
+        "backgroundColor": "#1c1915"
       },
       "permissions": ["android.permission.NFC"]
     },
@@ -35,7 +35,7 @@
       [
         "react-native-nfc-manager",
         {
-          "includeNdefEntitlement": true,
+          "includeNdefEntitlement": false,
           "nfcPermission": "NFCTap Config usa NFC para programar tus pegatinas."
         }
       ]

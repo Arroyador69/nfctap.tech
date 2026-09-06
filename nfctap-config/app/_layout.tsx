@@ -15,7 +15,7 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="write/[id]" options={{ title: "Programar" }} />
+        <Stack.Screen name="write" options={{ headerShown: false }} />
       </Stack>
     </>
   );
