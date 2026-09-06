@@ -9,10 +9,10 @@ export function Header() {
     >
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5">
         <Link href="/" className="flex items-center gap-2 font-medium tracking-tight">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#1c1915] text-sm text-[#f6f1e7]">
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#1c1915] font-[family-name:var(--font-fraunces)] text-[17px] leading-none text-[#f6f1e7]">
             N
           </span>
-          <span>
+          <span className="font-[family-name:var(--font-fraunces)]">
             {BRAND.name}
             <span className="text-[#b0892c]">.tech</span>
           </span>

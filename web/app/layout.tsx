@@ -37,8 +37,8 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
   },
   icons: {
-    icon: "/icon.svg",
-    apple: "/icon.svg",
+    icon: [{ url: "/icon.svg?v=3", type: "image/svg+xml" }],
+    apple: "/icon.svg?v=3",
   },
   alternates: {
     canonical: "https://nfctap.tech",
