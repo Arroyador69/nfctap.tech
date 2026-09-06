@@ -38,7 +38,7 @@ export default function HomePage() {
       <section className="mx-auto max-w-6xl px-5 pb-16">
         <div className="grid gap-4 md:grid-cols-3">
           {[
-            ["1. La diseñas", "Nombre, texto y logo. El preview 3D es el atril vertical que sale de la impresora."],
+            ["1. La diseñas", "Nombre, texto y logo. El preview 3D enseña solo la cara frontal; el soporte se define al imprimir."],
             ["2. El cliente toca", "NFC programado a tu enlace de Google. Sin app, sin QR sucio, sin pedir el móvil."],
             ["3. Tú solo imprimes", "El pedido llega al dashboard con la cara lista. Nosotros (o tú) lo fabricáis."],
           ].map(([t, d]) => (
@@ -71,7 +71,7 @@ export default function HomePage() {
             <p className="text-xs uppercase tracking-wider text-[#e2b43a]">La que más se pide</p>
             <h3 className="mt-1 text-xl font-semibold">Personalizada</h3>
             <p className="mt-2 text-sm text-[#d5cbb8]">
-              Nombre, texto y logo en un color. Preview 3D. Lo que ves sale de la impresora.
+              Nombre, texto y logo en un color. Preview de la cara frontal. El soporte se define al fabricar.
             </p>
             <p className="mt-6 text-4xl font-semibold">{euros(PRICES.personalizada[1])}</p>
             <p className="text-sm text-[#b9ae99]">

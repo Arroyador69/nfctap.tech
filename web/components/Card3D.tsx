@@ -1,5 +1,6 @@
 "use client";
 
+import { BODY_COLORS } from "@/lib/catalog";
 import { CARD_H, CARD_W, drawCardFace } from "@/lib/draw-card";
 import type { CardDesign } from "@/lib/types";
 import { ContactShadows, OrbitControls } from "@react-three/drei";
@@ -15,35 +16,36 @@ export function Card3D({ design, compact = false }: { design: CardDesign; compac
       onContextMenu={(e) => e.preventDefault()}
     >
       <Canvas
-        camera={{ position: [0.85, 0.28, 2.85], fov: 34 }}
+        camera={{ position: [0, 0.02, 2.35], fov: 32 }}
         gl={{ antialias: true, preserveDrawingBuffer: false }}
         dpr={[1, 1.75]}
         style={{ touchAction: "none" }}
       >
         <color attach="background" args={["#f3eee4"]} />
-        <ambientLight intensity={0.85} />
-        <spotLight position={[4, 6, 4]} intensity={1.4} angle={0.4} penumbra={0.8} />
-        <directionalLight position={[-3, 2, 2]} intensity={0.35} />
-        <Stand design={design} />
+        <ambientLight intensity={0.9} />
+        <spotLight position={[3, 5, 5]} intensity={1.15} angle={0.45} penumbra={0.85} />
+        <directionalLight position={[-2, 2, 3]} intensity={0.3} />
+        <Plaque design={design} />
         <OrbitControls
           enablePan={false}
           enableZoom={false}
-          autoRotate
-          autoRotateSpeed={0.7}
-          rotateSpeed={0.7}
-          minPolarAngle={Math.PI / 2.55}
-          maxPolarAngle={Math.PI / 2.05}
-          minAzimuthAngle={-0.9}
-          maxAzimuthAngle={0.9}
-          target={[0, -0.05, 0]}
+          autoRotate={false}
+          rotateSpeed={0.4}
+          minPolarAngle={Math.PI / 2 - 0.1}
+          maxPolarAngle={Math.PI / 2 + 0.05}
+          minAzimuthAngle={-0.2}
+          maxAzimuthAngle={0.2}
+          target={[0, 0, 0]}
         />
-        <ContactShadows position={[0, -1.18, 0]} opacity={0.28} scale={6} blur={2.4} />
+        <ContactShadows position={[0, -0.96, 0]} opacity={0.16} scale={3.6} blur={2.8} />
       </Canvas>
     </div>
   );
 }
 
-function Stand({ design }: { design: CardDesign }) {
+function Plaque({ design }: { design: CardDesign }) {
+  const bodyHex = BODY_COLORS.find((c) => c.id === design.bodyColor)?.hex ?? "#141416";
+
   const texture = useMemo(() => {
     const canvas = document.createElement("canvas");
     canvas.width = CARD_W;
@@ -71,15 +73,19 @@ function Stand({ design }: { design: CardDesign }) {
     } else apply();
   }, [design, texture]);
 
+  const edge = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: bodyHex, roughness: 0.72, metalness: 0.04 }),
+    [bodyHex],
+  );
+  const front = useMemo(
+    () => new THREE.MeshStandardMaterial({ map: texture, roughness: 0.55, metalness: 0.05 }),
+    [texture],
+  );
+
   return (
-    <group position={[0, -0.12, 0]} rotation={[0.1, 0.2, 0]}>
-      <mesh position={[0, 0.08, 0]} rotation={[-0.06, 0, 0]} castShadow>
+    <group rotation={[0.035, 0, 0]}>
+      <mesh castShadow material={[edge, edge, edge, edge, front, edge]}>
         <boxGeometry args={[1.12, 1.78, 0.058]} />
-        <meshStandardMaterial map={texture} roughness={0.55} metalness={0.05} />
-      </mesh>
-      <mesh position={[0, -0.98, 0.2]} rotation={[1.08, 0, 0]}>
-        <boxGeometry args={[1.16, 0.46, 0.055]} />
-        <meshStandardMaterial color="#d8c9a6" roughness={0.7} />
       </mesh>
     </group>
   );
