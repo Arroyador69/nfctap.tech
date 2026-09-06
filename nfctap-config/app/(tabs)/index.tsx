@@ -32,7 +32,7 @@ export default function ConfigHome() {
       <TextInput
         value={q}
         onChangeText={setQ}
-        placeholder="Buscar: WhatsApp, Wi‑Fi, Google…"
+        placeholder="Buscar: enlace, Google, WhatsApp, Wi‑Fi…"
         placeholderTextColor="#b3aa9c"
         autoCorrect={false}
         style={{

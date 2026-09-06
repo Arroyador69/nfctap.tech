@@ -30,6 +30,13 @@ export type Built = {
 
 export const TEMPLATES: Template[] = [
   {
+    id: "uri",
+    title: "Cualquier enlace",
+    blurb: "Pega la URL que quieras: web, PDF, Maps, reserva, PayPal…",
+    group: "negocio",
+    fields: [{ key: "url", label: "Enlace", placeholder: "https://…", keyboard: "url" }],
+  },
+  {
     id: "google",
     title: "Reseña Google",
     blurb: "Pedir reseñas (g.page). El cliente toca y opina.",
@@ -231,13 +238,6 @@ export const TEMPLATES: Template[] = [
       { key: "lat", label: "Latitud", placeholder: "40.4168" },
       { key: "lng", label: "Longitud", placeholder: "-3.7038" },
     ],
-  },
-  {
-    id: "uri",
-    title: "Enlace libre",
-    blurb: "Cualquier URL o esquema (https, mailto, app://).",
-    group: "extra",
-    fields: [{ key: "url", label: "URI", placeholder: "https://… o miapp://…", keyboard: "url" }],
   },
 ];
 

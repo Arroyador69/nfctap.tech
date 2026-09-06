@@ -30,6 +30,7 @@
       "permissions": ["android.permission.NFC"]
     },
     "plugins": [
+      "./plugins/with-quoted-constants-script",
       "expo-router",
       [
         "react-native-nfc-manager",

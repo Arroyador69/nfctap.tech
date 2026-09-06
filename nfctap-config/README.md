@@ -43,7 +43,13 @@ npx expo run:android
 
 3. Configurar → Reseña Google → pegas `g.page` → acercas la pegatina Timeskey Ø25 mm.
 
-iPhone: más tarde, `npx expo run:ios` o Xcode. Hace falta el capability **NFC Tag Reading**. iPhone 7+.
+iPhone: Xcode (Archive para TestFlight). El fallo `impresora: No such file` era el espacio en la carpeta; el plugin `with-quoted-constants-script` lo corrige.
+
+```bash
+./abrir-xcode.sh
+```
+
+Hace falta el capability **NFC Tag Reading**. iPhone 7+.
 
 ## Cómo ganan las otras (para el paywall)
 
