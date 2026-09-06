@@ -15,6 +15,7 @@
     },
     "ios": {
       "supportsTablet": false,
+      "buildNumber": "2",
       "bundleIdentifier": "tech.nfctab.config",
       "infoPlist": {
         "NFCReaderUsageDescription": "NFCTap Config lee y escribe tus pegatinas NFC para reseñas, menús y enlaces.",
