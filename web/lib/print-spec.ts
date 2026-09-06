@@ -1,14 +1,23 @@
 import { ACCENT_HEX, BODY_COLORS } from "./catalog";
 import type { Order } from "./types";
 
+/** Timeskey Amazon B08LD99GZT: pegatina PET NTAG215 Ø25 × ~0,2 mm. */
+export const NFC_STOCK = {
+  id: "moneda_25" as const,
+  tagDiameter: 25,
+  /** Hueco real (preset 28 mm + 0,4 mm de holgura de impresora). */
+  cavityDiameter: 28.4,
+  cavityThickness: 0.8,
+};
+
 export const STAND = {
   ancho: 70,
   alto: 112,
   grosor: 4,
   radio: 6,
-  nfc: "tira_45x15" as const,
+  nfc: NFC_STOCK.id,
   nfc_desde_base: 1.2,
-  nfc_grosor: 0.8,
+  nfc_grosor: NFC_STOCK.cavityThickness,
   relieve: 0.4,
 };
 

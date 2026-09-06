@@ -45,7 +45,7 @@ Pausa NFC: ${z.toFixed(2)} mm / capa ${layer}
 3. Si no coinciden: seleccionar → Ensamblar.
 4. Color por pieza según COLORES.txt
 5. Pausa en la capa de PAUSA_NFC.txt
-6. Al terminar, graba el enlace de NFC.txt
+6. Al terminar, graba el enlace de NFC.txt (Timeskey NTAG215 Ø25 mm)
 `,
   );
   return zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });

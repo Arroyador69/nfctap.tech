@@ -41,7 +41,7 @@ cd nfctap-config
 npx expo run:android
 ```
 
-3. Configurar → Reseña Google → pegas `g.page` → acercas la tira.
+3. Configurar → Reseña Google → pegas `g.page` → acercas la pegatina Timeskey Ø25 mm.
 
 iPhone: más tarde, `npx expo run:ios` o Xcode. Hace falta el capability **NFC Tag Reading**. iPhone 7+.
 

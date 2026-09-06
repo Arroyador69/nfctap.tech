@@ -322,11 +322,14 @@ def text_mesh(text: str, pixel: float, height: float, z0: float = 0.0, center: b
 # Tarjeta
 # ---------------------------------------------------------------------------
 
+# Stock actual: Timeskey Amazon B08LD99GZT — pegatina PET NTAG215 Ø25 × ~0,2 mm.
+# moneda_25 deja ~1,7 mm por lado (Ø28 + extra_clear 0,4 → hueco ~Ø28,4) para meterla
+# a mano en la pausa sin que roce. Los presets de tira se quedan por si compras otras.
 PRESETS_NFC = {
     "tira_45x15": {"kind": "rect", "w": 47.0, "h": 17.0, "t": 0.80},
     "tira_40x20": {"kind": "rect", "w": 42.0, "h": 22.0, "t": 0.80},
     "tira_35x15": {"kind": "rect", "w": 37.0, "h": 17.0, "t": 0.80},
-    "moneda_25": {"kind": "circle", "d": 26.5, "t": 1.00},
+    "moneda_25": {"kind": "circle", "d": 28.0, "t": 0.80},
     "moneda_30": {"kind": "circle", "d": 31.5, "t": 1.00},
 }
 
@@ -461,7 +464,7 @@ DEFAULTS = {
     "alto": 54.0,
     "grosor": 3.6,
     "radio": 4.0,
-    "nfc": "tira_45x15",
+    "nfc": "moneda_25",
     "nfc_desde_base": 1.20,
     "relieve": 0.40,
     "colores": {
@@ -490,7 +493,8 @@ def write_pause_note(cfg: dict, path: Path) -> None:
             f"3. Slider derecho -> capa {layer} (acaba el hueco).\n"
             f"4. Clic derecho -> Añadir pausa.\n"
             f"5. Vuelve a rebanar y envía a la AD5X.\n"
-            f"6. Cuando pause, coloca la tira NFC plana en el hueco y pulsa Reanudar.\n"
+            f"6. Cuando pause, coloca la pegatina NFC (Ø25 mm) plana y centrada,\n"
+            f"   adhesivo hacia abajo, y pulsa Reanudar.\n"
         ),
         encoding="utf-8",
     )
@@ -525,7 +529,7 @@ def main() -> None:
     p.add_argument("--pedido", help="pedido.json bajado del dashboard (mismo modelo que el editor)")
     p.add_argument("--linea1", default="TOCA PARA")
     p.add_argument("--linea2", default="RESENA")
-    p.add_argument("--nfc", default="tira_45x15", choices=sorted(PRESETS_NFC))
+    p.add_argument("--nfc", default="moneda_25", choices=sorted(PRESETS_NFC))
     p.add_argument("--ancho", type=float)
     p.add_argument("--alto", type=float)
     p.add_argument("--grosor", type=float)
@@ -541,7 +545,7 @@ def main() -> None:
             "alto": spec.get("alto", 112),
             "grosor": spec.get("grosor", 4),
             "radio": spec.get("radio", 6),
-            "nfc": spec.get("nfc", "tira_45x15"),
+            "nfc": spec.get("nfc", "moneda_25"),
             "nfc_desde_base": spec.get("nfc_desde_base", 1.2),
             "relieve": spec.get("relieve", 0.4),
             "linea1": spec.get("linea1", "TOCA PARA"),
@@ -566,7 +570,7 @@ def main() -> None:
         return
 
     variants = [
-        {**DEFAULTS, "nombre": "demo-tira-clasica", "nfc": "tira_45x15"},
+        {**DEFAULTS, "nombre": "demo-tira-clasica", "nfc": "moneda_25"},
         {**DEFAULTS, "nombre": "demo-moneda-25", "nfc": "moneda_25", "grosor": 4.0, "nfc_desde_base": 1.20},
         {
             **DEFAULTS,
@@ -575,7 +579,14 @@ def main() -> None:
             "alto": 70.0,
             "grosor": 4.0,
             "radio": 6.0,
-            "nfc": "tira_45x15",
+            "nfc": "moneda_25",
+        },
+        {
+            **DEFAULTS,
+            "nombre": "cliente-demo",
+            "nfc": "moneda_25",
+            "linea1": "TU NEGOCIO",
+            "linea2": "RESENA",
         },
     ]
     if args.todas or not args.nombre:

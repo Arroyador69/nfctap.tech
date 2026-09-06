@@ -37,7 +37,7 @@ Proyecto listo para cuando llegue la impresora: diseños STL, cómo meter la tir
 
 **¿Hay repos y plantillas?** Sí. Abajo tienes los que valen y, además, **ya tienes las primeras tarjetas generadas en este proyecto** (no dependes de Cults de pago).
 
-**Flujo completo:** diseñar → rebanar en Orca-Flashforge → pausar en la capa del hueco → meter la tira NFC → terminar impresión → escribir la URL de Google con NFC Tools.
+**Flujo completo:** diseñar → rebanar en Orca-Flashforge → pausar en la capa del hueco → meter la pegatina NFC Ø25 mm → terminar impresión → escribir la URL de Google con NFC Tools o NFCTap Config.
 
 ---
 
@@ -68,7 +68,7 @@ Docs oficiales útiles:
 - [Enviar a imprimir desde Orca-Flashforge](https://www.flashforge.com/a/docs/ad5x/print-via-orca-flashforge)
 - [Producto AD5X](https://www.flashforge.com/products/flashforge-ad5x-3d-printer)
 
-En la cama de 220 mm caben **4 tarjetas** (2×2) o **6** si las giras (3×2 en 54 mm). Una sola pausa sirve para meter las 6 tiras de golpe.
+En la cama de 220 mm caben **4 tarjetas** (2×2) o **6** si las giras (3×2 en 54 mm). Una sola pausa sirve para meter las 6 pegatinas de golpe.
 
 ---
 
@@ -81,7 +81,7 @@ Una tarjeta de reseña no es un solo bloque. Son **piezas de color** + un **huec
   -----------------------------------------
  |              CUERPO (negro/color marca)  |
  |           ┌─────────────────┐            |
- |           │   TIRA NFC      │  ← hueco   |
+ |           │  NFC Ø25 mm     │  ← hueco   |
  |           └─────────────────┘            |
   -----------------------------------------
 ```
@@ -93,9 +93,10 @@ disenos/
   generar_tarjetas.py              ← genera STL a medida
   tarjeta_google_review.scad       ← mismo diseño en OpenSCAD
   stl/
-    demo-tira-clasica/             ← 86×54 mm, hueco para TIRA ~45×15
-    demo-moneda-25/                ← mismo tamaño, hueco MONEDA 25 mm
+    demo-tira-clasica/             ← 86×54 mm, hueco moneda_25 (Timeskey Ø25)
+    demo-moneda-25/                ← mismo tamaño, grosor 4 mm
     mostrador-grande/              ← 110×70 mm para barra/recepción
+    cliente-demo/                  ← plantilla de cliente, mismo hueco
 ```
 
 Cada carpeta incluye:
@@ -109,8 +110,8 @@ Cada carpeta incluye:
 | `05_soporte.stl` | Negro | Atril de mesa, se imprime aparte |
 | `PAUSA_NFC.txt` | — | Capa exacta donde pausar |
 
-**Primera tarjeta a imprimir:** `disenos/stl/demo-tira-clasica/`  
-Pausa en **2,00 mm = capa 10** (capa de 0,20 mm).
+**Primera tarjeta a imprimir:** `disenos/stl/demo-moneda-25/`  
+Pausa en **2,00 mm = capa 10** (capa de 0,20 mm). Hueco **Ø 28,4 × 0,8 mm** para las pegatinas Timeskey NTAG215 Ø25 mm (Amazon B08LD99GZT).
 
 ### Personalizar un cliente
 
@@ -119,20 +120,20 @@ python3 disenos/generar_tarjetas.py \
   --nombre "bar-pepe" \
   --linea1 "BAR PEPE" \
   --linea2 "RESENA" \
-  --nfc tira_45x15
+  --nfc moneda_25
 ```
 
-Presets NFC del generador (elige el que coincida con **tus** tiras; mídelas con calibre):
+Stock NFC (los primeros 50): [Timeskey NTAG215 Ø25 mm](https://www.amazon.es/dp/B08LD99GZT). El hueco por defecto es `moneda_25` (Ø 28 + 0,4 mm de holgura → **~Ø 28,4 × 0,8 mm**), para meterla a mano sin que roce.
 
 | Preset | Hueco | Para qué |
 | --- | --- | --- |
-| `tira_45x15` | 47 × 17 × 0,8 mm | Tiras adhesivas típicas |
+| **`moneda_25`** | Ø 28 × 0,8 mm | **Pegatinas Timeskey Ø25 mm (el stock)** |
+| `moneda_30` | Ø 31,5 × 1,0 mm | Monedas grandes |
+| `tira_45x15` | 47 × 17 × 0,8 mm | Tiras adhesivas (si compras otras) |
 | `tira_40x20` | 42 × 22 × 0,8 mm | Tiras más anchas |
 | `tira_35x15` | 37 × 17 × 0,8 mm | Tiras cortas |
-| `moneda_25` | Ø 26,5 × 1,0 mm | Chips redondos NTAG215 |
-| `moneda_30` | Ø 31,5 × 1,0 mm | Monedas grandes |
 
-Cuando midas tus tiras, si no encajan, cambia el preset o edita `PRESETS_NFC` en `generar_tarjetas.py`. El hueco debe ser **~1 mm más grande** que la tira.
+Si una pegatina concreta roza, sube `d` en `PRESETS_NFC` de `generar_tarjetas.py`. El hueco debe quedar **~1,5 mm más grande por lado** que el chip.
 
 ### En Orca-Flashforge (cuando llegue la máquina)
 
@@ -187,20 +188,21 @@ Slicer y pausa: [cómo añadir pausa en OrcaSlicer](https://printago.io/guides/o
 
 ---
 
-## 4. Meter la tira NFC a media impresión
+## 4. Meter la pegatina NFC a media impresión
 
 1. La impresora hace la base (1,2 mm) y las paredes del hueco.
-2. **Pausa** en la primera capa que taparía el hueco (`demo-tira-clasica`: **2,00 mm / capa 10**).
-3. Tú colocas la tira **plana**, centrada, sin que sobresalga del hueco. Si es adhesiva, puedes pegar el lado pegajoso al suelo del hueco para que no se mueva.
+2. **Pausa** en la primera capa que taparía el hueco (`demo-moneda-25`: **2,00 mm / capa 10**).
+3. Colocas la pegatina Timeskey **Ø25 mm plana y centrada**, adhesivo hacia el suelo del hueco, sin que sobresalga.
 4. Reanudas. La impresora sella el NFC dentro. Queda invisible y protegido.
 
 Consejos que evitan fallos:
 
 - El nozzle está caliente: no toques la cama; usa pinzas si hace falta.
-- Si la tira es más gruesa de 0,8 mm, regenera con `--grosor 4` y el preset `moneda_25` o sube `nfc_grosor` en el `.scad`.
-- No pongas la tira arrugada: el cabezal la puede arrancar.
+- Estas pegatinas son finas (~0,2 mm). El hueco tiene 0,8 mm de alto: caben holgadas.
+- No las pongas arrugadas: el cabezal las puede arrancar.
 - Programa el NFC **después** (atraviesa el PLA sin problema) o **antes** si quieres probar el chip. Después es más cómodo.
 - iPhone lee NFC de serie; Android también (NFC activado).
+- No van sobre metal. No las pases a solo lectura hasta comprobar el enlace.
 
 ---
 
@@ -241,7 +243,7 @@ Chips que funcionan (NTAG de NXP, los que entiende iPhone y Android):
 | **NTAG215** | ~504 B | **El que debes comprar** |
 | NTAG216 | ~888 B | Sobra para esto |
 
-Si tus tiras no dicen el chip, asume NTAG213/215. Si al escribir falla por “poca memoria”, acorta la URL (usa el `g.page`).
+Las Timeskey B08LD99GZT son **NTAG215**. Si al escribir falla por “poca memoria”, acorta la URL (usa el `g.page`).
 
 ---
 
@@ -255,8 +257,7 @@ Ya tienes la impresora. Falta esto:
 | PLA blanco 1 kg | Texto / icono | Contraste |
 | PLA oro / amarillo silk | Estrellas | Aspecto “5 estrellas” |
 | 1 color extra (rojo, azul, verde) | Marca del cliente | El 4º canal del IFS |
-| Tiras NFC **NTAG215** | El chip | Las que ya tienes; si compras más, NTAG215 |
-| Calibre / regla | Medir la tira | Para pillar el preset bueno |
+| Pegatinas NFC **NTAG215 Ø25 mm** | El chip | [Timeskey B08LD99GZT](https://www.amazon.es/dp/B08LD99GZT); si compras más, mismas Ø25 |
 | Alcohol isopropílico | Limpiar PEI | Primera capa limpia |
 | Orca-Flashforge | Slicer | Gratis, web Flashforge |
 | NFC Tools | Programar | Gratis en App Store / Play |
@@ -280,8 +281,8 @@ No uses el **logotipo oficial de Google** (la G de 4 colores) en producto a la v
 
 ## 8. Plan de las próximas semanas
 
-1. **Hoy:** mide tus tiras, elige preset, deja Orca-Flashforge descargado.
-2. **Día que llegue la AD5X:** calibración, PLA de prueba, imprime `demo-tira-clasica` en un color. Pausa, mete NFC, programa un enlace de prueba (puede ser el de un negocio tuyo o un Place ID de prueba).
+1. **Hoy:** Orca-Flashforge descargado; chips Timeskey Ø25 mm; hueco ya es `moneda_25`.
+2. **Día que llegue la AD5X:** calibración, PLA de prueba, imprime `demo-moneda-25` en un color. Pausa, mete la pegatina, programa un enlace de prueba (puede ser el de un negocio tuyo o un Place ID de prueba).
 3. **Segunda impresión:** 3 colores (negro + blanco + oro).
 4. **Primera de cliente:** `--nombre` + colores de su marca + su `g.page`.
 5. **Web (en unas semanas):** catálogo (tarjeta, mostrador, pack), formulario de Place ID / enlace, pago, y este mismo generador para producir el STL del pedido.

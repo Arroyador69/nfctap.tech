@@ -1,7 +1,7 @@
 {
   "cliente": "Nombre del negocio",
   "producto": "tarjeta-clasica",
-  "nfc": "tira_45x15",
+  "nfc": "moneda_25",
   "texto": {
     "linea1": "TOCA PARA",
     "linea2": "RESENA"
@@ -17,5 +17,5 @@
     "enlace_resena": "https://g.page/r/XXXXXXXX/review"
   },
   "unidades": 3,
-  "notas": "Medir la tira NFC real antes de generar el STL."
+  "notas": "Hueco para Timeskey B08LD99GZT (NTAG215 Ø25 mm). Preset moneda_25."
 }

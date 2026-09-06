@@ -4,7 +4,7 @@
   "alto": 54.0,
   "grosor": 3.6,
   "radio": 4.0,
-  "nfc": "tira_45x15",
+  "nfc": "moneda_25",
   "nfc_desde_base": 1.2,
   "relieve": 0.4,
   "colores": {

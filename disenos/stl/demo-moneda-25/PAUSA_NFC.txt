@@ -1,13 +1,14 @@
 Pausa de inserción NFC
 ======================
 Preset NFC: moneda_25
-Altura de pausa: 2.20 mm
-Capa (a 0.20 mm): 11
+Altura de pausa: 2.00 mm
+Capa (a 0.20 mm): 10
 
 En Orca-Flashforge:
 1. Rebana la placa.
 2. Pestaña Vista previa.
-3. Slider derecho -> capa 11 (acaba el hueco).
+3. Slider derecho -> capa 10 (acaba el hueco).
 4. Clic derecho -> Añadir pausa.
 5. Vuelve a rebanar y envía a la AD5X.
-6. Cuando pause, coloca la tira NFC plana en el hueco y pulsa Reanudar.
+6. Cuando pause, coloca la pegatina NFC (Ø25 mm) plana y centrada,
+   adhesivo hacia abajo, y pulsa Reanudar.

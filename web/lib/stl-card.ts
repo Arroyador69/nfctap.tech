@@ -1,4 +1,4 @@
-import { pauseLayer, type PrintSpec } from "./print-spec";
+import { NFC_STOCK, pauseLayer, type PrintSpec } from "./print-spec";
 
 type V2 = [number, number];
 type V3 = [number, number, number];
@@ -262,9 +262,9 @@ function textMesh(text: string, pixel: number, height: number, z0: number) {
 
 function body(spec: PrintSpec) {
   const { ancho: w, alto: h, grosor: t, radio: r, nfc_desde_base: zFloor } = spec;
-  const zCeil = zFloor + 0.8;
+  const zCeil = zFloor + NFC_STOCK.cavityThickness;
   const outer = roundedRect(w, h, r);
-  const hole = rectangle(47.4, 17.4);
+  const hole = circle(0, 0, NFC_STOCK.cavityDiameter / 2, 48);
   const m = new Mesh();
   m.extend(extrude(outer, 0, zFloor));
   m.extend(extrudeRing(outer, hole, zFloor, zCeil));
@@ -398,7 +398,7 @@ En Orca-Flashforge:
 1. Importa 01 a 05, selecciónalos y Ensamblar.
 2. Asigna color según COLORES.txt
 3. Vista previa → capa ${layer} → Añadir pausa.
-4. Imprime. Al pausar, mete la tira NFC y reanuda.
+4. Imprime. Al pausar, mete la pegatina NFC Ø25 mm (adhesivo abajo) y reanuda.
 5. Programa el chip con el enlace de NFC.txt
 `;
 }

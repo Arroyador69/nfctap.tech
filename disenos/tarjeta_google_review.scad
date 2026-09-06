@@ -9,11 +9,11 @@ grosor = 3.6;
 radio = 4;
 
 /* [NFC] */
-// tira = rectangular; moneda = circular 25/30 mm
-nfc_tipo = "tira";   // [tira, moneda]
+// Stock: Timeskey B08LD99GZT — pegatina PET NTAG215 Ø25 mm. Hueco holgado Ø28.4.
+nfc_tipo = "moneda";   // [tira, moneda]
 nfc_tira_w = 47;
 nfc_tira_h = 17;
-nfc_moneda_d = 26.5;
+nfc_moneda_d = 28.4;
 nfc_grosor = 0.8;
 nfc_desde_base = 1.2;  // deja 6 capas de 0.2 mm debajo
 
