@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     }
     normalized = {
       name: address.name.trim(),
-      email: address.email?.trim() || "mano@nfctab.tech",
+      email: address.email?.trim() || "mano@nfctap.tech",
       phone: address.phone?.trim() || "",
       line1: "Entrega en mano",
       line2: address.line2?.trim(),

@@ -1,6 +1,6 @@
 # NFCTap Config
 
-App para **programar pegatinas NFC** de NFCTab. Nombre: **NFCTap Config** (`tech.nfctab.config`). «NFC Tap» ya está pillado en la App Store (ST).
+App para **programar pegatinas NFC** de NFCTap (`nfctap.tech`). Nombre: **NFCTap Config**. Bundle ID `tech.nfctab.config` (no cambiar: ya está en App Store Connect). «NFC Tap» está pillado en la App Store (ST).
 
 Hoy: **gratis, para ti**. Paywall más adelante.
 
@@ -53,7 +53,7 @@ iPhone: más tarde, `npx expo run:ios` o Xcode. Hace falta el capability **NFC T
 | NFC Tools Pro | App de pago. Perfiles, emular tag, 200 tareas. |
 | Smart NFC y clones | Escritura básica gratis, ilimitado / plantillas de pago o suscripción. |
 
-Para NFCTab, el dinero está en **la tarjeta física**. La app puede quedarse gratis para ti y, luego, un Pro (historial en la nube, lotes, varios operarios) si la usáis más gente.
+Para NFCTap, el dinero está en **la tarjeta física**. La app puede quedarse gratis para ti y, luego, un Pro (historial en la nube, lotes, varios operarios) si la usáis más gente.
 
 ## No hacemos (a propósito)
 

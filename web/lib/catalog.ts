@@ -1,10 +1,11 @@
 import type { BodyColor, ProductKind, Qty } from "./types";
 
 export const BRAND = {
-  name: "NFCTab",
-  domain: "nfctab.tech",
+  name: "NFCTap",
+  domain: "nfctap.tech",
+  legacyDomain: "nfctab.tech",
   tagline: "Toca. Opina. En Google.",
-  email: "hola@nfctab.tech",
+  email: "hola@nfctap.tech",
 };
 
 export const PRICES: Record<ProductKind, Record<Qty, number>> = {

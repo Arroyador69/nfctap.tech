@@ -23,17 +23,17 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.nfctab.tech"),
+  metadataBase: new URL("https://nfctap.tech"),
   title: {
-    default: "NFCTab — Crea tu tarjeta NFC de reseñas Google",
-    template: "%s · NFCTab",
+    default: "NFCTap — Crea tu tarjeta NFC de reseñas Google",
+    template: "%s · NFCTap",
   },
   description:
     "Editor 3D para tarjetas NFC verticales. El cliente toca y deja la reseña en Google. Desde 15 €. Impreso en España.",
-  applicationName: "NFCTab",
+  applicationName: "NFCTap",
   appleWebApp: {
     capable: true,
-    title: "NFCTab",
+    title: "NFCTap",
     statusBarStyle: "default",
   },
   icons: {
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     apple: "/icon.svg",
   },
   alternates: {
-    canonical: "https://www.nfctab.tech",
+    canonical: "https://nfctap.tech",
   },
 };
 

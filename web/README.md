@@ -1,4 +1,4 @@
-# NFCTab.tech — web
+# NFCTap.tech — web
 
 Tienda + personalizador + dashboard de pedidos. Next.js 16, lista para Vercel.
 

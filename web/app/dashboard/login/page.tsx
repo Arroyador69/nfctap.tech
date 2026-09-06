@@ -25,7 +25,7 @@ export default function LoginPage() {
 
   return (
     <div className="mx-auto max-w-sm px-5 py-24">
-      <h1 className="font-[family-name:var(--font-display)] text-3xl">Dashboard NFCTab</h1>
+      <h1 className="font-[family-name:var(--font-display)] text-3xl">Dashboard NFCTap</h1>
       <p className="mt-2 text-sm text-[#6f675c]">Solo tú. Contraseña en DASHBOARD_PASSWORD.</p>
       <form onSubmit={onSubmit} className="mt-6 space-y-3">
         <input

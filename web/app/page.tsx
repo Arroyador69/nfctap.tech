@@ -8,7 +8,7 @@ export default function HomePage() {
     <>
       <section className="mx-auto grid max-w-6xl items-center gap-8 px-5 py-8 sm:gap-12 sm:py-14 lg:grid-cols-[1fr_1.05fr] lg:py-20">
         <div>
-          <p className="mb-3 text-xs uppercase tracking-[0.22em] text-[#b0892c]">www.{BRAND.domain}</p>
+          <p className="mb-3 text-xs uppercase tracking-[0.22em] text-[#b0892c]">{BRAND.domain}</p>
           <h1 className="font-[family-name:var(--font-display)] text-[2.15rem] leading-[1.08] text-[#1c1915] sm:text-5xl lg:text-6xl">
             Crea tu tarjeta
             <br />

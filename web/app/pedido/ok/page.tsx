@@ -14,7 +14,7 @@ export default async function OkPage({
 
   return (
     <div className="mx-auto max-w-xl px-5 py-20 text-center">
-      <p className="text-xs uppercase tracking-[0.2em] text-[#b0892c]">NFCTab</p>
+      <p className="text-xs uppercase tracking-[0.2em] text-[#b0892c]">NFCTap</p>
       <h1 className="mt-3 font-[family-name:var(--font-display)] text-4xl">Pedido recibido</h1>
       <p className="mt-3 text-[#5c564c]">
         {order
