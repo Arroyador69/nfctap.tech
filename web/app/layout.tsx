@@ -23,7 +23,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.nfctap.tech"),
+  metadataBase: new URL("https://nfctap.tech"),
   title: {
     default: "NFCTap — Crea tu tarjeta NFC de reseñas Google",
     template: "%s · NFCTap",
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     apple: "/icon.svg",
   },
   alternates: {
-    canonical: "https://www.nfctap.tech",
+    canonical: "https://nfctap.tech",
   },
 };
 
