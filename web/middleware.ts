@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const CANONICAL = "nfctap.tech";
+const CANONICAL = "www.nfctap.tech";
 
 export function middleware(req: NextRequest) {
   const host = req.headers.get("host")?.split(":")[0] ?? "";
-  if (host === "nfctab.tech" || host === "www.nfctab.tech" || host === "www.nfctap.tech") {
+  if (host === "nfctab.tech" || host === "www.nfctab.tech") {
     const url = req.nextUrl.clone();
     url.protocol = "https:";
     url.host = CANONICAL;
