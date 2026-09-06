@@ -11,7 +11,11 @@ import * as THREE from "three";
 export function Card3D({ design, compact = false }: { design: CardDesign; compact?: boolean }) {
   return (
     <div
-      className={compact ? "h-[300px] w-full sm:h-[360px] lg:h-[560px]" : "h-[360px] w-full sm:h-[520px] lg:h-[600px]"}
+      className={
+        compact
+          ? "h-[220px] w-full sm:h-[320px] lg:h-[520px]"
+          : "h-[280px] w-full sm:h-[460px] lg:h-[560px]"
+      }
       style={{ touchAction: "none" }}
       onContextMenu={(e) => e.preventDefault()}
     >

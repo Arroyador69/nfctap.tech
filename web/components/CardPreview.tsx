@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 const Card3DLazy = dynamic(() => import("@/components/Card3D").then((m) => m.Card3D), {
   ssr: false,
   loading: () => (
-    <div className="grid h-[300px] place-items-center text-sm text-[#7a7266] lg:h-[560px]">
+    <div className="grid h-[220px] place-items-center text-sm text-[#7a7266] sm:h-[320px] lg:h-[520px]">
       Cargando el modelo…
     </div>
   ),

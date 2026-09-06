@@ -14,8 +14,8 @@ export default async function PersonalizarPage({
   const initial: ProductKind = kind === "generica" ? "generica" : "personalizada";
 
   return (
-    <div className="mx-auto max-w-6xl px-5 pb-6 pt-4 sm:py-10">
-      <h1 className="font-[family-name:var(--font-display)] text-3xl sm:text-5xl">
+    <div className="mx-auto max-w-6xl px-5 pb-6 pt-3 sm:py-10">
+      <h1 className="font-[family-name:var(--font-display)] text-[1.75rem] leading-tight sm:text-5xl">
         Crea tu propia tarjeta
       </h1>
       <p className="mt-2 max-w-xl text-sm text-[#5c564c] sm:text-base">

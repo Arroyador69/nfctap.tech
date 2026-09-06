@@ -15,6 +15,7 @@
 
 html {
   background: var(--background);
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -24,6 +25,11 @@ body {
     var(--background);
   color: var(--foreground);
   font-family: var(--font-outfit), system-ui, sans-serif;
+}
+
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
 }
 
 input:focus,
