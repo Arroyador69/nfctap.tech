@@ -13,7 +13,9 @@ from __future__ import annotations
 import json
 import math
 import struct
+import zipfile
 from pathlib import Path
+from xml.sax.saxutils import escape
 
 OUT = Path(__file__).resolve().parent / "stl"
 
@@ -175,6 +177,21 @@ class Mesh:
                 f.write(struct.pack("<3f", *c))
                 f.write(struct.pack("<H", 0))
         print(f"  STL  {path.name:40s}  {len(self.tris):6d} triángulos")
+
+    def to_3mf_object(self, obj_id: int, name: str, pid: int = 1, pindex: int = 0) -> str:
+        verts: list[tuple[float, float, float]] = []
+        tris: list[tuple[int, int, int]] = []
+        for a, b, c in self.tris:
+            i = len(verts)
+            verts.extend((a, b, c))
+            tris.append((i, i + 1, i + 2))
+        v_xml = "\n".join(f'<vertex x="{x:.4f}" y="{y:.4f}" z="{z:.4f}"/>' for x, y, z in verts)
+        t_xml = "\n".join(f'<triangle v1="{i}" v2="{j}" v3="{k}"/>' for i, j, k in tris)
+        return (
+            f'<object id="{obj_id}" name="{escape(name)}" type="model" pid="{pid}" pindex="{pindex}">'
+            f"<mesh><vertices>{v_xml}</vertices><triangles>{t_xml}</triangles></mesh>"
+            f"</object>"
+        )
 
 
 def extrude(poly: list[tuple[float, float]], z0: float, z1: float) -> Mesh:
@@ -678,10 +695,10 @@ Antes de imprimir (AD5X)
 ------------------------
 1. Cama PEI limpia (agua + jabon, seca).
 2. Carga negro y oro en el IFS.
-3. Abre Orca-Flashforge y elige impresora AD5X.
-4. Importa 01_cuerpo.stl y 02_oro.stl (misma carpeta).
-5. Selecciona los dos -> clic derecho -> Ensamblar.
-6. Panel Objetos: cuerpo = negro, oro = oro.
+3. Abre Flash Studio Desktop y elige impresora AD5X.
+4. Archivo -> Abrir -> alberto-cartera.3mf (ya va ensamblado).
+   No importes los STL sueltos: Flash Studio los pega a la cama.
+5. Panel Objetos: cuerpo = negro, oro = oro.
 7. Ajustes: capa 0.20 mm, 3 perimetros, relleno 15% gyroid,
    paredes Arachne, PLA ~210/60 C (mira el carrete).
 8. Rebana. Vista previa -> slider a la CAPA 10 (2.00 mm).
@@ -755,15 +772,106 @@ def write_pause_note(cfg: dict, path: Path) -> None:
     )
 
 
+def write_cartera_3mf(path: Path, body: Mesh, gold: Mesh) -> None:
+    """3MF estilo Orca/Flash Studio: versión BambuStudio + piezas ya ensambladas."""
+    ident = "1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"
+    model = f"""<?xml version="1.0" encoding="UTF-8"?>
+<model unit="millimeter" xml:lang="en-US"
+  xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02"
+  xmlns:BambuStudio="http://schemas.bambulab.com/package/2021">
+  <metadata name="Application">OrcaSlicer-2.3.2</metadata>
+  <metadata name="BambuStudio:3mfVersion">1</metadata>
+  <metadata name="Title">alberto-cartera</metadata>
+  <resources>
+    <basematerials id="1">
+      <base name="negro" displaycolor="#1A1A1AFF"/>
+      <base name="oro" displaycolor="#C9A227FF"/>
+    </basematerials>
+    {body.to_3mf_object(2, "01_cuerpo", 1, 0)}
+    {gold.to_3mf_object(3, "02_oro", 1, 1)}
+    <object id="4" name="alberto-cartera" type="model">
+      <components>
+        <component objectid="2"/>
+        <component objectid="3"/>
+      </components>
+    </object>
+  </resources>
+  <build>
+    <item objectid="4" transform="1 0 0 0 1 0 0 0 1 110 110 0"/>
+  </build>
+</model>
+"""
+    settings = f"""<?xml version="1.0" encoding="UTF-8"?>
+<config>
+  <object id="4">
+    <metadata key="name" value="alberto-cartera"/>
+    <part id="2" subtype="normal_part">
+      <metadata key="name" value="01_cuerpo"/>
+      <metadata key="matrix" value="{ident}"/>
+      <metadata key="source_file" value="01_cuerpo.stl"/>
+      <metadata key="extruder" value="1"/>
+    </part>
+    <part id="3" subtype="normal_part">
+      <metadata key="name" value="02_oro"/>
+      <metadata key="matrix" value="{ident}"/>
+      <metadata key="source_file" value="02_oro.stl"/>
+      <metadata key="extruder" value="2"/>
+    </part>
+  </object>
+  <plate>
+    <metadata key="plater_id" value="1"/>
+    <metadata key="plater_name" value="alberto-cartera"/>
+    <metadata key="locked" value="false"/>
+    <model_instance>
+      <metadata key="object_id" value="4"/>
+      <metadata key="instance_id" value="0"/>
+      <metadata key="identify_id" value="1"/>
+    </model_instance>
+  </plate>
+  <assemble>
+    <assemble_item object_id="4" instance_id="0" transform="1 0 0 0 0 1 0 0 0 0 1 0 110 110 0" offset="0 0 0"/>
+  </assemble>
+</config>
+"""
+    ctypes = """<?xml version="1.0" encoding="UTF-8"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/>
+  <Default Extension="config" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
+</Types>
+"""
+    rels = """<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Target="/3D/3dmodel.model" Id="rel0" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/>
+</Relationships>
+"""
+    model_rels = """<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Target="/Metadata/model_settings.config" Id="rel-1" Type="http://schemas.bambulab.com/package/2021/relationships/settings"/>
+</Relationships>
+"""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("[Content_Types].xml", ctypes)
+        zf.writestr("_rels/.rels", rels)
+        zf.writestr("3D/3dmodel.model", model)
+        zf.writestr("3D/_rels/3dmodel.model.rels", model_rels)
+        zf.writestr("Metadata/model_settings.config", settings)
+    print(f"  3MF  {path.name}")
+
+
 def generate(cfg: dict) -> None:
     name = cfg["nombre"]
     dest = OUT / name
     dest.mkdir(parents=True, exist_ok=True)
 
     print(f"\nGenerando '{name}'  ({cfg['ancho']}x{cfg['alto']}x{cfg['grosor']} mm, NFC={cfg['nfc']})")
-    card_body(cfg).write_stl(dest / "01_cuerpo.stl", "cuerpo")
+    body = card_body(cfg)
+    body.write_stl(dest / "01_cuerpo.stl", "cuerpo")
     if cfg.get("nfc_dual"):
-        card_gold_cartera(cfg).write_stl(dest / "02_oro.stl", "oro")
+        gold = card_gold_cartera(cfg)
+        gold.write_stl(dest / "02_oro.stl", "oro")
+        write_cartera_3mf(dest / "alberto-cartera.3mf", body, gold)
         (dest / "NFC.txt").write_text(
             (
                 "Dos pegatinas Timeskey Ø25 mm en la misma tarjeta.\n\n"

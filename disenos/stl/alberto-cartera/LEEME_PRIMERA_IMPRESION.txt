@@ -24,10 +24,10 @@ Antes de imprimir (AD5X)
 ------------------------
 1. Cama PEI limpia (agua + jabon, seca).
 2. Carga negro y oro en el IFS.
-3. Abre Orca-Flashforge y elige impresora AD5X.
-4. Importa 01_cuerpo.stl y 02_oro.stl (misma carpeta).
-5. Selecciona los dos -> clic derecho -> Ensamblar.
-6. Panel Objetos: cuerpo = negro, oro = oro.
+3. Abre Flash Studio Desktop y elige impresora AD5X.
+4. Archivo -> Abrir -> alberto-cartera.3mf (ya va ensamblado).
+   No importes los STL sueltos: Flash Studio los pega a la cama.
+5. Panel Objetos: cuerpo = negro, oro = oro.
 7. Ajustes: capa 0.20 mm, 3 perimetros, relleno 15% gyroid,
    paredes Arachne, PLA ~210/60 C (mira el carrete).
 8. Rebana. Vista previa -> slider a la CAPA 10 (2.00 mm).
