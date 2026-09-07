@@ -25,9 +25,11 @@ Antes de imprimir (AD5X)
 1. Cama PEI limpia (agua + jabon, seca).
 2. Carga negro y oro en el IFS.
 3. Abre Flash Studio Desktop y elige impresora AD5X.
-4. Archivo -> Abrir -> alberto-cartera.3mf (ya va ensamblado).
-   No importes los STL sueltos: Flash Studio los pega a la cama.
-5. Panel Objetos: cuerpo = negro, oro = oro.
+4. Archivo -> Importar -> 01_cuerpo.stl y 02_oro.stl (los dos).
+   El oro ya lleva un ancla en la cama para que las letras queden arriba.
+5. Clic cuerpo, Mayus+clic oro -> clic derecho -> Ensamblar.
+6. Cuerpo = negro. Oro = silk/oro. El cuadradito de ancla se imprime
+   fuera de la tarjeta: lo rompes al acabar.
 7. Ajustes: capa 0.20 mm, 3 perimetros, relleno 15% gyroid,
    paredes Arachne, PLA ~210/60 C (mira el carrete).
 8. Rebana. Vista previa -> slider a la CAPA 10 (2.00 mm).
