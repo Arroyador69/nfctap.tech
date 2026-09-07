@@ -592,7 +592,7 @@ def card_gold_cartera(cfg: dict) -> Mesh:
     m.extend(shifted(text_mesh("WEB", pixel=pixel, height=relief, z0=t, advance=adv), web_cx, side_y))
     m.extend(gold_dot(right_dot, side_y, dot_r, t, z1))
     firma = cfg.get("firma", "DEVELOPED BY NFCTAP.TECH")
-    m.extend(shifted(text_mesh(firma, pixel=0.40, height=relief, z0=t, advance=7), 0.0, -21.6))
+    m.extend(shifted(text_mesh(firma, pixel=0.38, height=relief, z0=t, advance=7), 0.0, -17.8))
     # Ancla en z=0: Flash Studio pega el STL a la cama; sin esto el oro cae al suelo.
     m.extend(extrude(rectangle(1.6, 1.6, 0.0, cfg["alto"] / 2 + 4.2), 0.0, 0.20))
     return m
@@ -617,7 +617,7 @@ def write_cartera_preview(dest: Path) -> None:
   <text x="92" y="354" fill="url(#gold)" font-family="Helvetica Neue, Arial, sans-serif" font-size="14" letter-spacing="6">WA</text>
   <text x="764" y="354" text-anchor="end" fill="url(#gold)" font-family="Helvetica Neue, Arial, sans-serif" font-size="14" letter-spacing="6">WEB</text>
   <circle cx="794" cy="348" r="8" fill="url(#gold)"/>
-  <text x="428" y="492" text-anchor="middle" fill="url(#gold)" font-family="Helvetica Neue, Arial, sans-serif" font-size="12" letter-spacing="3.4" filter="url(#emboss)">DEVELOPED BY NFCTAP.TECH</text>
+  <text x="428" y="430" text-anchor="middle" fill="url(#gold)" font-family="Helvetica Neue, Arial, sans-serif" font-size="12" letter-spacing="3.4" filter="url(#emboss)">DEVELOPED BY NFCTAP.TECH</text>
 </svg>
 """,
         encoding="utf-8",
@@ -708,6 +708,7 @@ Antes de imprimir (AD5X)
 4. Archivo -> Importar -> 01_cuerpo.stl y 02_oro.stl (los dos).
    El oro ya lleva un ancla en la cama para que las letras queden arriba.
 5. Clic cuerpo, Mayus+clic oro -> clic derecho -> Agrupar.
+   NO pulses Reparar el modelo: parte el cuerpo y deja 1,2 mm.
 6. Cuerpo = negro. Oro = silk/oro. El cuadradito de ancla se imprime
    fuera de la tarjeta: lo rompes al acabar.
 7. Ajustes: capa 0.20 mm, 3 perimetros, relleno 15% gyroid,

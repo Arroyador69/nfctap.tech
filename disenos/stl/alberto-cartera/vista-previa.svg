@@ -15,5 +15,5 @@
   <text x="92" y="354" fill="url(#gold)" font-family="Helvetica Neue, Arial, sans-serif" font-size="14" letter-spacing="6">WA</text>
   <text x="764" y="354" text-anchor="end" fill="url(#gold)" font-family="Helvetica Neue, Arial, sans-serif" font-size="14" letter-spacing="6">WEB</text>
   <circle cx="794" cy="348" r="8" fill="url(#gold)"/>
-  <text x="428" y="492" text-anchor="middle" fill="url(#gold)" font-family="Helvetica Neue, Arial, sans-serif" font-size="12" letter-spacing="3.4" filter="url(#emboss)">DEVELOPED BY NFCTAP.TECH</text>
+  <text x="428" y="430" text-anchor="middle" fill="url(#gold)" font-family="Helvetica Neue, Arial, sans-serif" font-size="12" letter-spacing="3.4" filter="url(#emboss)">DEVELOPED BY NFCTAP.TECH</text>
 </svg>
