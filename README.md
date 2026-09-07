@@ -111,7 +111,7 @@ Cada carpeta incluye:
 | `05_soporte.stl` | Negro | Atril de mesa, se imprime aparte |
 | `PAUSA_NFC.txt` | — | Capa exacta donde pausar |
 
-**Tu primera tarjeta:** en Flash Studio, **Importar** `01_cuerpo.stl` y `02_oro.stl` de `disenos/stl/alberto-cartera/`, luego **Ensamblar**.  
+**Tu primera tarjeta:** en Flash Studio, **Importar** `01_cuerpo.stl` y `02_oro.stl` de `disenos/stl/alberto-cartera/`, luego clic derecho → **Agrupar**.  
 Pausa en **2,00 mm = capa 10**. Lee `LEEME_PRIMERA_IMPRESION.txt`. Huecos **Ø 28,4 × 0,8 mm** para Timeskey NTAG215 Ø25 mm.
 
 ### Personalizar un cliente

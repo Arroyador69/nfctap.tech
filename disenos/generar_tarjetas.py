@@ -510,18 +510,17 @@ def card_body(cfg: dict) -> Mesh:
     outer = rounded_rect(w, h, r)
     hole = nfc_hole(nfc)
     body = Mesh()
-    gap = 0.002
-    body.extend(extrude(outer, 0.0, z_floor - gap))
+    body.extend(extrude(outer, 0.0, z_floor))
 
     if cfg.get("nfc_dual"):
         hole_r = nfc["d"] / 2 + 0.2
         cx_l, cx_r = dual_nfc_centers(cfg, hole_r)
-        mid = polygon_with_holes(outer, [translate(hole, cx_l, 0.0), translate(hole, cx_r, 0.0)])
-        body.extend(extrude(mid, z_floor, z_ceil))
+        body.extend(extrude_ring(half_rounded_rect(w, h, r, "left"), translate(hole, cx_l, 0.0), z_floor, z_ceil))
+        body.extend(extrude_ring(half_rounded_rect(w, h, r, "right"), translate(hole, cx_r, 0.0), z_floor, z_ceil))
     else:
-        body.extend(extrude(polygon_with_holes(outer, [hole]), z_floor, z_ceil))
+        body.extend(extrude_ring(outer, hole, z_floor, z_ceil))
 
-    body.extend(extrude(outer, z_ceil + gap, t))
+    body.extend(extrude(outer, z_ceil, t))
     return body
 
 
@@ -708,7 +707,7 @@ Antes de imprimir (AD5X)
 3. Abre Flash Studio Desktop y elige impresora AD5X.
 4. Archivo -> Importar -> 01_cuerpo.stl y 02_oro.stl (los dos).
    El oro ya lleva un ancla en la cama para que las letras queden arriba.
-5. Clic cuerpo, Mayus+clic oro -> clic derecho -> Ensamblar.
+5. Clic cuerpo, Mayus+clic oro -> clic derecho -> Agrupar.
 6. Cuerpo = negro. Oro = silk/oro. El cuadradito de ancla se imprime
    fuera de la tarjeta: lo rompes al acabar.
 7. Ajustes: capa 0.20 mm, 3 perimetros, relleno 15% gyroid,
