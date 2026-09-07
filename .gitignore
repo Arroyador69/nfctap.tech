@@ -10,3 +10,6 @@ nfctap-config/.expo
 nfctap-config/ios
 nfctap-config/android
 .DS_Store
+disenos/.venv/
+__pycache__/
+*.pyc

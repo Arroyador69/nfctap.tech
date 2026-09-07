@@ -1,0 +1,11 @@
+Freddo's Fuengirola — dos NFC en el grano
+
+IZQUIERDA — TAP / RESEÑA
+  Google Reviews del local. Pedir el enlace al cliente.
+  NFC Tap Config → Cualquier enlace → URL de reseña.
+
+DERECHA — TAP / PUNTOS
+  Alta o tarjeta de fidelidad / club de puntos.
+  Pedir URL (web, app, formulario).
+
+No grabar hasta tener las dos URLs.

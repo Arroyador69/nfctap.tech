@@ -29,11 +29,13 @@ export function drawCardFace(
   }
 
   if (generic) {
-    drawGoogleMark(ctx, w / 2, 470, 210);
+    drawGoogleMark(ctx, w / 2, 455, 200, accent);
     ctx.textAlign = "center";
-    ctx.fillStyle = ink;
-    ctx.font = "700 44px Outfit, Arial, sans-serif";
-    wrap(ctx, "TOCA PARA DEJAR TU RESEÑA", w / 2, 720, w - 100, 52);
+    ctx.fillStyle = accent;
+    ctx.font = "700 64px Outfit, Arial, sans-serif";
+    ctx.fillText("TAP", w / 2, 700);
+    ctx.font = "600 42px Outfit, Arial, sans-serif";
+    ctx.fillText("RESEÑA", w / 2, 760);
   } else {
     const logoY = 400;
     if (logo) {
@@ -65,7 +67,7 @@ export function drawCardFace(
 
     ctx.fillStyle = muted;
     ctx.font = "500 28px Outfit, Arial, sans-serif";
-    wrap(ctx, (design.line2 || "TOCA PARA DEJAR TU RESEÑA").toUpperCase(), w / 2, 760, w - 120, 36);
+    wrap(ctx, (design.line2 || "TAP PARA DEJAR TU RESEÑA").toUpperCase(), w / 2, 760, w - 120, 36);
   }
 
   ctx.strokeStyle = accent;
@@ -85,35 +87,20 @@ export function drawCardFace(
   ctx.fillText(BRAND.domain, w / 2, h - 70);
 }
 
-/** G de cuatro colores (marca de reseñas). No es el archivo oficial de Google. */
-function drawGoogleMark(ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number) {
+/** G de un color (el acento que se imprime). No hay azul/verde en stock. */
+function drawGoogleMark(ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number, color: string) {
   const outer = size / 2;
   ctx.save();
   ctx.beginPath();
-  ctx.arc(cx, cy, outer + 16, 0, Math.PI * 2);
-  ctx.fillStyle = "#ffffff";
-  ctx.fill();
-
-  const line = outer * 0.22;
-  const r = outer - line / 2;
-  ctx.lineWidth = line;
-  ctx.lineCap = "butt";
-
-  const arcs: [number, number, string][] = [
-    [-28, 52, "#4285F4"],
-    [52, 138, "#34A853"],
-    [138, 214, "#FBBC05"],
-    [214, 292, "#EA4335"],
-  ];
-  for (const [a0, a1, color] of arcs) {
-    ctx.beginPath();
-    ctx.strokeStyle = color;
-    ctx.arc(cx, cy, r, (a0 * Math.PI) / 180, (a1 * Math.PI) / 180);
-    ctx.stroke();
-  }
-
-  ctx.fillStyle = "#4285F4";
-  ctx.fillRect(cx - 2, cy - line / 2, r + line * 0.12, line);
+  ctx.arc(cx, cy, outer, 0, Math.PI * 2);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = outer * 0.16;
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.font = `700 ${Math.round(outer * 1.15)}px Georgia, Times, serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("G", cx, cy + outer * 0.04);
   ctx.restore();
 }
 

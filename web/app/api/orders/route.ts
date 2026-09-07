@@ -110,11 +110,11 @@ export async function POST(req: Request) {
       template: "clasica",
       bodyColor: design?.bodyColor ?? "negro",
       accentColor: design?.accentColor ?? "oro",
-      line1: kind === "generica" ? "" : design.line1.trim().slice(0, 24),
+      line1: kind === "generica" ? "TAP" : design.line1.trim().slice(0, 24),
       line2:
         kind === "generica"
-          ? "Toca para dejar tu reseña"
-          : (design.line2 || "Toca para dejar tu reseña").trim().slice(0, 40),
+          ? "RESEÑA"
+          : (design.line2 || "TAP para dejar tu reseña").trim().slice(0, 40),
       logoDataUrl: logo,
       logoMask,
       googleUrl: design.googleUrl.trim(),

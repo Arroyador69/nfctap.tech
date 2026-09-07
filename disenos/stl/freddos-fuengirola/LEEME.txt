@@ -1,0 +1,27 @@
+Freddo's Fuengirola — grano NFC + cuna-letras
+=============================================
+
+Que es
+------
+1. GRANO rugby inclinado, S que lo corta. Disco amarillo + TAP negro
+   (RESEÑA / PUNTOS, horizontal). Dos NFC Ø25.
+2. CUNA = las letras del logo. Freddo's abajo, el grano se ENCAJA
+   arriba en una ranura con labio, respaldo y topes. No se cae.
+3. Firma en el pie, debajo de Freddo's: NFCTAP.TECH
+
+Montaje
+-------
+        [        GRANO (de lado)        ]
+        [   ranura en lo alto de Freddo's ]
+        [  F r e d d o ' s              ]
+        [  NFCTAP.TECH                  ]
+        [=========== pie 64 mm =========]
+
+Imprime
+-------
+Grano: 01 + 02 agrupados. Pausa capa 24. NO Reparar.
+Cuna:  03 + 04 agrupados. Negro=03, amarillo=04. Sin pausa.
+Al acabar, la cuna se pone DE PIE (el pie en la mesa).
+El grano entra de canto en la ranura de ARRIBA.
+
+Colores: negro + amarillo. Los dos como PLA.

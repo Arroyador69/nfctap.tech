@@ -1,0 +1,25 @@
+{
+  "nombre": "generica-negra-roja",
+  "kind": "generica",
+  "precio": 15,
+  "cuerpo": "negro",
+  "acento": "rojo",
+  "face": [
+    76.0,
+    108.0,
+    8.0
+  ],
+  "pie_z": 54.0,
+  "nfc": {
+    "sticker": 25.0,
+    "well": 36.0,
+    "seat": 30.0,
+    "z_pause": 4.8
+  },
+  "textos": [
+    "TAP",
+    "RESEÑA",
+    "NFCTAP.TECH"
+  ],
+  "nota": "Hostelería, más punch."
+}

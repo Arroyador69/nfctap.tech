@@ -20,7 +20,7 @@ export function Card3D({ design, compact = false }: { design: CardDesign; compac
       onContextMenu={(e) => e.preventDefault()}
     >
       <Canvas
-        camera={{ position: [0, 0.02, 2.35], fov: 32 }}
+        camera={{ position: [0.35, 0.12, 2.55], fov: 32 }}
         gl={{ antialias: true, preserveDrawingBuffer: false }}
         dpr={[1, 1.75]}
         style={{ touchAction: "none" }}
@@ -35,13 +35,13 @@ export function Card3D({ design, compact = false }: { design: CardDesign; compac
           enableZoom={false}
           autoRotate={false}
           rotateSpeed={0.4}
-          minPolarAngle={Math.PI / 2 - 0.1}
-          maxPolarAngle={Math.PI / 2 + 0.05}
-          minAzimuthAngle={-0.2}
-          maxAzimuthAngle={0.2}
-          target={[0, 0, 0]}
+          minPolarAngle={Math.PI / 2 - 0.18}
+          maxPolarAngle={Math.PI / 2 + 0.08}
+          minAzimuthAngle={-0.35}
+          maxAzimuthAngle={0.35}
+          target={[0, -0.08, 0]}
         />
-        <ContactShadows position={[0, -0.96, 0]} opacity={0.16} scale={3.6} blur={2.8} />
+        <ContactShadows position={[0, -1.08, 0]} opacity={0.18} scale={3.8} blur={2.8} />
       </Canvas>
     </div>
   );
@@ -87,9 +87,12 @@ function Plaque({ design }: { design: CardDesign }) {
   );
 
   return (
-    <group rotation={[0.035, 0, 0]}>
-      <mesh castShadow material={[edge, edge, edge, edge, front, edge]}>
-        <boxGeometry args={[1.12, 1.78, 0.058]} />
+    <group rotation={[0.04, 0.18, 0]} position={[0, 0.04, 0]}>
+      <mesh castShadow material={[edge, edge, edge, edge, front, edge]} position={[0, 0.06, 0]}>
+        <boxGeometry args={[1.08, 1.62, 0.09]} />
+      </mesh>
+      <mesh castShadow material={edge} position={[0, -0.82, 0.22]}>
+        <boxGeometry args={[1.22, 0.12, 0.72]} />
       </mesh>
     </group>
   );

@@ -1,0 +1,4 @@
+Cama AD5X 220×220: 2 genéricas (2×1).
+Importa 01_cuerpo_x2.stl + 02_acento_x2.stl, agrupa, no Reparar.
+Misma pausa capa 24 en TODAS (están a la misma altura).
+Una pegatina por hueco, hundida, adhesivo a la cama.

@@ -1,0 +1,21 @@
+Coste por atril genérico (negro + amarillo)
+===========================================
+
+Pieza ~47 g PLA (cuerpo + acento).
+Filamento 22 €/kg ............... 1.04 €
+Pegatina Timeskey NTAG215 ....... 0.45 €
+Luz AD5X (~1,2 h) ............... 0.22 €
+Fallo / desperdicio (1 de 8) .... 0.25 €
+--------------------------------
+Coste material .................. 1.96 €
+Precio de venta ................. 15.00 €
+Margen (sin tu tiempo) .......... 13.04 €
+
+A 15 € sale rentable: el material no llega a 2 €.
+Tu tiempo (rebanar, pausa NFC, programar, empaquetar)
+es lo que hay que cuidar: 10-15 min/unidad si ya
+tienes el flujo.
+
+Texto en relieve: TAP / RESEÑA (con ñ).
+Imprime 01+02 o la placa *_x2 (2 uds en 220 mm).
+Pausa capa 24 (4,80 mm) en todas. Pegatina HUNDIDA en el asiento Ø30.

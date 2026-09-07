@@ -1,7 +1,7 @@
 "use client";
 
 import { CardPreview } from "@/components/CardPreview";
-import { ACCENT_HEX, BODY_COLORS, PRICES, defaultDesign, productLabel } from "@/lib/catalog";
+import { ACCENT_COLORS, ACCENT_HEX, BODY_COLORS, PRICES, defaultDesign, productLabel } from "@/lib/catalog";
 import { isEmail, isPhone, isPostalCode, isReviewUrl, prepareLogo } from "@/lib/logo";
 import { PROVINCIAS } from "@/lib/provinces";
 import { euros, shippingCost, zoneFromPostalCode, ZONE_LABEL } from "@/lib/shipping";
@@ -234,7 +234,7 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
                 </>
               ) : (
                 <p className="rounded-2xl bg-[#faf6ee] px-4 py-3 text-sm text-[#5c564c]">
-                  Genérica fija: G de Google al centro y «Toca para dejar tu reseña». Elige color y el enlace.
+                  Genérica: G de un color, TAP / RESEÑA y pie NFCTap. Elige cuerpo, acento y el enlace de Google.
                 </p>
               )}
 
@@ -273,24 +273,23 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
                 </div>
               </div>
 
-              {kind === "personalizada" && (
-                <div>
-                  <p className="mb-2 text-sm text-[#3f3a34]">Estrellas</p>
-                  <div className="flex gap-3">
-                    {(["oro", "blanco", "rojo"] as const).map((id) => (
-                      <button
-                        key={id}
-                        type="button"
-                        onClick={() => patch({ accentColor: id })}
-                        className={`h-12 w-12 rounded-full border-2 ${
-                          design.accentColor === id ? "border-[#1c1915]" : "border-[#e6ddd0]"
-                        }`}
-                        style={{ background: ACCENT_HEX[id] }}
-                      />
-                    ))}
-                  </div>
+              <div>
+                <p className="mb-2 text-sm text-[#3f3a34]">{kind === "generica" ? "G y estrellas" : "Estrellas"}</p>
+                <div className="flex gap-3">
+                  {ACCENT_COLORS.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      title={c.label}
+                      onClick={() => patch({ accentColor: c.id })}
+                      className={`h-12 w-12 rounded-full border-2 ${
+                        design.accentColor === c.id ? "border-[#1c1915]" : "border-[#e6ddd0]"
+                      }`}
+                      style={{ background: ACCENT_HEX[c.id] }}
+                    />
+                  ))}
                 </div>
-              )}
+              </div>
 
               {error && <p className="text-sm text-red-700">{error}</p>}
 

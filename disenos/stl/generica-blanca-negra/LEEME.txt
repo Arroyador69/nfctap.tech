@@ -1,0 +1,25 @@
+Atril genérico NFCTap — reseña Google (15 €)
+============================================
+
+Que es
+------
+Placa vertical + pie integrado (una pieza). TAP en la G
+y se abre Google Reviews. G de UN color (no hay azul/verde en stock).
+
+  01_cuerpo.stl   placa + pie + hueco NFC
+  02_acento.stl   5 estrellas + G + TAP / RESEÑA + NFCTAP.TECH
+  01_cuerpo_x2.stl + 02_acento_x2.stl   dos en la cama 220 mm
+
+Personalizada (30 €): el MISMO cuerpo. Se cambia el logo y los
+textos. No se rediseña el atril.
+
+Imprime
+-------
+Agrupar 01 + 02. NO Reparar el modelo.
+Capa 0,20 mm, 3 perímetros, gyroid 15 %, Arachne.
+Pausa NFC: capa 24 (4.80 mm).
+Pozo Ø36, asiento Ø30: la pegatina Ø25 queda HUNDIDA.
+Adhesivo a la cama. Si sobresale, no reanudes (montañita).
+Se imprime tumbada (cara arriba). Se pone de pie (el pie en la mesa).
+
+Colores de esta carpeta: cuerpo = blanco, acento = negro.

@@ -1,0 +1,10 @@
+Pausa NFC — atril genérico
+==========================
+Altura: 4.80 mm · capa 24 a 0,20 mm
+Pozo Ø36 · asiento Ø30 · pegatina Ø25
+Tapa encima: 3.20 mm
+
+Capa 24 -> Añadir pausa.
+Pegatina Timeskey NTAG215 Ø25, plana, adhesivo hacia la cama.
+Centrada en el asiento (hundida, no al ras). Reanudar.
+Si sobresale, no reanudes: la capa de encima hace montañita.

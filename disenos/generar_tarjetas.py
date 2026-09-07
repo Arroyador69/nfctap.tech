@@ -4,7 +4,7 @@
 Crea STL listos para Orca-Flashforge / AD5X:
   - Cuerpo con hueco interno para tira o moneda NFC
   - Estrellas e icono de reseña en otra pieza (segundo color)
-  - Texto "TOCA" + "RESEÑA" en tercera pieza
+  - Texto "TAP" + "RESEÑA" en tercera pieza
   - Soporte de mesa opcional
 """
 
@@ -255,6 +255,7 @@ FONT: dict[str, list[str]] = {
     "L": ["10000", "10000", "10000", "10000", "10000", "10000", "11111"],
     "M": ["10001", "11011", "10101", "10001", "10001", "10001", "10001"],
     "N": ["10001", "11001", "10101", "10011", "10001", "10001", "10001"],
+    "Ñ": ["01010", "10001", "11001", "10101", "10011", "10001", "10001"],
     "O": ["01110", "10001", "10001", "10001", "10001", "10001", "01110"],
     "P": ["11110", "10001", "10001", "11110", "10000", "10000", "10000"],
     "Q": ["01110", "10001", "10001", "10001", "10101", "10010", "01101"],
@@ -629,11 +630,11 @@ def card_text(cfg: dict) -> Mesh:
     relief = cfg["relieve"]
     m = Mesh()
     if cfg["alto"] > cfg["ancho"]:
-        m.extend(shifted(text_mesh(cfg.get("linea1", "TOCA PARA")[:16], pixel=1.05, height=relief, z0=t), 0.0, -8.0))
-        m.extend(shifted(text_mesh(cfg.get("linea2", "DEJAR TU RESENA")[:22], pixel=0.72, height=relief, z0=t), 0.0, -22.0))
+        m.extend(shifted(text_mesh(cfg.get("linea1", "TAP PARA")[:16], pixel=1.05, height=relief, z0=t), 0.0, -8.0))
+        m.extend(shifted(text_mesh(cfg.get("linea2", "DEJAR TU RESEÑA")[:22], pixel=0.72, height=relief, z0=t), 0.0, -22.0))
         return m
-    m.extend(shifted(text_mesh(cfg.get("linea1", "TOCA PARA"), pixel=1.05, height=relief, z0=t), 6.0, 4.5))
-    m.extend(shifted(text_mesh(cfg.get("linea2", "RESENA"), pixel=1.35, height=relief, z0=t), 6.0, -6.5))
+    m.extend(shifted(text_mesh(cfg.get("linea1", "TAP PARA"), pixel=1.05, height=relief, z0=t), 6.0, 4.5))
+    m.extend(shifted(text_mesh(cfg.get("linea2", "RESEÑA"), pixel=1.35, height=relief, z0=t), 6.0, -6.5))
     return m
 
 
@@ -829,13 +830,13 @@ def main() -> None:
     p = argparse.ArgumentParser(description="Genera STL de tarjetas NFC para reseñas.")
     p.add_argument("--nombre", help="Nombre del cliente / carpeta de salida")
     p.add_argument("--pedido", help="pedido.json bajado del dashboard (mismo modelo que el editor)")
-    p.add_argument("--linea1", default="TOCA PARA")
-    p.add_argument("--linea2", default="RESENA")
+    p.add_argument("--linea1", default="TAP PARA")
+    p.add_argument("--linea2", default="RESEÑA")
     p.add_argument("--nfc", default="moneda_25", choices=sorted(PRESETS_NFC))
     p.add_argument("--ancho", type=float)
     p.add_argument("--alto", type=float)
     p.add_argument("--grosor", type=float)
-    p.add_argument("--todas", action="store_true", help="Genera las 3 variantes demo")
+    p.add_argument("--todas", action="store_true", help="Obsoleto: las demos planas ya no se generan")
     p.add_argument("--cartera", action="store_true", help="Tarjeta slim de cartera con 2 NFC (WhatsApp + web)")
     args = p.parse_args()
 
@@ -874,8 +875,8 @@ def main() -> None:
             "nfc": spec.get("nfc", "moneda_25"),
             "nfc_desde_base": spec.get("nfc_desde_base", 1.2),
             "relieve": spec.get("relieve", 0.4),
-            "linea1": spec.get("linea1", "TOCA PARA"),
-            "linea2": spec.get("linea2", "DEJAR TU RESENA"),
+            "linea1": spec.get("linea1", "TAP PARA"),
+            "linea2": spec.get("linea2", "DEJAR TU RESEÑA"),
             "kind": spec.get("kind", "personalizada"),
             "logoMask": spec.get("logoMask"),
             "googleUrl": spec.get("googleUrl", ""),
@@ -895,30 +896,8 @@ def main() -> None:
         generate(cfg)
         return
 
-    variants = [
-        {**DEFAULTS, "nombre": "demo-tira-clasica", "nfc": "moneda_25"},
-        {**DEFAULTS, "nombre": "demo-moneda-25", "nfc": "moneda_25", "grosor": 4.0, "nfc_desde_base": 1.20},
-        {
-            **DEFAULTS,
-            "nombre": "mostrador-grande",
-            "ancho": 110.0,
-            "alto": 70.0,
-            "grosor": 4.0,
-            "radio": 6.0,
-            "nfc": "moneda_25",
-        },
-        {
-            **DEFAULTS,
-            "nombre": "cliente-demo",
-            "nfc": "moneda_25",
-            "linea1": "TU NEGOCIO",
-            "linea2": "RESENA",
-        },
-    ]
-    if args.todas or not args.nombre:
-        for cfg in variants:
-            generate(cfg)
-    print("\nListo. Importa 01_cuerpo + 02/03/04 en Orca-Flashforge, asigna 1 color a cada pieza.")
+    print("Usa --nombre, --pedido o --cartera.")
+    print("Genéricas 15 € (TAP / RESEÑA): python3 disenos/generar_generica.py")
 
 
 if __name__ == "__main__":

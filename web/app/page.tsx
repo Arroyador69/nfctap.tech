@@ -32,15 +32,15 @@ export default function HomePage() {
             </Link>
           </div>
         </div>
-        <CardPreview design={defaultDesign("personalizada")} />
+        <CardPreview design={defaultDesign("generica")} />
       </section>
 
       <section className="mx-auto max-w-6xl px-5 pb-16">
         <div className="grid gap-4 md:grid-cols-3">
           {[
-            ["1. La diseñas", "Nombre, texto y logo. El preview 3D enseña solo la cara frontal; el soporte se define al imprimir."],
-            ["2. El cliente toca", "NFC programado a tu enlace de Google. Sin app, sin QR sucio, sin pedir el móvil."],
-            ["3. Tú solo imprimes", "El pedido llega al dashboard con la cara lista. Nosotros (o tú) lo fabricáis."],
+            ["1. Eliges color", "Genérica negra + amarilla, o blanco + negro, o negro + rojo. La personalizada añade logo y nombre."],
+            ["2. TAP", "Acerca el móvil a la G. Se abre Google Reviews. Sin app, sin QR sucio."],
+            ["3. Lo fabricamos", "Atril con pie, NFC hundido. Llega programado a tu enlace."],
           ].map(([t, d]) => (
             <article key={t} className="rounded-[24px] border border-[#e6ddd0] bg-white/70 p-5">
               <h3 className="font-semibold">{t}</h3>
@@ -56,7 +56,7 @@ export default function HomePage() {
           <article className="rounded-[28px] border border-[#e6ddd0] bg-white p-6">
             <h3 className="text-xl font-semibold">Genérica</h3>
             <p className="mt-2 text-sm text-[#6f675c]">
-              G de Google al centro y «Toca para dejar tu reseña». Programada a tu enlace.
+              Atril con pie. G de un color, TAP / RESEÑA y cinco estrellas. Programada a tu enlace de Google.
             </p>
             <p className="mt-6 text-4xl font-semibold">{euros(PRICES.generica[1])}</p>
             <p className="text-sm text-[#8a8173]">una · dos {euros(PRICES.generica[2])}</p>

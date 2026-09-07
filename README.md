@@ -68,7 +68,7 @@ Docs oficiales útiles:
 - [Enviar a imprimir desde Orca-Flashforge](https://www.flashforge.com/a/docs/ad5x/print-via-orca-flashforge)
 - [Producto AD5X](https://www.flashforge.com/products/flashforge-ad5x-3d-printer)
 
-En la cama de 220 mm caben **4 tarjetas** (2×2) o **6** si las giras (3×2 en 54 mm). Una sola pausa sirve para meter las 6 pegatinas de golpe.
+En la cama de 220 mm caben **2 atriles genéricos** ( TAP / RESEÑA ) a tamaño real. Una sola pausa (capa 24) sirve para las dos pegatinas.
 
 ---
 
@@ -90,37 +90,40 @@ Una tarjeta de reseña no es un solo bloque. Son **piezas de color** + un **huec
 
 ```
 disenos/
-  generar_tarjetas.py              ← genera STL a medida
-  tarjeta_google_review.scad       ← mismo diseño en OpenSCAD
+  generar_generica.py              ← atril 15 € (TAP / RESEÑA), 3 colorways + placa ×2
+  generar_tarjetas.py              ← geometría + cartera / pedidos a medida
   stl/
-    demo-tira-clasica/             ← 86×54 mm, hueco moneda_25 (Timeskey Ø25)
-    demo-moneda-25/                ← mismo tamaño, grosor 4 mm
-    mostrador-grande/              ← 110×70 mm para barra/recepción
-    cliente-demo/                  ← plantilla de cliente, mismo hueco
-    alberto-cartera/               ← tu 1ª pieza: cartera slim, 2 NFC (WA + web)
+    generica-negra-amarillo/       ← la de 15 € que más se imprime
+    generica-blanca-negra/
+    generica-negra-roja/
+    freddos-fuengirola/            ← encargo cliente (no serigrafía)
+    alberto-cartera/               ← cartera slim, 2 NFC (WA + web)
 ```
 
-Cada carpeta incluye:
+Cada genérica incluye:
 
-| Archivo | Color sugerido | Qué es |
+| Archivo | Color | Qué es |
 | --- | --- | --- |
-| `01_cuerpo.stl` | Negro o color de marca | Tarjeta con hueco NFC dentro |
-| `02_estrellas.stl` | Amarillo oro | 5 estrellas en relieve |
-| `03_texto.stl` | Blanco | “TOCA PARA / RESENA” |
-| `04_icono.stl` | Blanco | Badge + estrella (icono genérico, no logo de Google) |
-| `05_soporte.stl` | Negro | Atril de mesa, se imprime aparte |
-| `PAUSA_NFC.txt` | — | Capa exacta donde pausar |
+| `01_cuerpo.stl` | Negro o blanco | Placa + pie + hueco NFC |
+| `02_acento.stl` | Amarillo / negro / rojo | Estrellas + G + TAP / RESEÑA + NFCTAP.TECH |
+| `01_cuerpo_x2.stl` + `02_acento_x2.stl` | igual | Dos en la cama 220 mm |
+| `PAUSA_NFC.txt` | — | Capa 24 (4,80 mm) |
 
-**Tu primera tarjeta:** en Flash Studio, **Importar** `01_cuerpo.stl` y `02_oro.stl` de `disenos/stl/alberto-cartera/`, luego clic derecho → **Agrupar**.  
-Pausa en **2,00 mm = capa 10**. Lee `LEEME_PRIMERA_IMPRESION.txt`. Huecos **Ø 28,4 × 0,8 mm** para Timeskey NTAG215 Ø25 mm.
+**Prueba de impresión (Google review):** Flash Studio → Importar `01_cuerpo.stl` + `02_acento.stl` de `generica-negra-amarillo/` (o los `_x2` para dos). **Agrupar, no Reparar.** Pausa **capa 24**. Pegatina Timeskey Ø25 hundida, adhesivo a la cama.
 
-### Personalizar un cliente
+### Regenerar genéricas
+
+```bash
+python3 disenos/generar_generica.py
+```
+
+### Personalizar un cliente (cartera / pedido plano)
 
 ```bash
 python3 disenos/generar_tarjetas.py \
   --nombre "bar-pepe" \
   --linea1 "BAR PEPE" \
-  --linea2 "RESENA" \
+  --linea2 "RESEÑA" \
   --nfc moneda_25
 ```
 
@@ -191,10 +194,10 @@ Slicer y pausa: [cómo añadir pausa en OrcaSlicer](https://printago.io/guides/o
 
 ## 4. Meter la pegatina NFC a media impresión
 
-1. La impresora hace la base (1,2 mm) y las paredes del hueco.
-2. **Pausa** en la primera capa que taparía el hueco (`demo-moneda-25`: **2,00 mm / capa 10**).
-3. Colocas la pegatina Timeskey **Ø25 mm plana y centrada**, adhesivo hacia el suelo del hueco, sin que sobresalga.
-4. Reanudas. La impresora sella el NFC dentro. Queda invisible y protegido.
+1. La impresora hace el pozo Ø36 y el asiento Ø30.
+2. **Pausa** en la primera capa que taparía el hueco (genérica: **4,80 mm / capa 24**).
+3. Colocas la pegatina Timeskey **Ø25 mm hundida y centrada**, adhesivo hacia la cama, sin que sobresalga.
+4. Reanudas. La impresora sella el NFC dentro. Queda invisible y protegido. Si sobresale, no reanudes (montañita).
 
 Consejos que evitan fallos:
 
@@ -269,12 +272,13 @@ Opcional más adelante: PLA de colores de marca (corporativos), PETG si van a te
 
 ## 7. Coste y producto (para el negocio)
 
-Números orientativos por tarjeta clásica 86×54:
+Números de la genérica 15 € (ver `COSTE.txt` en cada carpeta):
 
-- Filamento: 8–15 g → **0,15–0,30 €**
-- NFC NTAG215: **0,08–0,25 €** (mejor por 100/500 uds)
-- Tiempo máquina: 20–40 min (1 unidad) o ~1,5 h (placa de 6)
-- Precio de venta habitual en este nicho: **12–29 €** unidad, packs 3/5/10 con descuento, o 39–79 € el pack “mostrador + 2 tarjetas + programación”
+- PLA ~47 g → **~1,04 €**
+- NFC NTAG215 Ø25 → **~0,45 €**
+- Luz + fallos → **~0,47 €**
+- Coste ~**1,96 €**/ud · venta **15 €** · margen ~13 €
+- En cama caben **2** a tamaño real (`*_x2.stl`)
 
 No uses el **logotipo oficial de Google** (la G de 4 colores) en producto a la venta sin permiso de marca. “Reseña en Google”, estrellas y un icono genérico es lo correcto y es lo que generan estos STL.
 
@@ -282,10 +286,7 @@ No uses el **logotipo oficial de Google** (la G de 4 colores) en producto a la v
 
 ## 8. Plan de las próximas semanas
 
-1. **Hoy:** Orca-Flashforge descargado; chips Timeskey Ø25 mm; hueco ya es `moneda_25`.
-2. **Día que llegue la AD5X:** calibración, PLA de prueba, imprime `demo-moneda-25` en un color. Pausa, mete la pegatina, programa un enlace de prueba (puede ser el de un negocio tuyo o un Place ID de prueba).
-3. **Segunda impresión:** 3 colores (negro + blanco + oro).
-4. **Primera de cliente:** `--nombre` + colores de su marca + su `g.page`.
-5. **Web (en unas semanas):** catálogo (tarjeta, mostrador, pack), formulario de Place ID / enlace, pago, y este mismo generador para producir el STL del pedido.
-
-Cuando quieras, el siguiente paso técnico es: formulario web que pida nombre + enlace Google + colores y dispare `generar_tarjetas.py`.
+1. **Hoy:** imprimir `generica-negra-amarillo` (o `*_x2` para dos). Pausa capa 24. TAP / RESEÑA.
+2. **Stock:** negra+amarillo, blanca+negra, negra+roja. Misma geometría.
+3. **Pedido web:** `/personalizar?kind=generica` → ZIP / `generar_generica.py`.
+4. **Personalizada 30 €:** mismo atril, logo + textos.

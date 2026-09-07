@@ -1,21 +1,19 @@
 {
   "cliente": "Nombre del negocio",
-  "producto": "tarjeta-clasica",
+  "producto": "generica",
   "nfc": "moneda_25",
   "texto": {
-    "linea1": "TOCA PARA",
-    "linea2": "RESENA"
+    "linea1": "TAP",
+    "linea2": "RESEÑA"
   },
   "colores": {
     "cuerpo": "negro",
-    "estrellas": "oro",
-    "texto": "blanco",
-    "icono": "blanco"
+    "acento": "amarillo"
   },
   "google": {
     "place_id": "ChIJ................",
     "enlace_resena": "https://g.page/r/XXXXXXXX/review"
   },
-  "unidades": 3,
-  "notas": "Hueco para Timeskey B08LD99GZT (NTAG215 Ø25 mm). Preset moneda_25."
+  "unidades": 2,
+  "notas": "Atril genérico. Timeskey NTAG215 Ø25 mm. Pausa capa 24 (4,80 mm). Texto TAP / RESEÑA."
 }

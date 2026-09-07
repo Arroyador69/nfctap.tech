@@ -1,4 +1,4 @@
-import type { BodyColor, ProductKind, Qty } from "./types";
+import type { AccentColor, BodyColor, ProductKind, Qty } from "./types";
 
 export const BRAND = {
   name: "NFCTap",
@@ -21,10 +21,18 @@ export const BODY_COLORS: { id: BodyColor; label: string; hex: string }[] = [
 
 export const ACCENT_HEX: Record<string, string> = {
   oro: "#e2b43a",
+  amarillo: "#e2b43a",
   blanco: "#f7f4ee",
   rojo: "#c42b34",
   negro: "#141416",
 };
+
+export const ACCENT_COLORS: { id: AccentColor; label: string }[] = [
+  { id: "amarillo", label: "Amarillo" },
+  { id: "rojo", label: "Rojo" },
+  { id: "negro", label: "Negro" },
+  { id: "blanco", label: "Blanco" },
+];
 
 export const TEMPLATES = [
   {
@@ -54,9 +62,9 @@ export function defaultDesign(kind: ProductKind) {
     kind,
     template: "clasica" as const,
     bodyColor: "negro" as const,
-    accentColor: "oro" as const,
-    line1: kind === "generica" ? "" : "Tu negocio",
-    line2: "Toca para dejar tu reseña",
+    accentColor: "amarillo" as const,
+    line1: kind === "generica" ? "TAP" : "Tu negocio",
+    line2: kind === "generica" ? "RESEÑA" : "TAP para dejar tu reseña",
     googleUrl: "",
   };
 }

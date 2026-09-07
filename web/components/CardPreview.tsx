@@ -26,8 +26,8 @@ export function CardPreview({ design, compact, onReady }: Props) {
       onContextMenu={(e) => e.preventDefault()}
     >
       <div className="flex items-center justify-between px-4 pt-3">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-[#8a8173]">Modelo estándar</p>
-        <p className="text-[11px] text-[#8a8173]">Cara frontal</p>
+        <p className="text-[11px] uppercase tracking-[0.18em] text-[#8a8173]">Atril NFCTap</p>
+        <p className="text-[11px] text-[#8a8173]">Como se imprime</p>
       </div>
       <Card3DLazy design={design} compact={compact} />
       <div className="pointer-events-none hidden" aria-hidden>

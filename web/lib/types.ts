@@ -1,7 +1,7 @@
 export type ProductKind = "generica" | "personalizada";
 export type Qty = 1 | 2;
 export type BodyColor = "negro" | "blanco" | "rojo";
-export type AccentColor = "oro" | "blanco" | "rojo";
+export type AccentColor = "oro" | "amarillo" | "blanco" | "rojo" | "negro";
 export type TemplateId = "clasica" | "minimal" | "barra";
 export type ShippingZone = "peninsula" | "baleares" | "canarias" | "ceuta_melilla";
 export type OrderStatus =

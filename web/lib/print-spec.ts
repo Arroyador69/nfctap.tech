@@ -50,17 +50,19 @@ export type PrintSpec = {
 
 export function printText(value: string) {
   return value
+    .replace(/ñ/gi, "\u0001")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/ñ/gi, "N")
-    .replace(/[^A-Z0-9 .!?+\-*]/gi, " ")
+    .replace(/[^\u0001A-Z0-9 .!?+\-*]/gi, " ")
     .replace(/\s+/g, " ")
     .trim()
-    .toUpperCase();
+    .toUpperCase()
+    .replace(/\u0001/g, "Ñ");
 }
 
 export function slugName(order: Order) {
   const raw = printText(order.design.line1 || order.address.name || order.id)
+    .replace(/Ñ/g, "N")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
@@ -79,15 +81,15 @@ export function orderToSpec(order: Order): PrintSpec {
     kind: order.kind,
     qty: order.qty,
     ...STAND,
-    linea1: generic ? "TOCA PARA" : printText(order.design.line1 || "TU NEGOCIO"),
-    linea2: generic ? "DEJAR TU RESENA" : printText(order.design.line2 || "TOCA PARA DEJAR TU RESENA"),
+    linea1: generic ? "TAP" : printText(order.design.line1 || "TU NEGOCIO"),
+    linea2: generic ? "RESEÑA" : printText(order.design.line2 || "TAP RESEÑA"),
     logoMask: generic ? undefined : order.design.logoMask,
     googleUrl: order.design.googleUrl,
     colores: {
       cuerpo: `${order.design.bodyColor} (${body})`,
       estrellas: `${stars} (${ACCENT_HEX[stars] ?? stars})`,
-      texto: order.design.bodyColor === "blanco" ? "negro" : "blanco",
-      icono: order.design.bodyColor === "blanco" ? "negro" : "blanco",
+      texto: `${stars}`,
+      icono: `${stars}`,
       soporte: `${order.design.bodyColor} (${body})`,
     },
     cliente: order.address.name,

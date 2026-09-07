@@ -1,0 +1,30 @@
+{
+  "nombre": "freddos-fuengirola",
+  "grano": {
+    "rx": 80.0,
+    "ry": 108.0,
+    "tilt_deg": -33.0,
+    "bbox": [
+      178.4,
+      201.0,
+      8.0
+    ]
+  },
+  "nfc": {
+    "sticker": 25.0,
+    "well": 36.0,
+    "seat": 30.0,
+    "z_pause": 4.8,
+    "left": "TAP RESEÑA / Google",
+    "right": "TAP PUNTOS / club"
+  },
+  "colores": {
+    "cuerpo": "negro",
+    "acento": "amarillo",
+    "no_usar": [
+      "rojo",
+      "blanco"
+    ],
+    "nota": "No hay marron ni beige en stock. Negro+amarillo es lo mas cerca."
+  }
+}
