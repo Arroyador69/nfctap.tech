@@ -129,19 +129,17 @@ function Atril({ design }: { design: CardDesign }) {
       <mesh position={[0, ATRIL.NFC_Y, ATRIL.Z_FLOOR + 0.04]} material={wellMat}>
         <circleGeometry args={[ATRIL.SEAT_D / 2 - 0.15, 48]} />
       </mesh>
-      {personalized ? <LogoPlate dataUrl={design.logoDataUrl} accent={accentHex} /> : null}
+      {personalized && design.logoDataUrl ? (
+        <LogoPlate dataUrl={design.logoDataUrl} accent={accentHex} />
+      ) : null}
     </group>
   );
 }
 
-function LogoPlate({ dataUrl, accent }: { dataUrl?: string; accent: string }) {
+function LogoPlate({ dataUrl, accent }: { dataUrl: string; accent: string }) {
   const [map, setMap] = useState<THREE.CanvasTexture | null>(null);
 
   useEffect(() => {
-    if (!dataUrl) {
-      setMap(null);
-      return;
-    }
     let dead = false;
     const img = new Image();
     img.onload = () => {

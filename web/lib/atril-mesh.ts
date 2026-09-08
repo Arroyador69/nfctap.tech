@@ -74,10 +74,6 @@ function ensureCcw(poly: V2[]) {
   return area(poly) > 0 ? poly : [...poly].reverse();
 }
 
-function ensureCw(poly: V2[]) {
-  return area(poly) < 0 ? poly : [...poly].reverse();
-}
-
 function roundedRect(w: number, h: number, r: number, segs = 8): V2[] {
   r = Math.min(r, w / 2 - 0.01, h / 2 - 0.01);
   const corners: [number, number, number][] = [
@@ -248,48 +244,6 @@ function extrudePlateHole(outerIn: V2[], holeIn: V2[], z0: number, z1: number) {
   const cy = hole.reduce((s, p) => s + p[1], 0) / hole.length;
   const hits: V2[] = hole.map(([x, y]) => rayHitPoly(cx, cy, x - cx, y - cy, outer) ?? [x, y]);
   return extrudeMatchedRing(hits, hole, z0, z1);
-}
-
-function extrudeRing(outerIn: V2[], innerIn: V2[], z0: number, z1: number) {
-  const outer = ensureCcw(outerIn);
-  const inner = ensureCw(innerIn);
-  const m = new Mesh();
-  const steps = Math.max(outer.length, inner.length);
-  const ring: [V2, V2][] = [];
-  for (let s = 0; s < steps; s++) {
-    ring.push([
-      outer[Math.floor((s * outer.length) / steps) % outer.length],
-      inner[Math.floor((s * inner.length) / steps) % inner.length],
-    ]);
-  }
-  const cap = (z: number, flip: boolean) => {
-    for (let s = 0; s < steps; s++) {
-      const [o1, i1] = ring[s];
-      const [o2, i2] = ring[(s + 1) % steps];
-      if (flip) {
-        m.add([o1[0], o1[1], z], [i1[0], i1[1], z], [o2[0], o2[1], z]);
-        m.add([o2[0], o2[1], z], [i1[0], i1[1], z], [i2[0], i2[1], z]);
-      } else {
-        m.add([o1[0], o1[1], z], [o2[0], o2[1], z], [i1[0], i1[1], z]);
-        m.add([o2[0], o2[1], z], [i2[0], i2[1], z], [i1[0], i1[1], z]);
-      }
-    }
-  };
-  cap(z0, true);
-  cap(z1, false);
-  for (let i = 0; i < outer.length; i++) {
-    const [x1, y1] = outer[i];
-    const [x2, y2] = outer[(i + 1) % outer.length];
-    m.add([x1, y1, z0], [x2, y2, z0], [x2, y2, z1]);
-    m.add([x1, y1, z0], [x2, y2, z1], [x1, y1, z1]);
-  }
-  for (let i = 0; i < inner.length; i++) {
-    const [x1, y1] = inner[i];
-    const [x2, y2] = inner[(i + 1) % inner.length];
-    m.add([x1, y1, z0], [x1, y1, z1], [x2, y2, z1]);
-    m.add([x1, y1, z0], [x2, y2, z1], [x2, y2, z0]);
-  }
-  return m;
 }
 
 export function shifted(mesh: Mesh, dx: number, dy: number, dz = 0) {

@@ -94,6 +94,6 @@ export function orderToSpec(order: Order): PrintSpec {
 }
 
 /** Hueco abierto: no hay pausa. Se deja por compatibilidad del dashboard. */
-export function pauseLayer(_spec: PrintSpec) {
+export function pauseLayer() {
   return { z: 0, layer: 0, open: true as const };
 }
