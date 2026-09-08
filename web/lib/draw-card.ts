@@ -47,9 +47,10 @@ export function drawCardFace(
   ctx.fillStyle = body;
   ctx.fill();
 
+  const sizes = [3.1, 3.9, 5.2, 3.9, 3.1];
+  const lift = [0, 2.2, 4.4, 2.2, 0];
   for (let i = 0; i < 5; i++) {
-    const t = (i - 2) / 2;
-    star(ctx, px((i - 2) * 11.4), py(ATRIL.STAR_Y - t * t * 3.4), 4 * SCALE, accent);
+    star(ctx, px((i - 2) * 12), py(ATRIL.STAR_Y + lift[i]), sizes[i] * SCALE, accent);
   }
 
   if (generic) {
@@ -68,13 +69,11 @@ export function drawCardFace(
     ctx.globalAlpha = 1;
   }
 
+  drawSansText(ctx, "TAP", px(0), py(ATRIL.TAP_Y), ATRIL.TAP_H * SCALE, ATRIL.TAP_TRACK * SCALE, accent, 600);
   const name = !generic ? printText(design.line1 || "").slice(0, 16) : "";
-  const tapY = name ? ATRIL.TAP_Y + 1.2 : ATRIL.TAP_Y;
-  drawSansText(ctx, "TAP", px(0), py(tapY), ATRIL.TAP_H * SCALE, ATRIL.TAP_TRACK * SCALE, accent, 600);
   if (name) {
     drawSansText(ctx, name, px(0), py(ATRIL.NAME_Y), ATRIL.NAME_H * SCALE, ATRIL.NAME_TRACK * SCALE, accent, 600);
   }
-  drawSansText(ctx, "RESEÑA", px(0), py(ATRIL.RESE_Y), ATRIL.RESE_H * SCALE, ATRIL.RESE_TRACK * SCALE, accent, 500);
   drawSansText(ctx, "NFCTAP.TECH", px(0), (footTop + footBot) / 2, 3.4 * SCALE, 1.15 * SCALE, accent, 500);
 }
 

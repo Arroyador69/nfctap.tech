@@ -68,7 +68,7 @@ Docs oficiales útiles:
 - [Enviar a imprimir desde Orca-Flashforge](https://www.flashforge.com/a/docs/ad5x/print-via-orca-flashforge)
 - [Producto AD5X](https://www.flashforge.com/products/flashforge-ad5x-3d-printer)
 
-En la cama de 220 mm caben **2 atriles genéricos** ( TAP / RESEÑA ) a tamaño real. Una sola pausa (capa 24) sirve para las dos pegatinas.
+En la cama de 220 mm caben **2 atriles genéricos** a tamaño real. Una sola pausa (capa 24) sirve para las dos pegatinas.
 
 ---
 
@@ -90,13 +90,13 @@ Una tarjeta de reseña no es un solo bloque. Son **piezas de color** + un **huec
 
 ```
 disenos/
-  generar_generica.py              ← atril 15 € (TAP / RESEÑA), 3 colorways + placa ×2
+  generar_generica.py              ← atril 15 € (G + estrellas), 3 colorways + placa ×2
   generar_tarjetas.py              ← geometría + cartera / pedidos a medida
   stl/
     generica-negra-amarillo/       ← la de 15 € que más se imprime
     generica-blanca-negra/
     generica-negra-roja/
-    opciones/                      ← 4 caras (aire / corona / tap / flotante) para elegir
+    opciones/v4-flotante/          ← la genérica: estrellas + G + TAP
     freddos-fuengirola/            ← encargo cliente (no serigrafía)
     alberto-cartera/               ← cartera slim, 2 NFC (WA + web)
 ```
@@ -106,7 +106,7 @@ Cada genérica incluye:
 | Archivo | Color | Qué es |
 | --- | --- | --- |
 | `01_cuerpo.stl` | Negro o blanco | Placa + pie + hueco NFC |
-| `02_acento.stl` | Amarillo / negro / rojo | Estrellas + G + TAP / RESEÑA + NFCTAP.TECH |
+| `02_acento.stl` | Amarillo / negro / rojo | Estrellas + G + TAP + NFCTAP.TECH |
 | `01_cuerpo_a.stl` + `01_cuerpo_b.stl` | igual | Dos piezas sueltas (no pegadas) |
 | `02_acento_a.stl` + `02_acento_b.stl` | igual | Acento de cada una, mismo sitio |
 | `PAUSA_NFC.txt` | — | Capa 24 (4,80 mm) |
@@ -288,7 +288,7 @@ No uses el **logotipo oficial de Google** (la G de 4 colores) en producto a la v
 
 ## 8. Plan de las próximas semanas
 
-1. **Hoy:** imprimir `generica-negra-amarillo` (o `*_a` + `*_b` para dos sueltas). Pausa capa 24. TAP / RESEÑA.
+1. **Hoy:** imprimir `generica-negra-amarillo` (o `*_a` + `*_b` para dos sueltas). Pausa capa 24. G + estrellas.
 2. **Stock:** negra+amarillo, blanca+negra, negra+roja. Misma geometría.
 3. **Pedido web:** `/personalizar?kind=generica` → ZIP / `generar_generica.py`.
 4. **Personalizada 30 €:** mismo atril, logo + textos.

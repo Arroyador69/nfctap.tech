@@ -92,8 +92,8 @@ export function defaultDesign(kind: ProductKind) {
     template: "clasica" as const,
     bodyColor: "negro" as const,
     accentColor: "amarillo" as const,
-    line1: kind === "generica" ? "TAP" : "",
-    line2: "RESEÑA",
+    line1: "",
+    line2: "",
     googleUrl: "",
     extraUrl: "",
   };

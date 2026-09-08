@@ -69,7 +69,7 @@ export default async function OrderPage({
               : `${order.address.line1}, ${order.address.postalCode} ${order.address.city} (${order.address.province})`
           }
         />
-        <Item k="Cara" v={`${order.kind === "generica" ? "G de Google" : order.design.line1 || "Logo"} · TAP / RESEÑA`} />
+        <Item k="Cara" v={`${order.kind === "generica" ? "G de Google" : order.design.line1 || "Logo"} · TAP · estrellas`} />
         <Item k="Google / NFC" v={order.design.googleUrl || "Pendiente"} />
         {order.kind === "unica" ? <Item k="Segundo NFC" v={order.design.extraUrl || "Pendiente"} /> : null}
         <Item k="Cuerpo" v={spec.colores.cuerpo} />

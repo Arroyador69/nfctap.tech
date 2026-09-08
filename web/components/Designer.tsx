@@ -256,14 +256,14 @@ export function Designer({
                       value={design.line1}
                       maxLength={22}
                       autoComplete="organization"
-                      placeholder="Entre TAP y RESEÑA"
+                      placeholder="Debajo de TAP, opcional"
                       onChange={(e) => patch({ line1: e.target.value })}
                     />
                   </Field>
                 </>
               ) : (
                 <p className="rounded-2xl bg-[#faf6ee] px-4 py-3 text-sm text-[#5c564c]">
-                  Genérica: G de Google, TAP / RESEÑA y pie NFCTap. Elige cuerpo, acento y
+                  Genérica: estrellas flotantes, G y TAP debajo. Elige cuerpo, acento y
                   el enlace.
                 </p>
               )}
@@ -331,7 +331,7 @@ export function Designer({
 
               <div>
                 <p className="mb-2 text-sm text-[#3f3a34]">
-                  {kind === "generica" ? "G, estrellas y TAP" : "Logo, estrellas y TAP"}
+                  {kind === "generica" ? "G, TAP y estrellas" : "Logo, TAP y estrellas"}
                 </p>
                 <div className="flex gap-3">
                   {ACCENT_COLORS.map((c) => (

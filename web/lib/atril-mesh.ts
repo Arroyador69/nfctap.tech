@@ -132,6 +132,20 @@ function slantedBar(x0: number, y0: number, x1: number, y1: number, sw: number):
   ];
 }
 
+function strokeDot(x: number, y: number, sw: number): V2[] {
+  return circle(x, y, sw / 2, 16);
+}
+
+function strokeBar(x0: number, y0: number, x1: number, y1: number, sw: number): V2[][] {
+  return [slantedBar(x0, y0, x1, y1, sw), strokeDot(x0, y0, sw), strokeDot(x1, y1, sw)];
+}
+
+function strokeArcCaps(cx: number, cy: number, r: number, a0: number, a1: number, sw: number, segs = 20): V2[][] {
+  const e0: V2 = [cx + r * Math.cos((a0 * Math.PI) / 180), cy + r * Math.sin((a0 * Math.PI) / 180)];
+  const e1: V2 = [cx + r * Math.cos((a1 * Math.PI) / 180), cy + r * Math.sin((a1 * Math.PI) / 180)];
+  return [strokeArc(cx, cy, r, a0, a1, sw, segs), strokeDot(e0[0], e0[1], sw), strokeDot(e1[0], e1[1], sw)];
+}
+
 function strokeArc(cx: number, cy: number, r: number, a0: number, a1: number, sw: number, segs = 18): V2[] {
   const outer = r + sw / 2;
   const inner = Math.max(0.15, r - sw / 2);
@@ -148,79 +162,96 @@ function strokeArc(cx: number, cy: number, r: number, a0: number, a1: number, sw
 }
 
 const SANS_W: Record<string, number> = {
-  A: 0.92,
-  C: 0.88,
-  E: 0.78,
-  F: 0.74,
-  H: 0.9,
-  N: 0.9,
-  Ñ: 0.9,
-  P: 0.8,
+  A: 0.9,
+  C: 0.86,
+  E: 0.76,
+  F: 0.72,
+  H: 0.88,
+  N: 0.88,
+  Ñ: 0.88,
+  P: 0.78,
   R: 0.84,
-  S: 0.82,
-  T: 0.84,
-  ".": 0.38,
-  " ": 0.42,
+  S: 0.78,
+  T: 0.86,
+  ".": 0.36,
+  " ": 0.4,
 };
 
 function sansGlyph(ch: string, h: number, sw: number, w: number): V2[][] {
-  const vert = (x: number, y0: number, y1: number) => rectangle(sw, Math.max(0.2, y1 - y0), x, (y0 + y1) / 2);
-  const horz = (x0: number, x1: number, y: number) => rectangle(Math.max(0.2, x1 - x0), sw, (x0 + x1) / 2, y);
+  const r = sw / 2;
+  const nh = h * 0.78;
+  const tw = Math.max(0.55, sw * 0.7);
+  const pr = Math.min(w * 0.38, h * 0.24);
   switch (ch) {
     case "A":
       return [
-        slantedBar(sw * 0.2, sw * 0.08, w / 2, h - sw * 0.08, sw),
-        slantedBar(w - sw * 0.2, sw * 0.08, w / 2, h - sw * 0.08, sw),
-        horz(w * 0.24, w * 0.76, h * 0.36),
+        ...strokeBar(sw * 0.2, r, w * 0.5, h - r, sw),
+        ...strokeBar(w - sw * 0.2, r, w * 0.5, h - r, sw),
+        ...strokeBar(w * 0.26, h * 0.34, w * 0.74, h * 0.34, sw),
       ];
     case "C":
-      return [strokeArc(w / 2, h / 2, h / 2 - sw / 2, 48, 312, sw, 20)];
+      return [...strokeArcCaps(w / 2, h / 2, h / 2 - r, 42, 318, sw, 22)];
     case "E":
-      return [vert(sw / 2, 0, h), horz(0, w, h - sw / 2), horz(0, w * 0.78, h * 0.5), horz(0, w, sw / 2)];
+      return [
+        ...strokeBar(r, r, r, h - r, sw),
+        ...strokeBar(r, h - r, w - r, h - r, sw),
+        ...strokeBar(r, h * 0.5, w * 0.72, h * 0.5, sw),
+        ...strokeBar(r, r, w - r, r, sw),
+      ];
     case "F":
-      return [vert(sw / 2, 0, h), horz(0, w, h - sw / 2), horz(0, w * 0.72, h * 0.52)];
+      return [
+        ...strokeBar(r, r, r, h - r, sw),
+        ...strokeBar(r, h - r, w - r, h - r, sw),
+        ...strokeBar(r, h * 0.52, w * 0.7, h * 0.52, sw),
+      ];
     case "H":
-      return [vert(sw / 2, 0, h), vert(w - sw / 2, 0, h), horz(0, w, h * 0.5)];
+      return [
+        ...strokeBar(r, r, r, h - r, sw),
+        ...strokeBar(w - r, r, w - r, h - r, sw),
+        ...strokeBar(r, h * 0.5, w - r, h * 0.5, sw),
+      ];
     case "N":
-      return [vert(sw / 2, 0, h), vert(w - sw / 2, 0, h), slantedBar(sw, h - sw * 0.3, w - sw, sw * 0.3, sw)];
+      return [
+        ...strokeBar(r, r, r, h - r, sw),
+        ...strokeBar(w - r, r, w - r, h - r, sw),
+        ...strokeBar(r, h - r, w - r, r, sw),
+      ];
     case "P":
       return [
-        vert(sw / 2, 0, h),
-        horz(0, w - sw * 0.15, h - sw / 2),
-        horz(0, w - sw * 0.15, h * 0.48),
-        vert(w - sw / 2, h * 0.48, h),
+        ...strokeBar(r, r, r, h - r, sw),
+        ...strokeArcCaps(r + pr * 0.92, h - r - pr, pr, 108, -108, sw, 20),
       ];
     case "R":
       return [
-        vert(sw / 2, 0, h),
-        horz(0, w - sw * 0.15, h - sw / 2),
-        horz(0, w - sw * 0.15, h * 0.5),
-        vert(w - sw / 2, h * 0.5, h),
-        slantedBar(w * 0.42, h * 0.48, w - sw * 0.15, sw * 0.12, sw),
+        ...strokeBar(r, r, r, h - r, sw),
+        ...strokeArcCaps(r + Math.min(w * 0.36, h * 0.23), h - r - Math.min(w * 0.36, h * 0.23), Math.min(w * 0.36, h * 0.23), 90, -90, sw, 16),
+        ...strokeBar(w * 0.42, h * 0.48, w - r, r, sw),
       ];
     case "S":
       return [
-        strokeArc(w / 2, h * 0.72, w * 0.36, 210, 20, sw, 16),
-        strokeArc(w / 2, h * 0.28, w * 0.36, 30, -160, sw, 16),
+        ...strokeArcCaps(w * 0.5, h * 0.7, Math.min(w, h) * 0.3, 195, 15, sw, 16),
+        ...strokeArcCaps(w * 0.5, h * 0.3, Math.min(w, h) * 0.3, 15, -165, sw, 16),
       ];
     case "T":
-      return [horz(0, w, h - sw / 2), vert(w / 2, 0, h - sw)];
+      return [...strokeBar(r, h - r, w - r, h - r, sw), ...strokeBar(w / 2, r, w / 2, h - r, sw)];
     case "Ñ":
       return [
-        vert(sw / 2, 0, h * 0.86),
-        vert(w - sw / 2, 0, h * 0.86),
-        slantedBar(sw, h * 0.86 - sw * 0.3, w - sw, sw * 0.25, sw),
-        strokeArc(w / 2, h * 0.94, w * 0.28, 200, 340, sw * 0.7, 10),
+        ...strokeBar(r, r, r, nh - r, sw),
+        ...strokeBar(w - r, r, w - r, nh - r, sw),
+        ...strokeBar(r, nh - r, w - r, r, sw),
+        ...strokeBar(w * 0.08, h * 0.88, w * 0.4, h * 0.99, tw),
+        ...strokeBar(w * 0.36, h * 0.99, w * 0.64, h * 0.86, tw),
+        ...strokeBar(w * 0.6, h * 0.86, w * 0.92, h * 0.97, tw),
       ];
     case ".":
-      return [rectangle(sw * 1.1, sw * 1.1, w / 2, sw * 0.55)];
+      return [strokeDot(w / 2, r * 1.05, sw * 1.15)];
     default:
       return [];
   }
 }
 
 export function sansWord(text: string, cx: number, cy: number, h: number, tracking: number, z0: number, z1: number) {
-  const sw = Math.max(0.85, h * 0.16);
+  const sw = Math.max(0.8, h * 0.145);
   const glyphs = [...text.toUpperCase()].map((ch) => {
     const w = (SANS_W[ch] ?? 0.8) * h;
     return { w, polys: sansGlyph(ch, h, sw, w) };
@@ -239,22 +270,9 @@ export function sansWord(text: string, cx: number, cy: number, h: number, tracki
 }
 
 function starLayout(): [number, number, number][] {
-  const out: [number, number, number][] = [];
-  for (let i = 0; i < 5; i++) {
-    const t = (i - 2) / 2;
-    out.push([(i - 2) * 11.4, ATRIL.STAR_Y - t * t * 3.4, 4]);
-  }
-  return out;
-}
-
-function starPoly(cx: number, cy: number, rOut: number, rIn = rOut * 0.42): V2[] {
-  const pts: V2[] = [];
-  for (let i = 0; i < 10; i++) {
-    const ang = ((-90 + i * 36) * Math.PI) / 180;
-    const r = i % 2 === 0 ? rOut : rIn;
-    pts.push([cx + r * Math.cos(ang), cy + r * Math.sin(ang)]);
-  }
-  return pts;
+  const sizes = [3.1, 3.9, 5.2, 3.9, 3.1];
+  const lift = [0, 2.2, 4.4, 2.2, 0];
+  return sizes.map((r, i) => [(i - 2) * 12, ATRIL.STAR_Y + lift[i], r]);
 }
 
 function earClip(poly: V2[]): [number, number, number][] {
@@ -532,13 +550,11 @@ export function atrilAccent(input: AtrilAccentInput = {}): Mesh {
   } else if (input.logoMask) {
     m.extend(logoMesh(input.logoMask, z0, z1));
   }
+  m.extend(sansWord("TAP", 0, ATRIL.TAP_Y, ATRIL.TAP_H, ATRIL.TAP_TRACK, z0, z1));
   const name = !generic ? printText(input.line1 || "").slice(0, 16) : "";
-  const tapY = name ? ATRIL.TAP_Y + 1.2 : ATRIL.TAP_Y;
-  m.extend(sansWord("TAP", 0, tapY, ATRIL.TAP_H, ATRIL.TAP_TRACK, z0, z1));
   if (name) {
     m.extend(sansWord(name, 0, ATRIL.NAME_Y, ATRIL.NAME_H, ATRIL.NAME_TRACK, z0, z1));
   }
-  m.extend(sansWord("RESEÑA", 0, ATRIL.RESE_Y, ATRIL.RESE_H, ATRIL.RESE_TRACK, z0, z1));
   m.extend(sansWord("NFCTAP.TECH", 0, ATRIL.FOOT_Y / 2 + 0.15, 3.4, 1.15, ATRIL.FOOT_Z, ATRIL.FOOT_Z + 0.7));
   return m;
 }

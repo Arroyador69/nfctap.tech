@@ -61,7 +61,7 @@ export default function HomePage() {
           <article className="flex flex-col rounded-[28px] border border-[#e6ddd0] bg-white p-6">
             <h3 className="text-xl font-semibold">Genérica</h3>
             <p className="mt-2 flex-1 text-sm text-[#6f675c]">
-              G de Google, TAP / RESEÑA y estrellas. Programada a tu enlace de reseña.
+              Estrellas flotantes, G y TAP. Programada a tu enlace de reseña.
             </p>
             <p className="mt-6 text-4xl font-semibold">{euros(PRICES.generica[1])}</p>
             <p className="text-sm text-[#8a8173]">una · dos {euros(PRICES.generica[2])}</p>
@@ -76,7 +76,7 @@ export default function HomePage() {
             <p className="text-xs uppercase tracking-wider text-[#e2b43a]">La de barra</p>
             <h3 className="mt-1 text-xl font-semibold">Personalizada</h3>
             <p className="mt-2 flex-1 text-sm text-[#d5cbb8]">
-              El mismo atril. Tu logo en el acento, TAP / RESEÑA y estrellas. El nombre es opcional.
+              El mismo atril. Tu logo, TAP y estrellas flotantes. El nombre es opcional.
             </p>
             <p className="mt-6 text-4xl font-semibold">{euros(PRICES.personalizada[1])}</p>
             <p className="text-sm text-[#b9ae99]">

@@ -1,4 +1,4 @@
-"""Sans geométrico con tracking: TAP / RESEÑA se leen, no son píxeles."""
+"""Sans redondeada: extremos en cápsula, no cortes a 90°. TAP y NFCTAP.TECH."""
 
 from __future__ import annotations
 
@@ -11,7 +11,6 @@ from generar_tarjetas import (  # noqa: E402
     Mesh,
     circle,
     extrude,
-    rectangle,
     slanted_bar,
     stroke_arc,
 )
@@ -19,103 +18,123 @@ from generar_tarjetas import (  # noqa: E402
 Poly = list[tuple[float, float]]
 
 
+def _dot(x: float, y: float, sw: float) -> Poly:
+    return circle(x, y, sw / 2, 16)
+
+
+def _bar(x0: float, y0: float, x1: float, y1: float, sw: float) -> list[Poly]:
+    return [slanted_bar(x0, y0, x1, y1, sw), _dot(x0, y0, sw), _dot(x1, y1, sw)]
+
+
+def _arc(cx: float, cy: float, r: float, a0: float, a1: float, sw: float, segs: int = 20) -> list[Poly]:
+    e0 = (cx + r * math.cos(math.radians(a0)), cy + r * math.sin(math.radians(a0)))
+    e1 = (cx + r * math.cos(math.radians(a1)), cy + r * math.sin(math.radians(a1)))
+    return [stroke_arc(cx, cy, r, a0, a1, sw, segs), _dot(*e0, sw), _dot(*e1, sw)]
+
+
 def _verts(h: float, sw: float, w: float) -> dict[str, list[Poly]]:
-    def vert(x: float, y0: float, y1: float) -> Poly:
-        return rectangle(sw, max(0.2, y1 - y0), x, (y0 + y1) / 2)
-
-    def horz(x0: float, x1: float, y: float) -> Poly:
-        return rectangle(max(0.2, x1 - x0), sw, (x0 + x1) / 2, y)
-
-    return {
+    r = sw / 2
+    nh = h * 0.78
+    tw = max(0.55, sw * 0.70)
+    out: dict[str, list[Poly]] = {
         "A": [
-            slanted_bar(sw * 0.2, sw * 0.08, w / 2, h - sw * 0.08, sw),
-            slanted_bar(w - sw * 0.2, sw * 0.08, w / 2, h - sw * 0.08, sw),
-            horz(w * 0.24, w * 0.76, h * 0.36),
+            *_bar(sw * 0.20, r, w * 0.50, h - r, sw),
+            *_bar(w - sw * 0.20, r, w * 0.50, h - r, sw),
+            *_bar(w * 0.26, h * 0.34, w * 0.74, h * 0.34, sw),
         ],
-        "C": [stroke_arc(w / 2, h / 2, h / 2 - sw / 2, 48, 312, sw, 20)],
+        "C": [*_arc(w / 2, h / 2, h / 2 - r, 42, 318, sw, 22)],
         "E": [
-            vert(sw / 2, 0, h),
-            horz(0, w, h - sw / 2),
-            horz(0, w * 0.78, h * 0.50),
-            horz(0, w, sw / 2),
+            *_bar(r, r, r, h - r, sw),
+            *_bar(r, h - r, w - r, h - r, sw),
+            *_bar(r, h * 0.50, w * 0.72, h * 0.50, sw),
+            *_bar(r, r, w - r, r, sw),
         ],
         "F": [
-            vert(sw / 2, 0, h),
-            horz(0, w, h - sw / 2),
-            horz(0, w * 0.72, h * 0.52),
+            *_bar(r, r, r, h - r, sw),
+            *_bar(r, h - r, w - r, h - r, sw),
+            *_bar(r, h * 0.52, w * 0.70, h * 0.52, sw),
         ],
         "H": [
-            vert(sw / 2, 0, h),
-            vert(w - sw / 2, 0, h),
-            horz(0, w, h * 0.50),
+            *_bar(r, r, r, h - r, sw),
+            *_bar(w - r, r, w - r, h - r, sw),
+            *_bar(r, h * 0.50, w - r, h * 0.50, sw),
         ],
         "N": [
-            vert(sw / 2, 0, h),
-            vert(w - sw / 2, 0, h),
-            slanted_bar(sw, h - sw * 0.3, w - sw, sw * 0.3, sw),
+            *_bar(r, r, r, h - r, sw),
+            *_bar(w - r, r, w - r, h - r, sw),
+            *_bar(r, h - r, w - r, r, sw),
         ],
         "P": [
-            vert(sw / 2, 0, h),
-            horz(0, w - sw * 0.15, h - sw / 2),
-            horz(0, w - sw * 0.15, h * 0.48),
-            vert(w - sw / 2, h * 0.48, h),
+            *_bar(r, r, r, h - r, sw),
+            *_arc(r + min(w * 0.36, h * 0.23) * 0.92, h - r - min(w * 0.36, h * 0.23), min(w * 0.36, h * 0.23), 108, -108, sw, 20),
         ],
         "R": [
-            vert(sw / 2, 0, h),
-            horz(0, w - sw * 0.15, h - sw / 2),
-            horz(0, w - sw * 0.15, h * 0.50),
-            vert(w - sw / 2, h * 0.50, h),
-            slanted_bar(w * 0.42, h * 0.48, w - sw * 0.15, sw * 0.12, sw),
+            *_bar(r, r, r, h - r, sw),
+            *_arc(r + min(w * 0.36, h * 0.23), h - r - min(w * 0.36, h * 0.23), min(w * 0.36, h * 0.23), 90, -90, sw, 16),
+            *_bar(w * 0.42, h * 0.48, w - r, r, sw),
         ],
         "S": [
-            stroke_arc(w / 2, h * 0.72, w * 0.36, 210, 20, sw, 16),
-            stroke_arc(w / 2, h * 0.28, w * 0.36, 30, -160, sw, 16),
+            *_arc(w * 0.50, h * 0.70, min(w, h) * 0.30, 195, 15, sw, 16),
+            *_arc(w * 0.50, h * 0.30, min(w, h) * 0.30, 15, -165, sw, 16),
         ],
-        "T": [horz(0, w, h - sw / 2), vert(w / 2, 0, h - sw)],
+        "T": [
+            *_bar(r, h - r, w - r, h - r, sw),
+            *_bar(w / 2, r, w / 2, h - r, sw),
+        ],
         "Ñ": [
-            vert(sw / 2, 0, h * 0.86),
-            vert(w - sw / 2, 0, h * 0.86),
-            slanted_bar(sw, h * 0.86 - sw * 0.3, w - sw, sw * 0.25, sw),
-            stroke_arc(w / 2, h * 0.94, w * 0.28, 200, 340, sw * 0.7, 10),
+            *_bar(r, r, r, nh - r, sw),
+            *_bar(w - r, r, w - r, nh - r, sw),
+            *_bar(r, nh - r, w - r, r, sw),
+            *_bar(w * 0.08, h * 0.88, w * 0.40, h * 0.99, tw),
+            *_bar(w * 0.36, h * 0.99, w * 0.64, h * 0.86, tw),
+            *_bar(w * 0.60, h * 0.86, w * 0.92, h * 0.97, tw),
         ],
-        ".": [rectangle(sw * 1.1, sw * 1.1, w / 2, sw * 0.55)],
+        ".": [_dot(w / 2, r * 1.05, sw * 1.15)],
         " ": [],
     }
+    return out
 
 
 _WIDTH = {
-    "A": 0.92,
-    "C": 0.88,
-    "E": 0.78,
-    "F": 0.74,
-    "H": 0.90,
-    "N": 0.90,
-    "Ñ": 0.90,
-    "P": 0.80,
+    "A": 0.90,
+    "C": 0.86,
+    "E": 0.76,
+    "F": 0.72,
+    "H": 0.88,
+    "N": 0.88,
+    "Ñ": 0.88,
+    "P": 0.78,
     "R": 0.84,
-    "S": 0.82,
-    "T": 0.84,
-    ".": 0.38,
-    " ": 0.42,
+    "S": 0.78,
+    "T": 0.86,
+    ".": 0.36,
+    " ": 0.40,
 }
 
 
-def sans_word(text: str, cx: float, cy: float, h: float, tracking: float, z0: float, z1: float) -> Mesh:
-    """Texto centrado. `tracking` = hueco extra entre letras (mm)."""
-    sw = max(0.85, h * 0.16)
+def word_polys(text: str, cx: float, cy: float, h: float, tracking: float) -> list[Poly]:
+    sw = max(0.80, h * 0.145)
     glyphs: list[tuple[float, list[Poly]]] = []
     for ch in text.upper():
         unit = _WIDTH.get(ch, 0.8)
         w = unit * h
         glyphs.append((w, _verts(h, sw, w).get(ch, [])))
     if not glyphs:
-        return Mesh()
+        return []
     total = sum(w for w, _ in glyphs) + tracking * (len(glyphs) - 1)
     x = cx - total / 2
     y = cy - h / 2
-    m = Mesh()
+    out: list[Poly] = []
     for w, polys in glyphs:
         for poly in polys:
-            m.extend(extrude([(px + x, py + y) for px, py in poly], z0, z1))
+            out.append([(px + x, py + y) for px, py in poly])
         x += w + tracking
+    return out
+
+
+def sans_word(text: str, cx: float, cy: float, h: float, tracking: float, z0: float, z1: float) -> Mesh:
+    m = Mesh()
+    for poly in word_polys(text, cx, cy, h, tracking):
+        if len(poly) >= 3:
+            m.extend(extrude(poly, z0, z1))
     return m
