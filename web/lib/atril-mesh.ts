@@ -307,14 +307,18 @@ function plaqueOutline() {
   );
 }
 
-export function atrilBody(): Mesh {
+export function atrilBody(opts?: { shopView?: boolean }) {
   const outer = plaqueOutline();
-  const well = circle(0, ATRIL.NFC_Y, ATRIL.WELL_D / 2, 56);
-  const seat = circle(0, ATRIL.NFC_Y, ATRIL.SEAT_D / 2, 48);
   const m = new Mesh();
-  m.extend(extrude(outer, 0, ATRIL.Z_FLOOR));
-  m.extend(extrudePlateHole(outer, seat, ATRIL.Z_FLOOR, ATRIL.Z_GUIDE));
-  m.extend(extrudePlateHole(outer, well, ATRIL.Z_GUIDE, ATRIL.FACE_T));
+  if (opts?.shopView) {
+    m.extend(extrude(outer, 0, ATRIL.FACE_T));
+  } else {
+    const well = circle(0, ATRIL.NFC_Y, ATRIL.WELL_D / 2, 56);
+    const seat = circle(0, ATRIL.NFC_Y, ATRIL.SEAT_D / 2, 48);
+    m.extend(extrude(outer, 0, ATRIL.Z_FLOOR));
+    m.extend(extrudePlateHole(outer, seat, ATRIL.Z_FLOOR, ATRIL.Z_GUIDE));
+    m.extend(extrudePlateHole(outer, well, ATRIL.Z_GUIDE, ATRIL.FACE_T));
+  }
   m.extend(
     shifted(extrude(roundedRect(ATRIL.FOOT_W, ATRIL.FOOT_Y + 2.4, 2.2, 8), 0, ATRIL.FOOT_Z), 0, ATRIL.FOOT_Y / 2 + 0.15),
   );
@@ -325,6 +329,8 @@ export type AtrilAccentInput = {
   kind?: "generica" | "personalizada" | "unica";
   logoMask?: string;
   line1?: string;
+  /** Cara lisa en la tienda: el hueco NFC no se enseña al cliente. */
+  shopView?: boolean;
 };
 
 function logoMesh(mask: string, z0: number, z1: number) {
@@ -372,5 +378,5 @@ export function atrilAccent(input: AtrilAccentInput = {}): Mesh {
 }
 
 export function buildAtrilMeshes(input: AtrilAccentInput = {}) {
-  return { cuerpo: atrilBody(), acento: atrilAccent(input) };
+  return { cuerpo: atrilBody({ shopView: input.shopView }), acento: atrilAccent(input) };
 }

@@ -42,11 +42,6 @@ export function drawCardFace(
   ctx.fillStyle = body;
   ctx.fill();
 
-  ctx.beginPath();
-  ctx.arc(px(0), py(ATRIL.NFC_Y), (ATRIL.WELL_D / 2) * SCALE, 0, Math.PI * 2);
-  ctx.fillStyle = "#f3eee4";
-  ctx.fill();
-
   const footTop = py(ATRIL.FOOT_Y + 1.2);
   const footBot = footTop + 58;
   roundRect(ctx, px(-ATRIL.FOOT_W / 2), footTop, ATRIL.FOOT_W * SCALE, footBot - footTop, 10);

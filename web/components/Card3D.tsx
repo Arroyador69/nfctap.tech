@@ -86,6 +86,7 @@ function Atril({ design }: { design: CardDesign }) {
         kind: personalized ? "personalizada" : "generica",
         logoMask: undefined,
         line1: design.line1,
+        shopView: true,
       }),
     [personalized, design.line1],
   );
