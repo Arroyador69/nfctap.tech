@@ -26,7 +26,6 @@ from generar_tarjetas import (  # noqa: E402
     google_g_mesh,
     google_g_pil,
     google_g_svg,
-    rectangle,
     rounded_rect,
     shifted,
     star,
@@ -51,12 +50,12 @@ WELL_D = 34.0
 SEAT_D = 30.0
 Z_FLOOR = 3.20
 Z_GUIDE = 3.60
-STAR_Y = FOOT_Y + FACE_H - 11.0
-MARK_Y = 86.0
+STAR_Y = 100.0
+MARK_Y = 81.0
 MARK_R = 14.0
-TAP_Y = 65.0
-RESE_Y = 54.0
-NFC_Y = 30.0
+TAP_Y = 63.0
+RESE_Y = 53.0
+NFC_Y = 28.0
 RELIEF = 0.50
 
 COLORWAYS = (
@@ -130,7 +129,6 @@ def accent() -> Mesh:
             FOOT_Y / 2 + 0.15,
         )
     )
-    m.extend(extrude(rectangle(1.6, 1.6, 0.0, FOOT_Y + FACE_H + 5.0), 0.0, 0.20))
     return m
 
 

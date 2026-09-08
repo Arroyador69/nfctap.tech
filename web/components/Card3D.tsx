@@ -52,7 +52,7 @@ export function Card3D({ design, compact = false }: { design: CardDesign; compac
       onContextMenu={(e) => e.preventDefault()}
     >
       <Canvas
-        camera={{ position: [0.85, 0.22, 3.85], fov: 32 }}
+        camera={{ position: [0.7, 0.18, 4.15], fov: 32 }}
         gl={{ antialias: true, preserveDrawingBuffer: false }}
         dpr={[1, 1.75]}
         style={{ touchAction: "none" }}
@@ -71,7 +71,7 @@ export function Card3D({ design, compact = false }: { design: CardDesign; compac
           rotateSpeed={0.55}
           zoomSpeed={0.7}
           panSpeed={0.45}
-          minDistance={2.1}
+          minDistance={2.4}
           maxDistance={7.5}
           minPolarAngle={0.15}
           maxPolarAngle={Math.PI - 0.2}

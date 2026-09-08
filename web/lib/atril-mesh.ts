@@ -366,7 +366,6 @@ export function atrilAccent(input: AtrilAccentInput = {}): Mesh {
   m.extend(
     shifted(textMesh("NFCTAP.TECH", 0.62, 0.7, ATRIL.FOOT_Z, 6), 0, ATRIL.FOOT_Y / 2 + 0.15),
   );
-  m.extend(extrude(rectangle(1.6, 1.6, 0, ATRIL.FOOT_Y + ATRIL.FACE_H + 5), 0, 0.2));
   return m;
 }
 
