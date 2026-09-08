@@ -13,6 +13,7 @@ import {
   productLabel,
   qtysFor,
 } from "@/lib/catalog";
+import { ReviewLookup } from "@/components/ReviewLookup";
 import { isEmail, isHttpUrl, isPhone, isPostalCode, isReviewUrl, prepareLogo } from "@/lib/logo";
 import { PROVINCIAS } from "@/lib/provinces";
 import { euros, shippingCost, zoneFromPostalCode, ZONE_LABEL } from "@/lib/shipping";
@@ -21,13 +22,19 @@ import { useMemo, useState, type ReactNode } from "react";
 
 type Props = {
   initialKind?: ProductKind;
+  initialGoogleUrl?: string;
   shipping: ShippingSettings;
   mode?: "public" | "admin";
 };
 
 type Step = "diseno" | "envio";
 
-export function Designer({ initialKind = "personalizada", shipping, mode = "public" }: Props) {
+export function Designer({
+  initialKind = "personalizada",
+  initialGoogleUrl,
+  shipping,
+  mode = "public",
+}: Props) {
   const admin = mode === "admin";
   const startKind =
     !admin && initialKind === "unica" ? "personalizada" : initialKind;
@@ -35,7 +42,11 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
   const [handover, setHandover] = useState<Handover>("envio");
   const [kind, setKind] = useState<ProductKind>(startKind);
   const [qty, setQty] = useState<Qty>(1);
-  const [design, setDesign] = useState<CardDesign>(defaultDesign(startKind));
+  const [design, setDesign] = useState<CardDesign>(() => {
+    const d = defaultDesign(startKind);
+    if (initialGoogleUrl) d.googleUrl = initialGoogleUrl;
+    return d;
+  });
   const [preview, setPreview] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -229,7 +240,6 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
                     <p className="mt-2 text-xs text-[#8a8173]">
                       PNG con fondo transparente si puedes. Cuadrado o redondo, unos 800×800 px. Se
                       imprime en el color de acento, en el mismo sitio y tamaño que la G (~33 mm).
-                      El hueco NFC va abajo: no lleva tinta encima.
                     </p>
                     {design.logoDataUrl && (
                       <button
@@ -253,8 +263,8 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
                 </>
               ) : (
                 <p className="rounded-2xl bg-[#faf6ee] px-4 py-3 text-sm text-[#5c564c]">
-                  Genérica: G de Google, TAP / RESEÑA, pie NFCTap y hueco NFC abierto. Elige
-                  cuerpo, acento y el enlace.
+                  Genérica: G de Google, TAP / RESEÑA y pie NFCTap. Elige cuerpo, acento y
+                  el enlace.
                 </p>
               )}
 
@@ -280,7 +290,7 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
 
               <Field
                 label="Enlace de reseña Google"
-                hint={tried && !isReviewUrl(design.googleUrl) ? "Pega el enlace de Pedir reseñas" : ""}
+                hint={tried && !isReviewUrl(design.googleUrl) ? "Pega el enlace o búscalo abajo" : ""}
               >
                 <input
                   inputMode="url"
@@ -291,9 +301,15 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
                   onChange={(e) => patch({ googleUrl: e.target.value })}
                 />
               </Field>
-              <p className="text-xs text-[#8a8173]">
-                Google Business → Pedir reseñas → copiar. Con eso programamos el NFC.
-              </p>
+              <div className="rounded-2xl bg-[#faf6ee] p-3">
+                <p className="mb-2 text-xs text-[#6f675c]">
+                  Busca el negocio (nombre + pueblo) o pega el enlace de Maps.
+                </p>
+                <ReviewLookup
+                  compact
+                  onPick={(url) => patch({ googleUrl: url })}
+                />
+              </div>
 
               <div>
                 <p className="mb-2 text-sm text-[#3f3a34]">Color de la pieza</p>

@@ -7,8 +7,13 @@ import { redirect } from "next/navigation";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Nuevo pedido" };
 
-export default async function NuevoPedidoPage() {
+export default async function NuevoPedidoPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ googleUrl?: string }>;
+}) {
   if (!(await isAdmin())) redirect("/dashboard/login");
+  const { googleUrl } = await searchParams;
 
   return (
     <div className="mx-auto max-w-6xl px-5 pb-6 pt-6">
@@ -21,7 +26,7 @@ export default async function NuevoPedidoPage() {
         El mismo editor de la web. Lo montas delante suya, lo guardas y bajas el ZIP para Orca.
       </p>
       <div className="mt-6">
-        <Designer mode="admin" shipping={await getShipping()} />
+        <Designer mode="admin" shipping={await getShipping()} initialGoogleUrl={googleUrl} />
       </div>
     </div>
   );

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1440" width="1080" height="1440">
+  <rect width="1080" height="1440" fill="#F3EEE4"/>
+  <text x="540" y="78" text-anchor="middle" fill="#1C1915" font-family="Georgia, serif" font-size="40">NFCTap</text>
+  <text x="540" y="118" text-anchor="middle" fill="#7A6A52" font-family="Georgia, serif" font-size="20">Flotante · negro + amarillo</text>
+  <rect x="330.0" y="200.0" width="420.0" height="596.8" rx="33.2" fill="#141416"/>
+  <polygon points="407.4,221.6 411.6,232.9 423.7,233.4 414.2,240.9 417.4,252.5 407.4,245.9 397.3,252.5 400.5,240.9 391.1,233.4 403.1,232.9" fill="#E2B43A"/> <polygon points="473.7,205.0 479.0,219.2 494.2,219.9 482.3,229.3 486.4,244.0 473.7,235.6 461.0,244.0 465.1,229.3 453.2,219.9 468.4,219.2" fill="#E2B43A"/> <polygon points="540.0,185.6 547.1,204.6 567.3,205.5 551.5,218.1 556.9,237.6 540.0,226.4 523.1,237.6 528.5,218.1 512.7,205.5 532.9,204.6" fill="#E2B43A"/> <polygon points="606.3,205.0 611.6,219.2 626.8,219.9 614.9,229.3 619.0,244.0 606.3,235.6 593.6,244.0 597.7,229.3 585.8,219.9 601.0,219.2" fill="#E2B43A"/> <polygon points="672.6,221.6 676.9,232.9 688.9,233.4 679.5,240.9 682.7,252.5 672.6,245.9 662.6,252.5 665.8,240.9 656.3,233.4 668.4,232.9" fill="#E2B43A"/>
+  <g transform="translate(448.816 318.816) scale(10.13158)"><path d="M9.001 10.71V7.362h8.424c.126.567.225 1.098.225 1.845 0 5.139-3.447 8.793-8.64 8.793-4.968 0-9-4.032-9-9s4.032-9 9-9c2.43 0 4.464.891 6.021 2.349l-2.556 2.484c-.648-.612-1.782-1.332-3.465-1.332-2.979 0-5.409 2.475-5.409 5.508s2.43 5.508 5.409 5.508c3.447 0 4.716-2.385 4.95-3.798H9.001v-.009z" fill="#E2B43A"/></g>
+  <text x="540" y="616.2" text-anchor="middle" fill="#E2B43A" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="36" font-weight="600" letter-spacing="8.5">TAP</text>
+  <text x="540" y="684.9" text-anchor="middle" fill="#E2B43A" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="28" font-weight="500" letter-spacing="5.2">RESEÑA</text>
+  <rect x="296.8" y="800.8" width="486.3" height="48" rx="8" fill="#141416"/>
+  <text x="540" y="832.8" text-anchor="middle" fill="#E2B43A" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" letter-spacing="6">NFCTAP.TECH</text>
+  <text x="540" y="1288" text-anchor="middle" fill="#1C1915" font-family="Georgia, serif" font-size="22">NFC bajo la G · Flotante</text>
+  <text x="540" y="1328" text-anchor="middle" fill="#7A6A52" font-family="Georgia, serif" font-size="16">Estrellas de distinto tamaño, como colgando sobre la G.</text>
+  <text x="540" y="1386" text-anchor="middle" fill="#7A6A52" font-family="Georgia, serif" font-size="14">Atril · PLA negro + amarillo · NFCTap.tech</text>
+</svg>

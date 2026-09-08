@@ -3,9 +3,10 @@ Atril genérico NFCTap — reseña Google (15 €)
 
 Que es
 ------
-Placa vertical + pie integrado. G de Google, TAP / RESEÑA y
-hueco NFC ABIERTO (se ve, más grande que la pegatina).
-Nada de acento encima del hueco: no hay montañita.
+Placa + pie integrado. G de Google, TAP / RESEÑA.
+NFC DENTRO, justo bajo la G (o el logo en personalizada). Pausa a mitad.
+Antes de pausar se imprime un disco de acento en el suelo del pozo:
+eso es la mira. La pegatina va ENCIMA de ese círculo.
 
   01_cuerpo.stl / 02_acento.stl     una pieza (agrupar, no Reparar)
   01_cuerpo_a/b.stl + 02_acento_a/b.stl   dos SUELTAS en la cama
@@ -16,9 +17,9 @@ Imprime
 -------
 Agrupar 01 + 02. NO Reparar el modelo.
 Capa 0,20 mm, 3 perímetros, gyroid 15 %, Arachne.
-NO hace falta pausa: el pozo queda abierto.
-Pozo Ø28, asiento Ø26, pegatina Ø25 HUNDIDA.
-Al terminar, mete la pegatina en el hueco (adhesivo al asiento).
-Se imprime tumbada (cara arriba). Se pone de pie.
+Pausa OBLIGATORIA capa 24 (4.80 mm). Ver PAUSA_NFC.txt.
+Pozo Ø28, asiento Ø26, pegatina Ø25.
+Se imprime con la cara de la placa hacia arriba (el pie sale hacia Z).
+Al acabar se pone de pie.
 
 Colores de esta carpeta: cuerpo = negro, acento = rojo.

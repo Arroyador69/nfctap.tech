@@ -118,6 +118,145 @@ function starPoly(cx: number, cy: number, rOut: number, rIn = rOut * 0.42): V2[]
   return pts;
 }
 
+function slantedBar(x0: number, y0: number, x1: number, y1: number, sw: number): V2[] {
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  const length = Math.hypot(dx, dy) || 1;
+  const nx = (-dy / length) * (sw / 2);
+  const ny = (dx / length) * (sw / 2);
+  return [
+    [x0 + nx, y0 + ny],
+    [x1 + nx, y1 + ny],
+    [x1 - nx, y1 - ny],
+    [x0 - nx, y0 - ny],
+  ];
+}
+
+function strokeArc(cx: number, cy: number, r: number, a0: number, a1: number, sw: number, segs = 18): V2[] {
+  const outer = r + sw / 2;
+  const inner = Math.max(0.15, r - sw / 2);
+  const pts: V2[] = [];
+  for (let i = 0; i <= segs; i++) {
+    const a = ((a0 + (a1 - a0) * (i / segs)) * Math.PI) / 180;
+    pts.push([cx + outer * Math.cos(a), cy + outer * Math.sin(a)]);
+  }
+  for (let i = 0; i <= segs; i++) {
+    const a = ((a1 + (a0 - a1) * (i / segs)) * Math.PI) / 180;
+    pts.push([cx + inner * Math.cos(a), cy + inner * Math.sin(a)]);
+  }
+  return pts;
+}
+
+const SANS_W: Record<string, number> = {
+  A: 0.92,
+  C: 0.88,
+  E: 0.78,
+  F: 0.74,
+  H: 0.9,
+  N: 0.9,
+  Ñ: 0.9,
+  P: 0.8,
+  R: 0.84,
+  S: 0.82,
+  T: 0.84,
+  ".": 0.38,
+  " ": 0.42,
+};
+
+function sansGlyph(ch: string, h: number, sw: number, w: number): V2[][] {
+  const vert = (x: number, y0: number, y1: number) => rectangle(sw, Math.max(0.2, y1 - y0), x, (y0 + y1) / 2);
+  const horz = (x0: number, x1: number, y: number) => rectangle(Math.max(0.2, x1 - x0), sw, (x0 + x1) / 2, y);
+  switch (ch) {
+    case "A":
+      return [
+        slantedBar(sw * 0.2, sw * 0.08, w / 2, h - sw * 0.08, sw),
+        slantedBar(w - sw * 0.2, sw * 0.08, w / 2, h - sw * 0.08, sw),
+        horz(w * 0.24, w * 0.76, h * 0.36),
+      ];
+    case "C":
+      return [strokeArc(w / 2, h / 2, h / 2 - sw / 2, 48, 312, sw, 20)];
+    case "E":
+      return [vert(sw / 2, 0, h), horz(0, w, h - sw / 2), horz(0, w * 0.78, h * 0.5), horz(0, w, sw / 2)];
+    case "F":
+      return [vert(sw / 2, 0, h), horz(0, w, h - sw / 2), horz(0, w * 0.72, h * 0.52)];
+    case "H":
+      return [vert(sw / 2, 0, h), vert(w - sw / 2, 0, h), horz(0, w, h * 0.5)];
+    case "N":
+      return [vert(sw / 2, 0, h), vert(w - sw / 2, 0, h), slantedBar(sw, h - sw * 0.3, w - sw, sw * 0.3, sw)];
+    case "P":
+      return [
+        vert(sw / 2, 0, h),
+        horz(0, w - sw * 0.15, h - sw / 2),
+        horz(0, w - sw * 0.15, h * 0.48),
+        vert(w - sw / 2, h * 0.48, h),
+      ];
+    case "R":
+      return [
+        vert(sw / 2, 0, h),
+        horz(0, w - sw * 0.15, h - sw / 2),
+        horz(0, w - sw * 0.15, h * 0.5),
+        vert(w - sw / 2, h * 0.5, h),
+        slantedBar(w * 0.42, h * 0.48, w - sw * 0.15, sw * 0.12, sw),
+      ];
+    case "S":
+      return [
+        strokeArc(w / 2, h * 0.72, w * 0.36, 210, 20, sw, 16),
+        strokeArc(w / 2, h * 0.28, w * 0.36, 30, -160, sw, 16),
+      ];
+    case "T":
+      return [horz(0, w, h - sw / 2), vert(w / 2, 0, h - sw)];
+    case "Ñ":
+      return [
+        vert(sw / 2, 0, h * 0.86),
+        vert(w - sw / 2, 0, h * 0.86),
+        slantedBar(sw, h * 0.86 - sw * 0.3, w - sw, sw * 0.25, sw),
+        strokeArc(w / 2, h * 0.94, w * 0.28, 200, 340, sw * 0.7, 10),
+      ];
+    case ".":
+      return [rectangle(sw * 1.1, sw * 1.1, w / 2, sw * 0.55)];
+    default:
+      return [];
+  }
+}
+
+export function sansWord(text: string, cx: number, cy: number, h: number, tracking: number, z0: number, z1: number) {
+  const sw = Math.max(0.85, h * 0.16);
+  const glyphs = [...text.toUpperCase()].map((ch) => {
+    const w = (SANS_W[ch] ?? 0.8) * h;
+    return { w, polys: sansGlyph(ch, h, sw, w) };
+  });
+  const total = glyphs.reduce((s, g) => s + g.w, 0) + tracking * Math.max(0, glyphs.length - 1);
+  let x = cx - total / 2;
+  const y = cy - h / 2;
+  const m = new Mesh();
+  for (const g of glyphs) {
+    for (const poly of g.polys) {
+      m.extend(extrude(poly.map(([px, py]) => [px + x, py + y] as V2), z0, z1));
+    }
+    x += g.w + tracking;
+  }
+  return m;
+}
+
+function starLayout(): [number, number, number][] {
+  const out: [number, number, number][] = [];
+  for (let i = 0; i < 5; i++) {
+    const t = (i - 2) / 2;
+    out.push([(i - 2) * 11.4, ATRIL.STAR_Y - t * t * 3.4, 4]);
+  }
+  return out;
+}
+
+function starPoly(cx: number, cy: number, rOut: number, rIn = rOut * 0.42): V2[] {
+  const pts: V2[] = [];
+  for (let i = 0; i < 10; i++) {
+    const ang = ((-90 + i * 36) * Math.PI) / 180;
+    const r = i % 2 === 0 ? rOut : rIn;
+    pts.push([cx + r * Math.cos(ang), cy + r * Math.sin(ang)]);
+  }
+  return pts;
+}
+
 function earClip(poly: V2[]): [number, number, number][] {
   const pts = [...poly];
   if (area(pts) < 0) pts.reverse();
@@ -246,6 +385,16 @@ function extrudePlateHole(outerIn: V2[], holeIn: V2[], z0: number, z1: number) {
   return extrudeMatchedRing(hits, hole, z0, z1);
 }
 
+function extrudeRing(outerIn: V2[], innerIn: V2[], z0: number, z1: number) {
+  const outer = ensureCcw(outerIn);
+  const inner = ensureCcw(innerIn);
+  const n = Math.max(outer.length, inner.length);
+  const sample = (poly: V2[], i: number): V2 => poly[Math.floor((i * poly.length) / n) % poly.length];
+  const outerPts = Array.from({ length: n }, (_, i) => sample(outer, i));
+  const innerPts = Array.from({ length: n }, (_, i) => sample(inner, i));
+  return extrudeMatchedRing(outerPts, innerPts, z0, z1);
+}
+
 export function shifted(mesh: Mesh, dx: number, dy: number, dz = 0) {
   const out = new Mesh();
   for (const [a, b, c] of mesh.tris) {
@@ -317,7 +466,8 @@ export function atrilBody(opts?: { shopView?: boolean }) {
     const seat = circle(0, ATRIL.NFC_Y, ATRIL.SEAT_D / 2, 48);
     m.extend(extrude(outer, 0, ATRIL.Z_FLOOR));
     m.extend(extrudePlateHole(outer, seat, ATRIL.Z_FLOOR, ATRIL.Z_GUIDE));
-    m.extend(extrudePlateHole(outer, well, ATRIL.Z_GUIDE, ATRIL.FACE_T));
+    m.extend(extrudePlateHole(outer, well, ATRIL.Z_GUIDE, ATRIL.Z_PAUSE));
+    m.extend(extrude(outer, ATRIL.Z_PAUSE, ATRIL.FACE_T));
   }
   m.extend(
     shifted(extrude(roundedRect(ATRIL.FOOT_W, ATRIL.FOOT_Y + 2.4, 2.2, 8), 0, ATRIL.FOOT_Z), 0, ATRIL.FOOT_Y / 2 + 0.15),
@@ -350,12 +500,31 @@ function logoMesh(mask: string, z0: number, z1: number) {
   return m;
 }
 
+function nfcMira() {
+  const cx = 0;
+  const cy = ATRIL.NFC_Y;
+  const m = new Mesh();
+  m.extend(extrude(circle(cx, cy, ATRIL.PAD_D / 2, 48), ATRIL.Z_FLOOR, ATRIL.Z_FLOOR + ATRIL.PAD_H));
+  m.extend(
+    extrudeRing(
+      circle(cx, cy, ATRIL.WELL_D / 2 - 0.2, 48),
+      circle(cx, cy, ATRIL.SEAT_D / 2 + 0.2, 40),
+      ATRIL.Z_GUIDE,
+      ATRIL.Z_GUIDE + ATRIL.RING_H,
+    ),
+  );
+  return m;
+}
+
 export function atrilAccent(input: AtrilAccentInput = {}): Mesh {
   const m = new Mesh();
+  if (!input.shopView) {
+    m.extend(nfcMira());
+  }
   const z0 = ATRIL.FACE_T;
   const z1 = ATRIL.FACE_T + ATRIL.RELIEF;
-  for (let i = 0; i < 5; i++) {
-    m.extend(extrude(starPoly((i - 2) * 12.2, ATRIL.STAR_Y, 4.3), z0, z1));
+  for (const [x, y, r] of starLayout()) {
+    m.extend(extrude(starPoly(x, y, r), z0, z1 + 0.12));
   }
   const generic = input.kind !== "personalizada";
   if (generic) {
@@ -364,16 +533,13 @@ export function atrilAccent(input: AtrilAccentInput = {}): Mesh {
     m.extend(logoMesh(input.logoMask, z0, z1));
   }
   const name = !generic ? printText(input.line1 || "").slice(0, 16) : "";
-  const tapY = name ? ATRIL.TAP_Y + 1.8 : ATRIL.TAP_Y;
-  const reseY = ATRIL.RESE_Y;
-  m.extend(shifted(textMesh("TAP", ATRIL.TAP_PX, ATRIL.RELIEF, z0), 0, tapY));
+  const tapY = name ? ATRIL.TAP_Y + 1.2 : ATRIL.TAP_Y;
+  m.extend(sansWord("TAP", 0, tapY, ATRIL.TAP_H, ATRIL.TAP_TRACK, z0, z1));
   if (name) {
-    m.extend(shifted(textMesh(name, ATRIL.NAME_PX, ATRIL.RELIEF, z0), 0, ATRIL.NAME_Y));
+    m.extend(sansWord(name, 0, ATRIL.NAME_Y, ATRIL.NAME_H, ATRIL.NAME_TRACK, z0, z1));
   }
-  m.extend(shifted(textMesh("RESEÑA", ATRIL.RESE_PX, ATRIL.RELIEF, z0), 0, reseY));
-  m.extend(
-    shifted(textMesh("NFCTAP.TECH", 0.62, 0.7, ATRIL.FOOT_Z, 6), 0, ATRIL.FOOT_Y / 2 + 0.15),
-  );
+  m.extend(sansWord("RESEÑA", 0, ATRIL.RESE_Y, ATRIL.RESE_H, ATRIL.RESE_TRACK, z0, z1));
+  m.extend(sansWord("NFCTAP.TECH", 0, ATRIL.FOOT_Y / 2 + 0.15, 3.4, 1.15, ATRIL.FOOT_Z, ATRIL.FOOT_Z + 0.7));
   return m;
 }
 

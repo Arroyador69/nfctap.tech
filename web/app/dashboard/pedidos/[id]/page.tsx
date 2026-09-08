@@ -4,7 +4,7 @@ import { DashboardNav } from "@/components/DashboardNav";
 import { isAdmin } from "@/lib/auth";
 import { productLabel } from "@/lib/catalog";
 import { ATRIL } from "@/lib/atril-geom";
-import { orderToSpec } from "@/lib/print-spec";
+import { orderToSpec, pauseLayer } from "@/lib/print-spec";
 import { euros, ZONE_LABEL } from "@/lib/shipping";
 import { getOrder } from "@/lib/store";
 import Link from "next/link";
@@ -21,6 +21,7 @@ export default async function OrderPage({
   const order = await getOrder(id);
   if (!order) notFound();
   const spec = orderToSpec(order);
+  const pause = pauseLayer();
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-10">
@@ -42,8 +43,9 @@ export default async function OrderPage({
         Descargar ZIP para Flash
       </a>
       <p className="mt-2 text-sm text-[#6f675c]">
-        Mismo atril que la web: 01_cuerpo + 02_acento, hueco NFC abierto Ø{ATRIL.WELL_D} (sin
-        pausa) y URL del chip. Lo que se ve es lo que se imprime.
+        Pozo bajo la G / el logo (no abajo). Pausa capa {pause.layer} ({pause.z.toFixed(2)} mm):
+        hueco con disco de acento Ø{ATRIL.PAD_D}. Pegatina Ø{ATRIL.STICKER_D} encima, adhesivo
+        abajo, y continuar.
       </p>
 
       {order.previewDataUrl && (

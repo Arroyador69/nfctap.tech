@@ -96,6 +96,7 @@ disenos/
     generica-negra-amarillo/       ← la de 15 € que más se imprime
     generica-blanca-negra/
     generica-negra-roja/
+    opciones/                      ← 4 caras (aire / corona / tap / flotante) para elegir
     freddos-fuengirola/            ← encargo cliente (no serigrafía)
     alberto-cartera/               ← cartera slim, 2 NFC (WA + web)
 ```
@@ -195,7 +196,7 @@ Slicer y pausa: [cómo añadir pausa en OrcaSlicer](https://printago.io/guides/o
 
 ## 4. Meter la pegatina NFC a media impresión
 
-1. La impresora hace el pozo Ø36 y el asiento Ø30.
+1. La impresora hace el pozo Ø28 y el asiento Ø26 (anillo de acento = mira).
 2. **Pausa** en la primera capa que taparía el hueco (genérica: **4,80 mm / capa 24**).
 3. Colocas la pegatina Timeskey **Ø25 mm hundida y centrada**, adhesivo hacia la cama, sin que sobresalga.
 4. Reanudas. La impresora sella el NFC dentro. Queda invisible y protegido. Si sobresale, no reanudes (montañita).
@@ -203,7 +204,7 @@ Slicer y pausa: [cómo añadir pausa en OrcaSlicer](https://printago.io/guides/o
 Consejos que evitan fallos:
 
 - El nozzle está caliente: no toques la cama; usa pinzas si hace falta.
-- Estas pegatinas son finas (~0,2 mm). El hueco tiene 0,8 mm de alto: caben holgadas.
+- Estas pegatinas son finas (~0,2 mm). El pozo tiene 1,6 mm de alto: caben holgadas.
 - No las pongas arrugadas: el cabezal las puede arrancar.
 - Programa el NFC **después** (atraviesa el PLA sin problema) o **antes** si quieres probar el chip. Después es más cómodo.
 - iPhone lee NFC de serie; Android también (NFC activado).

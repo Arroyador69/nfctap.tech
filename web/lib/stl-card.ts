@@ -1,6 +1,6 @@
 import { ATRIL } from "./atril-geom";
 import { buildAtrilMeshes, type Mesh } from "./atril-mesh";
-import type { PrintSpec } from "./print-spec";
+import { pauseLayer, type PrintSpec } from "./print-spec";
 
 function toStl(mesh: Mesh, name: string) {
   const buf = Buffer.alloc(84 + mesh.tris.length * 50);
@@ -52,15 +52,35 @@ export function buildCardStls(spec: PrintSpec) {
 }
 
 export function pauseNote(spec: PrintSpec) {
-  return `Hueco NFC — abierto, sin pausa
-==============================
+  const { z, layer, cover } = pauseLayer();
+  const accent = spec.colores.acento;
+  return `Pausa NFC — genérica y personalizada (mismo pozo, bajo la G / logo)
+================================================================
 Pedido: ${spec.orderId}
-Pozo Ø${ATRIL.WELL_D} (se ve) · asiento Ø${ATRIL.SEAT_D} · pegatina Ø${ATRIL.STICKER_D}
-Suelo del pozo: ${ATRIL.Z_FLOOR.toFixed(2)} mm. La cara no tapa el hueco.
+Altura: ${z.toFixed(2)} mm · capa ${layer} (primera 0,25 + 0,20 mm)
+Centro del pozo = centro de la G / logo (y=${ATRIL.NFC_Y} mm). NO va abajo.
+Pozo Ø${ATRIL.WELL_D} · asiento Ø${ATRIL.SEAT_D} · mira Ø${ATRIL.PAD_D} · pegatina Ø${ATRIL.STICKER_D}
+Tapa encima: ${cover.toFixed(2)} mm. Luego se imprime la G / el logo encima.
 
-Imprime entero (Agrupar 01 + 02, NO Reparar).
-Al terminar, mete la pegatina Timeskey Ø25 en el asiento
-(hundida, adhesivo abajo). No hay filamento encima: no montañita.
+Proyecto NUEVO en Flash. No reutilices el 3mf/G-code viejo.
+Importa 01_cuerpo.stl + 02_acento.stl → Agrupar → NO Reparar.
+Rebanar 0,20 mm Standard @FF AD5X.
+
+La mira se imprime ANTES de la pausa (capas ~16–20):
+disco de acento Ø${ATRIL.PAD_D} en el suelo, justo donde irá la G / el logo.
+
+En Previsualización:
+1. Slider DERECHO BAJA hasta la capa ${layer} (~${z.toFixed(2)} mm).
+   Mitad-arriba de la placa: HUECO REDONDO + círculo de acento (${accent}).
+   Ese círculo es el sitio de la G / el logo. No busques el hueco abajo.
+   Capa 270+ = solo el pie. Baja el slider.
+2. Clic derecho en esa capa → Añadir pausa.
+3. Imprime.
+
+Cuando pare (mira desde ARRIBA):
+- El círculo de acento (donde irá la G / el logo) = aquí la pegatina.
+- Timeskey Ø25 ENCIMA de ese círculo, hundida, adhesivo ABAJO.
+- Que no sobresalga. No apagues. Continuar.
 Programa el chip con el enlace de NFC.txt
 `;
 }

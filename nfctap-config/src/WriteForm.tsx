@@ -1,6 +1,7 @@
 import { NfcSheet } from "@/src/NfcSheet";
 import { pushHistory } from "@/src/history";
 import { cancelNfc, nfcMessage, writePayload } from "@/src/nfc";
+import { lookupReviewPlaces, type PlaceHit } from "@/src/places";
 import { TEMPLATES, buildPayload, defaultsFor } from "@/src/templates";
 import { colors } from "@/src/theme";
 import { useMemo, useState } from "react";
@@ -29,6 +30,9 @@ export function WriteForm({ templateId, onBack }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
+  const [placeHits, setPlaceHits] = useState<PlaceHit[]>([]);
+  const [placeBusy, setPlaceBusy] = useState(false);
+  const [placeError, setPlaceError] = useState("");
 
   const preview = useMemo(() => {
     if (!template) return "";
@@ -57,6 +61,26 @@ export function WriteForm({ templateId, onBack }: Props) {
     if (f.optional) return true;
     return Boolean((values[f.key] ?? f.defaultValue ?? "").trim());
   });
+
+  async function searchPlaces() {
+    const q = (values.query || "").trim();
+    if (q.length < 3) {
+      setPlaceError("Nombre y pueblo, o pega el enlace de Google.");
+      return;
+    }
+    setPlaceBusy(true);
+    setPlaceError("");
+    try {
+      const hits = await lookupReviewPlaces(q);
+      setPlaceHits(hits);
+      if (!hits.length) setPlaceError("Nada. Prueba con el pueblo o pega el enlace.");
+    } catch (e) {
+      setPlaceHits([]);
+      setPlaceError(e instanceof Error ? e.message : "No se pudo buscar");
+    } finally {
+      setPlaceBusy(false);
+    }
+  }
 
   async function write() {
     if (!template) return;
@@ -164,8 +188,57 @@ export function WriteForm({ templateId, onBack }: Props) {
                 }}
               />
             )}
+            {template.id === "google" && f.key === "query" ? (
+              <Pressable
+                onPress={searchPlaces}
+                disabled={placeBusy}
+                style={{
+                  marginTop: 10,
+                  alignSelf: "flex-start",
+                  backgroundColor: colors.ink,
+                  opacity: placeBusy ? 0.5 : 1,
+                  borderRadius: 999,
+                  paddingVertical: 10,
+                  paddingHorizontal: 16,
+                }}
+              >
+                <Text style={{ color: colors.bg, fontWeight: "700", fontSize: 14 }}>
+                  {placeBusy ? "Buscando…" : "Buscar enlace de reseña"}
+                </Text>
+              </Pressable>
+            ) : null}
           </View>
         ))}
+
+        {template.id === "google" && placeError ? (
+          <Text style={{ marginTop: 10, color: "#b42318", fontSize: 13 }}>{placeError}</Text>
+        ) : null}
+        {template.id === "google" &&
+          placeHits.map((h) => (
+            <Pressable
+              key={h.reviewUrl}
+              onPress={() => {
+                setValues((s) => ({ ...s, url: h.reviewUrl }));
+                setPlaceHits([]);
+              }}
+              style={{
+                marginTop: 10,
+                backgroundColor: "#faf6ee",
+                borderRadius: 14,
+                padding: 12,
+                borderWidth: 1,
+                borderColor: colors.line,
+              }}
+            >
+              <Text style={{ color: colors.ink, fontWeight: "600" }}>{h.name}</Text>
+              {h.address ? (
+                <Text style={{ marginTop: 2, color: colors.muted, fontSize: 12 }}>{h.address}</Text>
+              ) : null}
+              <Text style={{ marginTop: 6, color: colors.goldSoft, fontSize: 12 }}>
+                {h.directReview ? "Formulario de reseña · tocar para usar" : "Ficha Maps · tocar para usar"}
+              </Text>
+            </Pressable>
+          ))}
 
         {!!preview && (
           <View style={{ marginTop: 18, backgroundColor: "#faf6ee", borderRadius: 14, padding: 12 }}>

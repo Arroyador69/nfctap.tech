@@ -1,16 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1440" width="1080" height="1440">
   <rect width="1080" height="1440" fill="#F7F4EE"/>
   <text x="540" y="78" text-anchor="middle" fill="#1C1915" font-family="Georgia, serif" font-size="40">NFCTap</text>
-  <text x="540" y="118" text-anchor="middle" fill="#7A6A52" font-family="Georgia, serif" font-size="20">Genérica 15 € · blanco + negro</text>
+  <text x="540" y="118" text-anchor="middle" fill="#7A6A52" font-family="Georgia, serif" font-size="20">Aire · blanco + negro</text>
   <rect x="330.0" y="200.0" width="420.0" height="596.8" rx="33.2" fill="#F4F1EA"/>
-  <polygon points="405.2,242.6 411.0,258.2 427.8,259.0 414.6,269.4 419.1,285.5 405.2,276.3 391.2,285.5 395.7,269.4 382.6,259.0 399.3,258.2" fill="#141416"/> <polygon points="472.6,242.6 478.4,258.2 495.2,259.0 482.1,269.4 486.5,285.5 472.6,276.3 458.6,285.5 463.1,269.4 450.0,259.0 466.7,258.2" fill="#141416"/> <polygon points="540.0,242.6 545.9,258.2 562.6,259.0 549.5,269.4 554.0,285.5 540.0,276.3 526.0,285.5 530.5,269.4 517.4,259.0 534.1,258.2" fill="#141416"/> <polygon points="607.4,242.6 613.3,258.2 630.0,259.0 616.9,269.4 621.4,285.5 607.4,276.3 593.5,285.5 597.9,269.4 584.8,259.0 601.6,258.2" fill="#141416"/> <polygon points="674.8,242.6 680.7,258.2 697.4,259.0 684.3,269.4 688.8,285.5 674.8,276.3 660.9,285.5 665.4,269.4 652.2,259.0 669.0,258.2" fill="#141416"/>
-  <g transform="translate(448.816 351.974) scale(10.13158)"><path d="M9.001 10.71V7.362h8.424c.126.567.225 1.098.225 1.845 0 5.139-3.447 8.793-8.64 8.793-4.968 0-9-4.032-9-9s4.032-9 9-9c2.43 0 4.464.891 6.021 2.349l-2.556 2.484c-.648-.612-1.782-1.332-3.465-1.332-2.979 0-5.409 2.475-5.409 5.508s2.43 5.508 5.409 5.508c3.447 0 4.716-2.385 4.95-3.798H9.001v-.009z" fill="#141416"/></g>
-  <text x="540" y="593.8" text-anchor="middle" fill="#141416" font-family="Outfit, Helvetica, Arial, sans-serif" font-size="44" font-weight="700">TAP</text>
-  <text x="540" y="634.0" text-anchor="middle" fill="#141416" font-family="Outfit, Helvetica, Arial, sans-serif" font-size="32">RESEÑA</text>
-  <circle cx="540" cy="713.9" r="77.4" fill="#F7F4EE"/>
+  <polygon points="414.0,235.4 419.5,250.0 435.0,250.6 422.8,260.3 427.0,275.4 414.0,266.8 401.0,275.4 405.2,260.3 393.0,250.6 408.5,250.0" fill="#141416"/> <polygon points="477.0,221.3 482.5,235.9 498.0,236.6 485.8,246.3 490.0,261.3 477.0,252.7 464.0,261.3 468.2,246.3 456.0,236.6 471.5,235.9" fill="#141416"/> <polygon points="540.0,216.6 545.5,231.2 561.0,231.9 548.8,241.6 553.0,256.6 540.0,248.0 527.0,256.6 531.2,241.6 519.0,231.9 534.5,231.2" fill="#141416"/> <polygon points="603.0,221.3 608.5,235.9 624.0,236.6 611.8,246.3 616.0,261.3 603.0,252.7 590.0,261.3 594.2,246.3 582.0,236.6 597.5,235.9" fill="#141416"/> <polygon points="666.0,235.4 671.5,250.0 687.0,250.6 674.8,260.3 679.0,275.4 666.0,266.8 653.0,275.4 657.2,260.3 645.0,250.6 660.5,250.0" fill="#141416"/>
+  <g transform="translate(448.816 318.816) scale(10.13158)"><path d="M9.001 10.71V7.362h8.424c.126.567.225 1.098.225 1.845 0 5.139-3.447 8.793-8.64 8.793-4.968 0-9-4.032-9-9s4.032-9 9-9c2.43 0 4.464.891 6.021 2.349l-2.556 2.484c-.648-.612-1.782-1.332-3.465-1.332-2.979 0-5.409 2.475-5.409 5.508s2.43 5.508 5.409 5.508c3.447 0 4.716-2.385 4.95-3.798H9.001v-.009z" fill="#141416"/></g>
+  <text x="540" y="622.5" text-anchor="middle" fill="#141416" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="39" font-weight="600" letter-spacing="7.9">TAP</text>
+  <text x="540" y="690.1" text-anchor="middle" fill="#141416" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="27" font-weight="500" letter-spacing="5.8">RESEÑA</text>
   <rect x="296.8" y="800.8" width="486.3" height="48" rx="8" fill="#F4F1EA"/>
-  <text x="540" y="832.8" text-anchor="middle" fill="#141416" font-family="Georgia, serif" font-size="20" letter-spacing="3">NFCTAP.TECH</text>
-  <text x="540" y="1288" text-anchor="middle" fill="#1C1915" font-family="Georgia, serif" font-size="22">Hueco NFC abierto · TAP para tu reseña en Google</text>
-  <text x="540" y="1328" text-anchor="middle" fill="#7A6A52" font-family="Georgia, serif" font-size="16">Clínicas, hoteles, recepciones.</text>
-  <text x="540" y="1386" text-anchor="middle" fill="#7A6A52" font-family="Georgia, serif" font-size="14">Atril integrado · PLA blanco + negro · NFCTap.tech</text>
+  <text x="540" y="832.8" text-anchor="middle" fill="#141416" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="18" letter-spacing="6">NFCTAP.TECH</text>
+  <text x="540" y="1288" text-anchor="middle" fill="#1C1915" font-family="Georgia, serif" font-size="22">NFC bajo la G · Aire</text>
+  <text x="540" y="1328" text-anchor="middle" fill="#7A6A52" font-family="Georgia, serif" font-size="16">Estrellas en arco, flotando. TAP con tracking. Más hueco bajo la G.</text>
+  <text x="540" y="1386" text-anchor="middle" fill="#7A6A52" font-family="Georgia, serif" font-size="14">Atril · PLA blanco + negro · NFCTap.tech</text>
 </svg>

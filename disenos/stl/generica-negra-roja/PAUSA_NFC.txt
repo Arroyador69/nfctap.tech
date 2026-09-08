@@ -1,7 +1,28 @@
-Hueco NFC — abierto, sin pausa
-==============================
-Pozo Ø28 (se ve) · asiento Ø26 · pegatina Ø25
-Suelo del pozo: 3.20 mm. La cara no tapa el hueco.
+Pausa NFC — genérica y personalizada (mismo pozo, bajo la G / logo)
+================================================================
+Altura: 4.80 mm · capa 24 (primera 0,25 + 0,20 mm)
+Centro del pozo = centro de la G / logo (y=78 mm). NO va abajo.
+Pozo Ø28 · asiento Ø26 · mira Ø24 · pegatina Ø25
+Tapa encima: 3.20 mm. Luego se imprime la G / el logo encima.
 
-Imprime entero. Al terminar, mete la pegatina Timeskey Ø25
-en el asiento (hundida, adhesivo abajo). No hay filamento encima.
+Proyecto NUEVO en Flash. No reutilices el 3mf/G-code viejo.
+Importa 01_cuerpo.stl + 02_acento.stl → Agrupar → NO Reparar.
+Rebanar 0,20 mm Standard @FF AD5X.
+
+La mira se imprime ANTES de la pausa (capas ~16–20):
+disco de rojo Ø24 en el suelo, justo donde irá la G.
+
+En Previsualización:
+1. Slider DERECHO BAJA hasta la capa 24 (~4.80 mm).
+   Mitad-arriba de la placa: HUECO REDONDO + círculo rojo.
+   Ese círculo es el sitio de la G / el logo. No busques el hueco abajo.
+   Capa 270+ = solo el pie. Baja el slider.
+   Si el hueco está abajo del todo, son STL viejos: vuelve a importar.
+2. Clic derecho en esa capa → Añadir pausa.
+3. Imprime.
+
+Cuando pare (mira desde ARRIBA):
+- El círculo rojo (donde irá la G) = aquí la pegatina.
+- Timeskey Ø25 ENCIMA de ese círculo, hundida, adhesivo ABAJO.
+- Que no sobresalga. No apagues. Continuar.
+- Si sobresale, no reanudes (montañita).

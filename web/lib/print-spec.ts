@@ -8,7 +8,7 @@ export const NFC_STOCK = {
   tagDiameter: ATRIL.STICKER_D,
   cavityDiameter: ATRIL.WELL_D,
   seatDiameter: ATRIL.SEAT_D,
-  cavityThickness: ATRIL.Z_GUIDE - ATRIL.Z_FLOOR,
+  cavityThickness: ATRIL.Z_PAUSE - ATRIL.Z_FLOOR,
 };
 
 export const STAND = {
@@ -95,7 +95,11 @@ export function orderToSpec(order: Order): PrintSpec {
   };
 }
 
-/** Hueco abierto: no hay pausa. Se deja por compatibilidad del dashboard. */
+/** Capa de Flash Studio (primera 0,25 mm + 0,20 mm) donde el pozo aún se ve. */
 export function pauseLayer() {
-  return { z: 0, layer: 0, open: true as const };
+  const first = 0.25;
+  const h = 0.2;
+  const z = ATRIL.Z_PAUSE;
+  const layer = 1 + Math.round((z - first) / h);
+  return { z, layer, open: false as const, cover: ATRIL.FACE_T - z };
 }

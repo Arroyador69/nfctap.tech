@@ -41,7 +41,7 @@ cd nfctap-config
 npx expo run:android
 ```
 
-3. Configurar → Reseña Google → pegas `g.page` → acercas la pegatina Timeskey Ø25 mm.
+3. Configurar → Reseña Google → nombre y pueblo → Buscar enlace, o pega `g.page`.
 
 iPhone: Xcode (Archive para TestFlight). El fallo `impresora: No such file` es el espacio en la carpeta. El plugin `with-quoted-constants-script` y `scripts/bundle-rn-ios.sh` citan las rutas.
 

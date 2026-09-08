@@ -1,6 +1,5 @@
 import { ACCENT_HEX, BODY_COLORS } from "./catalog";
 import { ATRIL } from "./atril-geom";
-import { PIXEL_FONT } from "./atril-mesh";
 import { drawGoogleG } from "./google-g";
 import { paintAccentLogo } from "./logo";
 import { printText } from "./print-spec";
@@ -49,7 +48,8 @@ export function drawCardFace(
   ctx.fill();
 
   for (let i = 0; i < 5; i++) {
-    star(ctx, px((i - 2) * 12.2), py(ATRIL.STAR_Y), 4.3 * SCALE, accent);
+    const t = (i - 2) / 2;
+    star(ctx, px((i - 2) * 11.4), py(ATRIL.STAR_Y - t * t * 3.4), 4 * SCALE, accent);
   }
 
   if (generic) {
@@ -69,11 +69,13 @@ export function drawCardFace(
   }
 
   const name = !generic ? printText(design.line1 || "").slice(0, 16) : "";
-  const tapY = name ? ATRIL.TAP_Y + 1.8 : ATRIL.TAP_Y;
-  drawPixelText(ctx, "TAP", px(0), py(tapY), ATRIL.TAP_PX * SCALE, accent);
-  if (name) drawPixelText(ctx, name, px(0), py(ATRIL.NAME_Y), ATRIL.NAME_PX * SCALE, accent);
-  drawPixelText(ctx, "RESEÑA", px(0), py(ATRIL.RESE_Y), ATRIL.RESE_PX * SCALE, accent);
-  drawPixelText(ctx, "NFCTAP.TECH", px(0), (footTop + footBot) / 2, 0.62 * SCALE, accent);
+  const tapY = name ? ATRIL.TAP_Y + 1.2 : ATRIL.TAP_Y;
+  drawSansText(ctx, "TAP", px(0), py(tapY), ATRIL.TAP_H * SCALE, ATRIL.TAP_TRACK * SCALE, accent, 600);
+  if (name) {
+    drawSansText(ctx, name, px(0), py(ATRIL.NAME_Y), ATRIL.NAME_H * SCALE, ATRIL.NAME_TRACK * SCALE, accent, 600);
+  }
+  drawSansText(ctx, "RESEÑA", px(0), py(ATRIL.RESE_Y), ATRIL.RESE_H * SCALE, ATRIL.RESE_TRACK * SCALE, accent, 500);
+  drawSansText(ctx, "NFCTAP.TECH", px(0), (footTop + footBot) / 2, 3.4 * SCALE, 1.15 * SCALE, accent, 500);
 }
 
 function drawAccentLogo(
@@ -88,36 +90,24 @@ function drawAccentLogo(
   ctx.drawImage(off, cx - size / 2, cy - size / 2, size, size);
 }
 
-export function drawPixelText(
+function drawSansText(
   ctx: CanvasRenderingContext2D,
   text: string,
   cx: number,
   cy: number,
-  pixel: number,
+  size: number,
+  tracking: number,
   color: string,
+  weight: number,
 ) {
-  const cells: [number, number][] = [];
-  let x = 0;
-  for (const ch of text.toUpperCase()) {
-    const glyph = PIXEL_FONT[ch] ?? PIXEL_FONT[" "];
-    glyph.forEach((line, row) => {
-      [...line].forEach((bit, col) => {
-        if (bit === "1") cells.push([x + col, 6 - row]);
-      });
-    });
-    x += 6;
-  }
-  if (!cells.length) return;
-  const xs = cells.map((p) => p[0]);
-  const ys = cells.map((p) => p[1]);
-  const w = (Math.max(...xs) + 1) * pixel;
-  const h = (Math.max(...ys) + 1) * pixel;
-  const ox = cx - w / 2;
-  const oy = cy - h / 2;
+  ctx.save();
   ctx.fillStyle = color;
-  for (const [col, row] of cells) {
-    ctx.fillRect(ox + col * pixel, oy + row * pixel, pixel * 0.92, pixel * 0.92);
-  }
+  ctx.font = `${weight} ${size}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.letterSpacing = `${tracking}px`;
+  ctx.fillText(text.toUpperCase(), cx, cy);
+  ctx.restore();
 }
 
 function roundRect(

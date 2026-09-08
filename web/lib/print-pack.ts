@@ -1,11 +1,12 @@
 import JSZip from "jszip";
 import { ATRIL } from "./atril-geom";
-import { orderToSpec } from "./print-spec";
+import { orderToSpec, pauseLayer } from "./print-spec";
 import { buildCardStls, pauseNote } from "./stl-card";
 import type { Order } from "./types";
 
 export async function buildPrintPack(order: Order) {
   const spec = orderToSpec(order);
+  const pause = pauseLayer();
   const files = buildCardStls(spec);
   const zip = new JSZip();
   const folder = zip.folder(spec.nombre)!;
@@ -24,7 +25,9 @@ export async function buildPrintPack(order: Order) {
 Agrupar 01 + 02. NO Reparar el modelo.
 Capa 0,20 mm, 3 perímetros, gyroid 15 %, Arachne.
 Cantidad: ${spec.qty}
-Hueco NFC abierto Ø${ATRIL.WELL_D} (sin pausa). Pegatina Ø${ATRIL.STICKER_D} al terminar.
+Pausa NFC: capa ${pause.layer} (${pause.z.toFixed(2)} mm).
+Antes de pausar: disco de acento Ø${ATRIL.PAD_D} bajo la G / el logo (mira).
+Pegatina Ø${ATRIL.STICKER_D} ENCIMA de ese círculo, adhesivo a la cama.
 `,
   );
   folder.file(
@@ -41,13 +44,14 @@ Hueco NFC abierto Ø${ATRIL.WELL_D} (sin pausa). Pegatina Ø${ATRIL.STICKER_D} a
     "LEEME.txt",
     `Este zip es el mismo atril que ves en la web (y en Flash).
 
-1. Abre Flash Studio / Orca-Flashforge, impresora AD5X.
-2. Importa 01_cuerpo.stl + 02_acento.stl.
+1. Proyecto NUEVO en Flash Studio, impresora AD5X.
+2. Importa 01_cuerpo.stl + 02_acento.stl (no el 3mf viejo).
 3. Selecciónalos → Agrupar. NO pulses Reparar.
 4. Color: cuerpo = ${spec.colores.cuerpo}, acento = ${spec.colores.acento}.
-5. Imprime entero. El hueco NFC queda abierto (se ve, más grande que la pegatina).
-6. Al terminar, mete la pegatina Timeskey Ø25 en el asiento (adhesivo abajo).
-7. Graba el enlace de NFC.txt.
+5. Rebana 0,20 mm. Previsualización → slider derecho → capa ${pause.layer} (~${pause.z.toFixed(2)} mm).
+6. Mitad-arriba de la placa: hueco redondo (sitio de la G / logo) con círculo de acento. Clic derecho → Añadir pausa.
+7. Al pausar: Timeskey Ø25 ENCIMA de ese círculo, adhesivo ABAJO. Continuar.
+8. Graba el enlace de NFC.txt.
 
 Genérica = G de Google. Personalizada = logo en acento.
 Pieza única = logo + dos NFC (reseña + segundo enlace de NFC.txt).

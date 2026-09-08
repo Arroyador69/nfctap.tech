@@ -14,7 +14,10 @@
     "sticker": 25.0,
     "well": 28.0,
     "seat": 26.0,
-    "open": true
+    "pad": 24.0,
+    "y": 78.0,
+    "z_pause": 4.8,
+    "layer": 24
   },
   "textos": [
     "TAP",
