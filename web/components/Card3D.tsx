@@ -44,7 +44,7 @@ export function Card3D({ design, compact = false }: { design: CardDesign; compac
       onContextMenu={(e) => e.preventDefault()}
     >
       <Canvas
-        camera={{ position: [0.55, 0.06, 4.45], fov: 30 }}
+        camera={{ position: [0.18, 0.02, 3.55], fov: 28 }}
         gl={{ antialias: true, preserveDrawingBuffer: false }}
         dpr={[1, 1.75]}
         style={{ touchAction: "none" }}
@@ -67,7 +67,7 @@ export function Card3D({ design, compact = false }: { design: CardDesign; compac
           maxDistance={7.5}
           minPolarAngle={0.15}
           maxPolarAngle={Math.PI - 0.2}
-          target={[0, -0.06, 0.06]}
+          target={[0, -0.04, 0.04]}
         />
         <ContactShadows position={[0, -0.72, 0.12]} opacity={0.18} scale={4.2} blur={2.8} />
       </Canvas>
@@ -111,7 +111,7 @@ function Atril({ design }: { design: CardDesign }) {
   );
 
   return (
-    <group scale={SCALE} position={[0, -0.64, -0.2]} rotation={[0.04, 0.14, 0]}>
+    <group scale={SCALE} position={[0, -0.62, -0.18]} rotation={[0.02, 0.06, 0]}>
       <mesh geometry={bodyGeo} material={bodyMat} castShadow />
       <mesh geometry={accentGeo} material={accentMat} castShadow />
       {personalized && design.logoDataUrl ? (
