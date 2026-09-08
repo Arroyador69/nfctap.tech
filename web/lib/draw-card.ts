@@ -2,6 +2,7 @@ import { ACCENT_HEX, BODY_COLORS } from "./catalog";
 import { ATRIL } from "./atril-geom";
 import { PIXEL_FONT } from "./atril-mesh";
 import { drawGoogleG } from "./google-g";
+import { paintAccentLogo } from "./logo";
 import { printText } from "./print-spec";
 import type { CardDesign } from "./types";
 
@@ -100,11 +101,6 @@ export function drawCardFace(
   drawPixelText(ctx, "NFCTAP.TECH", px(0), (footTop + footBot) / 2, 0.62 * SCALE, accent);
 }
 
-function hexRgb(hex: string): [number, number, number] {
-  const h = hex.replace("#", "");
-  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
-}
-
 function drawAccentLogo(
   ctx: CanvasRenderingContext2D,
   img: HTMLImageElement,
@@ -113,36 +109,8 @@ function drawAccentLogo(
   size: number,
   color: string,
 ) {
-  const off = document.createElement("canvas");
-  off.width = size;
-  off.height = size;
-  const o = off.getContext("2d");
-  if (!o) return;
-  const scale = Math.min(size / img.width, size / img.height);
-  const dw = img.width * scale;
-  const dh = img.height * scale;
-  o.drawImage(img, (size - dw) / 2, (size - dh) / 2, dw, dh);
-  const data = o.getImageData(0, 0, size, size);
-  let lumSum = 0;
-  let n = 0;
-  for (let i = 0; i < data.data.length; i += 4) {
-    if (data.data[i + 3] < 40) continue;
-    lumSum += data.data[i] * 0.3 + data.data[i + 1] * 0.59 + data.data[i + 2] * 0.11;
-    n += 1;
-  }
-  const lightLogo = n > 0 && lumSum / n > 160;
-  const [cr, cg, cb] = hexRgb(color);
-  for (let i = 0; i < data.data.length; i += 4) {
-    const a = data.data[i + 3];
-    const lum = data.data[i] * 0.3 + data.data[i + 1] * 0.59 + data.data[i + 2] * 0.11;
-    const ink = a > 40 && (lightLogo ? lum > 90 : lum < 210);
-    data.data[i] = cr;
-    data.data[i + 1] = cg;
-    data.data[i + 2] = cb;
-    data.data[i + 3] = ink ? Math.max(a, 220) : 0;
-  }
-  o.putImageData(data, 0, 0);
-  ctx.drawImage(off, cx - size / 2, cy - size / 2);
+  const off = paintAccentLogo(img, Math.max(8, Math.round(size)), color);
+  ctx.drawImage(off, cx - size / 2, cy - size / 2, size, size);
 }
 
 export function drawPixelText(
