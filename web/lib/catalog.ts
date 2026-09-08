@@ -63,8 +63,8 @@ export function defaultDesign(kind: ProductKind) {
     template: "clasica" as const,
     bodyColor: "negro" as const,
     accentColor: "amarillo" as const,
-    line1: kind === "generica" ? "TAP" : "Tu negocio",
-    line2: kind === "generica" ? "RESEÑA" : "TAP para dejar tu reseña",
+    line1: kind === "generica" ? "TAP" : "",
+    line2: "RESEÑA",
     googleUrl: "",
   };
 }

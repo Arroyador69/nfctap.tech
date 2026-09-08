@@ -4,11 +4,11 @@ Atril genérico NFCTap — reseña Google (15 €)
 Que es
 ------
 Placa vertical + pie integrado (una pieza). TAP en la G
-y se abre Google Reviews. G de UN color (no hay azul/verde en stock).
+y se abre Google Reviews. G oficial de Google (un color de acento).
 
-  01_cuerpo.stl   placa + pie + hueco NFC
-  02_acento.stl   5 estrellas + G + TAP / RESEÑA + NFCTAP.TECH
-  01_cuerpo_x2.stl + 02_acento_x2.stl   dos en la cama 220 mm
+  01_cuerpo.stl / 02_acento.stl     una pieza (agrupar, no Reparar)
+  01_cuerpo_a/b.stl + 02_acento_a/b.stl   dos SUELTAS en la cama
+                                    (no es un STL pegado)
 
 Personalizada (30 €): el MISMO cuerpo. Se cambia el logo y los
 textos. No se rediseña el atril.

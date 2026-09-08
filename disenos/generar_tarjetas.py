@@ -15,6 +15,8 @@ import math
 import struct
 from pathlib import Path
 
+from google_g import google_g_pil, google_g_poly, google_g_svg  # noqa: F401
+
 OUT = Path(__file__).resolve().parent / "stl"
 
 
@@ -192,6 +194,12 @@ def extrude(poly: list[tuple[float, float]], z0: float, z1: float) -> Mesh:
         m.add((x1, y1, z0), (x2, y2, z0), (x2, y2, z1))
         m.add((x1, y1, z0), (x2, y2, z1), (x1, y1, z1))
     return m
+
+
+def google_g_mesh(cx: float, cy: float, r_out: float, z0: float, z1: float, segs: int = 72) -> Mesh:
+    """G oficial de Google (mismo path que la web), un color de acento."""
+    del segs
+    return extrude(google_g_poly(cx, cy, r_out * 2.0, flip_y=True), z0, z1)
 
 
 def extrude_ring(outer: list[tuple[float, float]], inner: list[tuple[float, float]], z0: float, z1: float) -> Mesh:
@@ -562,8 +570,7 @@ def card_icon(cfg: dict) -> Mesh:
         return m
     m = Mesh()
     if cfg.get("kind") == "generica":
-        m.extend(extrude_ring(circle(cx, cy, 14.0, 40), circle(cx, cy, 10.6, 40), t, t + relief))
-        m.extend(shifted(text_mesh("G", pixel=2.1, height=relief, z0=t), cx, cy))
+        m.extend(google_g_mesh(cx, cy, 14.0, t, t + relief))
         return m
     m.extend(extrude_ring(circle(cx, cy, 8.2 if not vertical else 12.0, 36), circle(cx, cy, 6.6 if not vertical else 9.6, 36), t, t + relief))
     m.extend(extrude(star(cx, cy, 4.4 if not vertical else 6.2), t, t + relief))

@@ -106,10 +106,11 @@ Cada genérica incluye:
 | --- | --- | --- |
 | `01_cuerpo.stl` | Negro o blanco | Placa + pie + hueco NFC |
 | `02_acento.stl` | Amarillo / negro / rojo | Estrellas + G + TAP / RESEÑA + NFCTAP.TECH |
-| `01_cuerpo_x2.stl` + `02_acento_x2.stl` | igual | Dos en la cama 220 mm |
+| `01_cuerpo_a.stl` + `01_cuerpo_b.stl` | igual | Dos piezas sueltas (no pegadas) |
+| `02_acento_a.stl` + `02_acento_b.stl` | igual | Acento de cada una, mismo sitio |
 | `PAUSA_NFC.txt` | — | Capa 24 (4,80 mm) |
 
-**Prueba de impresión (Google review):** Flash Studio → Importar `01_cuerpo.stl` + `02_acento.stl` de `generica-negra-amarillo/` (o los `_x2` para dos). **Agrupar, no Reparar.** Pausa **capa 24**. Pegatina Timeskey Ø25 hundida, adhesivo a la cama.
+**Prueba de impresión (Google review):** Flash Studio → Importar `01_cuerpo.stl` + `02_acento.stl` de `generica-negra-amarillo/` (una). Para dos: `*_a` y `*_b` (cuatro STL, dos grupos). **Agrupar, no Reparar.** Pausa **capa 24**. Pegatina Timeskey Ø25 hundida, adhesivo a la cama.
 
 ### Regenerar genéricas
 
@@ -278,7 +279,7 @@ Números de la genérica 15 € (ver `COSTE.txt` en cada carpeta):
 - NFC NTAG215 Ø25 → **~0,45 €**
 - Luz + fallos → **~0,47 €**
 - Coste ~**1,96 €**/ud · venta **15 €** · margen ~13 €
-- En cama caben **2** a tamaño real (`*_x2.stl`)
+- En cama caben **2** a tamaño real (`*_a.stl` + `*_b.stl`, sueltas)
 
 No uses el **logotipo oficial de Google** (la G de 4 colores) en producto a la venta sin permiso de marca. “Reseña en Google”, estrellas y un icono genérico es lo correcto y es lo que generan estos STL.
 
@@ -286,7 +287,7 @@ No uses el **logotipo oficial de Google** (la G de 4 colores) en producto a la v
 
 ## 8. Plan de las próximas semanas
 
-1. **Hoy:** imprimir `generica-negra-amarillo` (o `*_x2` para dos). Pausa capa 24. TAP / RESEÑA.
+1. **Hoy:** imprimir `generica-negra-amarillo` (o `*_a` + `*_b` para dos sueltas). Pausa capa 24. TAP / RESEÑA.
 2. **Stock:** negra+amarillo, blanca+negra, negra+roja. Misma geometría.
 3. **Pedido web:** `/personalizar?kind=generica` → ZIP / `generar_generica.py`.
 4. **Personalizada 30 €:** mismo atril, logo + textos.

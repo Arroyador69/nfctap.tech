@@ -81,8 +81,8 @@ export function orderToSpec(order: Order): PrintSpec {
     kind: order.kind,
     qty: order.qty,
     ...STAND,
-    linea1: generic ? "TAP" : printText(order.design.line1 || "TU NEGOCIO"),
-    linea2: generic ? "RESEÑA" : printText(order.design.line2 || "TAP RESEÑA"),
+    linea1: "TAP",
+    linea2: "RESEÑA",
     logoMask: generic ? undefined : order.design.logoMask,
     googleUrl: order.design.googleUrl,
     colores: {

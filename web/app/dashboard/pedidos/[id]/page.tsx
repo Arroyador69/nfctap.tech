@@ -67,7 +67,7 @@ export default async function OrderPage({
               : `${order.address.line1}, ${order.address.postalCode} ${order.address.city} (${order.address.province})`
           }
         />
-        <Item k="Texto" v={`${order.design.line1 || "Genérica"} / ${order.design.line2}`} />
+        <Item k="Cara" v={`${order.kind === "generica" ? "G de Google" : order.design.line1 || "Logo"} · TAP / RESEÑA`} />
         <Item k="Google / NFC" v={order.design.googleUrl || "Pendiente"} />
         <Item k="Cuerpo" v={spec.colores.cuerpo} />
         <Item k="Estrellas" v={spec.colores.estrellas} />

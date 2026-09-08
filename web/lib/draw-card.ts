@@ -1,8 +1,11 @@
 import { ACCENT_HEX, BODY_COLORS, BRAND } from "./catalog";
+import { drawGoogleG } from "./google-g";
 import type { CardDesign } from "./types";
 
 export const CARD_W = 750;
 export const CARD_H = 1200;
+/** Mismo hueco que la G impresa (~34 mm en la placa de 76 mm). */
+export const MARK_SIZE = 200;
 
 export function drawCardFace(
   ctx: CanvasRenderingContext2D,
@@ -11,12 +14,11 @@ export function drawCardFace(
 ) {
   const w = CARD_W;
   const h = CARD_H;
-  const generic = design.kind === "generica";
+  const generic = design.kind !== "personalizada";
   const body = BODY_COLORS.find((c) => c.id === design.bodyColor)?.hex ?? "#171513";
+  const accent = ACCENT_HEX[design.accentColor] ?? ACCENT_HEX.amarillo;
   const light = design.bodyColor === "blanco";
-  const ink = light ? "#1c1915" : "#f6f1e7";
   const muted = light ? "rgba(28,25,21,0.55)" : "rgba(246,241,231,0.62)";
-  const accent = ACCENT_HEX[design.accentColor] ?? ACCENT_HEX.oro;
   const r = 42;
 
   ctx.clearRect(0, 0, w, h);
@@ -29,104 +31,84 @@ export function drawCardFace(
   }
 
   if (generic) {
-    drawGoogleMark(ctx, w / 2, 455, 200, accent);
-    ctx.textAlign = "center";
-    ctx.fillStyle = accent;
-    ctx.font = "700 64px Outfit, Arial, sans-serif";
-    ctx.fillText("TAP", w / 2, 700);
-    ctx.font = "600 42px Outfit, Arial, sans-serif";
-    ctx.fillText("RESEÑA", w / 2, 760);
+    drawGoogleG(ctx, w / 2, 455, MARK_SIZE, accent);
+  } else if (logo) {
+    drawAccentLogo(ctx, logo, w / 2, 455, MARK_SIZE, accent);
   } else {
-    const logoY = 400;
-    if (logo) {
-      const s = 188;
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(w / 2, logoY, s / 2 + 6, 0, Math.PI * 2);
-      ctx.clip();
-      grayscale(ctx, logo, w / 2 - s / 2, logoY - s / 2, s, s, light);
-      ctx.restore();
-    } else {
-      ctx.beginPath();
-      ctx.arc(w / 2, logoY, 86, 0, Math.PI * 2);
-      ctx.strokeStyle = muted;
-      ctx.setLineDash([10, 8]);
-      ctx.lineWidth = 4;
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = muted;
-      ctx.textAlign = "center";
-      ctx.font = "600 22px Outfit, Arial, sans-serif";
-      ctx.fillText("LOGO", w / 2, logoY + 8);
-    }
-
-    ctx.textAlign = "center";
-    ctx.fillStyle = ink;
-    ctx.font = "700 50px Outfit, Arial, sans-serif";
-    wrap(ctx, (design.line1 || "TU NEGOCIO").toUpperCase(), w / 2, 620, w - 100, 56);
-
+    ctx.beginPath();
+    ctx.arc(w / 2, 455, MARK_SIZE / 2, 0, Math.PI * 2);
+    ctx.strokeStyle = muted;
+    ctx.setLineDash([10, 8]);
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.setLineDash([]);
     ctx.fillStyle = muted;
-    ctx.font = "500 28px Outfit, Arial, sans-serif";
-    wrap(ctx, (design.line2 || "TAP PARA DEJAR TU RESEÑA").toUpperCase(), w / 2, 760, w - 120, 36);
+    ctx.textAlign = "center";
+    ctx.font = "600 22px Outfit, Arial, sans-serif";
+    ctx.fillText("LOGO", w / 2, 460);
   }
-
-  ctx.strokeStyle = accent;
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(w / 2 - 40, 890);
-  ctx.lineTo(w / 2 + 40, 890);
-  ctx.stroke();
 
   ctx.textAlign = "center";
   ctx.fillStyle = accent;
-  ctx.font = "600 22px Outfit, Arial, sans-serif";
-  ctx.fillText("ACERCA EL MÓVIL", w / 2, 950);
+  const name = !generic ? design.line1.trim() : "";
+  if (name) {
+    ctx.font = "700 36px Outfit, Arial, sans-serif";
+    wrap(ctx, name.toUpperCase(), w / 2, 600, w - 110, 40);
+  }
+  ctx.font = "700 64px Outfit, Arial, sans-serif";
+  ctx.fillText("TAP", w / 2, name ? 700 : 700);
+  ctx.font = "600 42px Outfit, Arial, sans-serif";
+  ctx.fillText("RESEÑA", w / 2, name ? 760 : 760);
 
   ctx.fillStyle = muted;
   ctx.font = "500 18px Outfit, Arial, sans-serif";
   ctx.fillText(BRAND.domain, w / 2, h - 70);
 }
 
-/** G de un color (el acento que se imprime). No hay azul/verde en stock. */
-function drawGoogleMark(ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number, color: string) {
-  const outer = size / 2;
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(cx, cy, outer, 0, Math.PI * 2);
-  ctx.strokeStyle = color;
-  ctx.lineWidth = outer * 0.16;
-  ctx.stroke();
-  ctx.fillStyle = color;
-  ctx.font = `700 ${Math.round(outer * 1.15)}px Georgia, Times, serif`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText("G", cx, cy + outer * 0.04);
-  ctx.restore();
+function hexRgb(hex: string): [number, number, number] {
+  const h = hex.replace("#", "");
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
 }
 
-function grayscale(
+/** Logo a un color (el acento). Oscuro o tinta = filamento; el fondo se come. */
+function drawAccentLogo(
   ctx: CanvasRenderingContext2D,
   img: HTMLImageElement,
-  x: number,
-  y: number,
-  s: number,
-  _h: number,
-  invert: boolean,
+  cx: number,
+  cy: number,
+  size: number,
+  color: string,
 ) {
   const off = document.createElement("canvas");
-  off.width = s;
-  off.height = s;
+  off.width = size;
+  off.height = size;
   const o = off.getContext("2d");
   if (!o) return;
-  o.drawImage(img, 0, 0, s, s);
-  const data = o.getImageData(0, 0, s, s);
+  const scale = Math.min(size / img.width, size / img.height);
+  const dw = img.width * scale;
+  const dh = img.height * scale;
+  o.drawImage(img, (size - dw) / 2, (size - dh) / 2, dw, dh);
+  const data = o.getImageData(0, 0, size, size);
+  let lumSum = 0;
+  let n = 0;
   for (let i = 0; i < data.data.length; i += 4) {
-    const g = data.data[i] * 0.3 + data.data[i + 1] * 0.59 + data.data[i + 2] * 0.11;
-    const v = invert ? 255 - g : g;
-    data.data[i] = data.data[i + 1] = data.data[i + 2] = v;
+    if (data.data[i + 3] < 40) continue;
+    lumSum += data.data[i] * 0.3 + data.data[i + 1] * 0.59 + data.data[i + 2] * 0.11;
+    n += 1;
+  }
+  const lightLogo = n > 0 && lumSum / n > 160;
+  const [cr, cg, cb] = hexRgb(color);
+  for (let i = 0; i < data.data.length; i += 4) {
+    const a = data.data[i + 3];
+    const lum = data.data[i] * 0.3 + data.data[i + 1] * 0.59 + data.data[i + 2] * 0.11;
+    const ink = a > 40 && (lightLogo ? lum > 90 : lum < 210);
+    data.data[i] = cr;
+    data.data[i + 1] = cg;
+    data.data[i + 2] = cb;
+    data.data[i + 3] = ink ? Math.max(a, 220) : 0;
   }
   o.putImageData(data, 0, 0);
-  ctx.drawImage(off, x, y, s, s);
+  ctx.drawImage(off, cx - size / 2, cy - size / 2);
 }
 
 function wrap(

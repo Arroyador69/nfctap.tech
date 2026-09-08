@@ -1,4 +1,8 @@
-Cama AD5X 220×220: 2 genéricas (2×1).
-Importa 01_cuerpo_x2.stl + 02_acento_x2.stl, agrupa, no Reparar.
-Misma pausa capa 24 en TODAS (están a la misma altura).
-Una pegatina por hueco, hundida, adhesivo a la cama.
+Cama AD5X 220×220: 2 genéricas SUELTAS (no pegadas).
+Hueco entre pies: 14.0 mm.
+
+Importa los 4 STL:
+  01_cuerpo_a.stl + 02_acento_a.stl  → Agrupar (pieza 1)
+  01_cuerpo_b.stl + 02_acento_b.stl  → Agrupar (pieza 2)
+NO Reparar. No uses un STL x2 viejo.
+Misma pausa capa 24 en las dos. Una pegatina por hueco.

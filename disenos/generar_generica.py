@@ -23,6 +23,9 @@ from generar_tarjetas import (  # noqa: E402
     circle,
     extrude,
     extrude_ring,
+    google_g_mesh,
+    google_g_pil,
+    google_g_svg,
     rectangle,
     rounded_rect,
     shifted,
@@ -114,8 +117,7 @@ def accent() -> Mesh:
     for i in range(5):
         m.extend(extrude(star((i - 2) * 12.2, star_y, 4.3), z0, z1))
 
-    m.extend(extrude_ring(circle(0.0, NFC_Y, 17.2, 48), circle(0.0, NFC_Y, 13.4, 40), z0, z1))
-    m.extend(shifted(text_mesh("G", pixel=2.35, height=RELIEF + 0.08, z0=z0), 0.0, NFC_Y))
+    m.extend(google_g_mesh(0.0, NFC_Y, 16.8, z0, z1 + 0.08))
 
     m.extend(shifted(text_mesh("TAP", pixel=1.55, height=RELIEF, z0=z0), 0.0, NFC_Y - 28.0))
     m.extend(shifted(text_mesh("RESEÑA", pixel=1.15, height=RELIEF, z0=z0), 0.0, NFC_Y - 40.5))
@@ -143,10 +145,9 @@ def write_preview(path: Path, cw: dict) -> None:
   <text x="540" y="118" text-anchor="middle" fill="#7A6A52" font-family="Georgia, serif" font-size="20">Genérica 15 € · {cw["cuerpo"]} + {cw["acento"]}</text>
   <rect x="330" y="168" width="420" height="980" rx="28" fill="{body_c}"/>
   {stars}
-  <circle cx="540" cy="520" r="92" fill="none" stroke="{acc}" stroke-width="16"/>
-  <text x="540" y="548" text-anchor="middle" fill="{acc}" font-family="Georgia, serif" font-size="120" font-weight="700">G</text>
-  <text x="540" y="720" text-anchor="middle" fill="{acc}" font-family="Georgia, serif" font-size="54" font-weight="700">TAP</text>
-  <text x="540" y="790" text-anchor="middle" fill="{acc}" font-family="Georgia, serif" font-size="40">RESEÑA</text>
+  {google_g_svg(540, 520, 92, acc)}
+  <text x="540" y="720" text-anchor="middle" fill="{acc}" font-family="Outfit, Helvetica, Arial, sans-serif" font-size="54" font-weight="700">TAP</text>
+  <text x="540" y="790" text-anchor="middle" fill="{acc}" font-family="Outfit, Helvetica, Arial, sans-serif" font-size="40">RESEÑA</text>
   <rect x="300" y="1148" width="480" height="52" rx="8" fill="{body_c}"/>
   <text x="540" y="1184" text-anchor="middle" fill="{acc}" font-family="Georgia, serif" font-size="22" letter-spacing="3">NFCTAP.TECH</text>
   <text x="540" y="1290" text-anchor="middle" fill="#1C1915" font-family="Georgia, serif" font-size="22">TAP para dejar tu reseña en Google</text>
@@ -173,11 +174,11 @@ LEEME = """Atril genérico NFCTap — reseña Google (15 €)
 Que es
 ------
 Placa vertical + pie integrado (una pieza). TAP en la G
-y se abre Google Reviews. G de UN color (no hay azul/verde en stock).
+y se abre Google Reviews. G oficial de Google (un color de acento).
 
-  01_cuerpo.stl   placa + pie + hueco NFC
-  02_acento.stl   5 estrellas + G + TAP / RESEÑA + NFCTAP.TECH
-  01_cuerpo_x2.stl + 02_acento_x2.stl   dos en la cama 220 mm
+  01_cuerpo.stl / 02_acento.stl     una pieza (agrupar, no Reparar)
+  01_cuerpo_a/b.stl + 02_acento_a/b.stl   dos SUELTAS en la cama
+                                    (no es un STL pegado)
 
 Personalizada (30 €): el MISMO cuerpo. Se cambia el logo y los
 textos. No se rediseña el atril.
@@ -259,12 +260,15 @@ def raster_preview(svg_path: Path) -> None:
     acc = tuple(int(cw["hex_acento"][i : i + 2], 16) for i in (1, 3, 5))
     georgia = Path("/System/Library/Fonts/Supplemental/Georgia.ttf")
     bold = Path("/System/Library/Fonts/Supplemental/Georgia Bold.ttf")
+    arial = Path("/System/Library/Fonts/Supplemental/Arial.ttf")
+    arial_b = Path("/System/Library/Fonts/Supplemental/Arial Bold.ttf")
+    sans = arial if arial.exists() else georgia
+    sans_b = arial_b if arial_b.exists() else (bold if bold.exists() else georgia)
     title = ImageFont.truetype(str(bold if bold.exists() else georgia), 42)
     sub = ImageFont.truetype(str(georgia), 22)
-    gfont = ImageFont.truetype(str(bold if bold.exists() else georgia), 130)
-    toca = ImageFont.truetype(str(bold if bold.exists() else georgia), 52)
-    rese = ImageFont.truetype(str(georgia), 36)
-    firm = ImageFont.truetype(str(georgia), 22)
+    toca = ImageFont.truetype(str(sans_b), 52)
+    rese = ImageFont.truetype(str(sans), 36)
+    firm = ImageFont.truetype(str(sans), 22)
     tiny = ImageFont.truetype(str(georgia), 16)
     draw.text((540, 70), "NFCTap", font=title, fill=(28, 25, 21), anchor="mt")
     draw.text((540, 118), f"Genérica 15 € · {cw['cuerpo']} + {cw['acento']}", font=sub, fill=(122, 106, 82), anchor="mt")
@@ -277,8 +281,7 @@ def raster_preview(svg_path: Path) -> None:
             rr = r if k % 2 == 0 else r * 0.42
             pts.append((cx + rr * math.cos(a), cy + rr * math.sin(a)))
         draw.polygon(pts, fill=acc)
-    draw.ellipse((540 - 92, 520 - 92, 540 + 92, 520 + 92), outline=acc, width=16)
-    draw.text((540, 520), "G", font=gfont, fill=acc, anchor="mm")
+    google_g_pil(draw, 540, 520, 92, acc, cut=body)
     draw.text((540, 700), "TAP", font=toca, fill=acc, anchor="mt")
     draw.text((540, 768), "RESEÑA", font=rese, fill=acc, anchor="mt")
     draw.rounded_rectangle((300, 1148, 780, 1200), 8, fill=body)
@@ -293,7 +296,7 @@ def raster_preview(svg_path: Path) -> None:
 
 BED = 220.0
 BED_MARGIN = 6.0
-BED_GAP = 8.0
+BED_GAP = 14.0
 
 
 def _bbox_xy(mesh: Mesh) -> tuple[float, float, float, float]:
@@ -306,24 +309,17 @@ def _bbox_xy(mesh: Mesh) -> tuple[float, float, float, float]:
     return min(xs), max(xs), min(ys), max(ys)
 
 
-def pack_bed(src: Mesh) -> tuple[Mesh, int, int, int]:
-    """Máximas copias en cama AD5X 220×220, misma orientación (tumbadas)."""
+def plate_offsets(src: Mesh, copies: int = 2) -> list[tuple[float, float]]:
+    """Desplazamientos para N piezas SUELTAS. Siempre se miden sobre el cuerpo."""
     x0, x1, y0, y1 = _bbox_xy(src)
     w, h = x1 - x0, y1 - y0
     usable = BED - 2 * BED_MARGIN
-    nx = max(1, int((usable + BED_GAP) // (w + BED_GAP)))
-    ny = max(1, int((usable + BED_GAP) // (h + BED_GAP)))
-    out = Mesh()
-    tw = nx * w + (nx - 1) * BED_GAP
-    th = ny * h + (ny - 1) * BED_GAP
+    if copies * w + (copies - 1) * BED_GAP > usable:
+        copies = 1
+    tw = copies * w + (copies - 1) * BED_GAP
     ox = -tw / 2 - x0
-    oy = -th / 2 - y0
-    n = 0
-    for iy in range(ny):
-        for ix in range(nx):
-            out.extend(shifted(src, ox + ix * (w + BED_GAP), oy + iy * (h + BED_GAP)))
-            n += 1
-    return out, n, nx, ny
+    oy = -h / 2 - y0
+    return [(ox + i * (w + BED_GAP), oy) for i in range(copies)]
 
 
 def generate_one(cw: dict) -> None:
@@ -334,21 +330,29 @@ def generate_one(cw: dict) -> None:
     acento = accent()
     cuerpo.write_stl(dest / "01_cuerpo.stl", "cuerpo")
     acento.write_stl(dest / "02_acento.stl", "acento")
-    placa_c, n, nx, ny = pack_bed(cuerpo)
-    placa_a, _, _, _ = pack_bed(acento)
-    if n > 1:
-        placa_c.write_stl(dest / f"01_cuerpo_x{n}.stl", "cuerpo_placa")
-        placa_a.write_stl(dest / f"02_acento_x{n}.stl", "acento_placa")
+    for stale in dest.glob("*_x2.stl"):
+        stale.unlink()
+    offs = plate_offsets(cuerpo, 2)
+    labels = ("a", "b")
+    if len(offs) > 1:
+        x0, x1, _, _ = _bbox_xy(cuerpo)
+        gap = offs[1][0] - offs[0][0] - (x1 - x0)
+        for lab, (dx, dy) in zip(labels, offs):
+            shifted(cuerpo, dx, dy).write_stl(dest / f"01_cuerpo_{lab}.stl", f"cuerpo_{lab}")
+            shifted(acento, dx, dy).write_stl(dest / f"02_acento_{lab}.stl", f"acento_{lab}")
         (dest / "PLACA.txt").write_text(
             (
-                f"Cama AD5X 220×220: {n} genéricas ({nx}×{ny}).\n"
-                f"Importa 01_cuerpo_x{n}.stl + 02_acento_x{n}.stl, agrupa, no Reparar.\n"
-                f"Misma pausa capa 24 en TODAS (están a la misma altura).\n"
-                "Una pegatina por hueco, hundida, adhesivo a la cama.\n"
+                "Cama AD5X 220×220: 2 genéricas SUELTAS (no pegadas).\n"
+                f"Hueco entre pies: {gap:.1f} mm.\n\n"
+                "Importa los 4 STL:\n"
+                "  01_cuerpo_a.stl + 02_acento_a.stl  → Agrupar (pieza 1)\n"
+                "  01_cuerpo_b.stl + 02_acento_b.stl  → Agrupar (pieza 2)\n"
+                "NO Reparar. No uses un STL x2 viejo.\n"
+                "Misma pausa capa 24 en las dos. Una pegatina por hueco.\n"
             ),
             encoding="utf-8",
         )
-        print(f"  placa {n} uds  ({nx}×{ny}) en 220 mm")
+        print(f"  placa 2 sueltas  hueco {gap:.1f} mm")
     write_notes(dest, cw)
     svg = dest / "vista-previa.svg"
     write_preview(svg, cw)

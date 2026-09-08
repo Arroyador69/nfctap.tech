@@ -17,5 +17,5 @@ es lo que hay que cuidar: 10-15 min/unidad si ya
 tienes el flujo.
 
 Texto en relieve: TAP / RESEÑA (con ñ).
-Imprime 01+02 o la placa *_x2 (2 uds en 220 mm).
+Imprime 01+02 (una) o cuerpo/acento a+b (dos sueltas).
 Pausa capa 24 (4,80 mm) en todas. Pegatina HUNDIDA en el asiento Ø30.

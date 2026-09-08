@@ -56,9 +56,9 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
 
   const designOk = useMemo(() => {
     if (!isReviewUrl(design.googleUrl)) return false;
-    if (kind === "personalizada" && !design.line1.trim()) return false;
+    if (kind === "personalizada" && !design.logoDataUrl) return false;
     return true;
-  }, [design.googleUrl, design.line1, kind]);
+  }, [design.googleUrl, design.logoDataUrl, kind]);
 
   const shipOk = useMemo(() => {
     if (admin && handover === "mano") return Boolean(form.name.trim());
@@ -79,7 +79,7 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
     if (!designOk) {
       setError(
         kind === "personalizada"
-          ? "Pon el nombre del negocio y el enlace de reseña de Google."
+          ? "Sube el logo y pega el enlace de reseña de Google."
           : "Falta el enlace de reseña de Google (el de Pedir reseñas).",
       );
       return;
@@ -195,32 +195,23 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
 
               {kind === "personalizada" ? (
                 <>
-                  <Field label="Nombre del negocio" hint={tried && !design.line1.trim() ? "Obligatorio" : ""}>
-                    <input
-                      value={design.line1}
-                      maxLength={22}
-                      autoComplete="organization"
-                      onChange={(e) => patch({ line1: e.target.value })}
-                    />
-                  </Field>
-                  <Field label="Texto (bajo el nombre)">
-                    <input
-                      value={design.line2}
-                      maxLength={36}
-                      onChange={(e) => patch({ line2: e.target.value })}
-                    />
-                  </Field>
                   <div>
-                    <p className="mb-2 text-sm text-[#3f3a34]">Logo (blanco y negro)</p>
+                    <p className="mb-2 text-sm text-[#3f3a34]">
+                      Logo {tried && !design.logoDataUrl ? <span className="text-red-700">· obligatorio</span> : null}
+                    </p>
                     <label className="flex min-h-14 cursor-pointer items-center justify-center rounded-2xl border border-dashed border-[#cfc4b2] bg-[#fffcf7] px-3 text-sm">
-                      {design.logoDataUrl ? "Cambiar logo" : "Subir logo o foto"}
+                      {design.logoDataUrl ? "Cambiar logo" : "Subir logo"}
                       <input
                         type="file"
-                        accept="image/*"
+                        accept="image/png,image/jpeg,image/webp,image/svg+xml"
                         className="sr-only"
                         onChange={(e) => onLogo(e.target.files?.[0])}
                       />
                     </label>
+                    <p className="mt-2 text-xs text-[#8a8173]">
+                      PNG con fondo transparente si puedes. Cuadrado o redondo, unos 800×800 px. Se
+                      imprime en el color de acento, del mismo tamaño que la G (~34 mm).
+                    </p>
                     {design.logoDataUrl && (
                       <button
                         type="button"
@@ -231,10 +222,19 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
                       </button>
                     )}
                   </div>
+                  <Field label="Nombre del negocio (opcional)">
+                    <input
+                      value={design.line1}
+                      maxLength={22}
+                      autoComplete="organization"
+                      placeholder="Se imprime sobre TAP / RESEÑA"
+                      onChange={(e) => patch({ line1: e.target.value })}
+                    />
+                  </Field>
                 </>
               ) : (
                 <p className="rounded-2xl bg-[#faf6ee] px-4 py-3 text-sm text-[#5c564c]">
-                  Genérica: G de un color, TAP / RESEÑA y pie NFCTap. Elige cuerpo, acento y el enlace de Google.
+                  Genérica: G de Google, TAP / RESEÑA y pie NFCTap. Elige cuerpo, acento y el enlace de Google.
                 </p>
               )}
 
@@ -274,7 +274,9 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
               </div>
 
               <div>
-                <p className="mb-2 text-sm text-[#3f3a34]">{kind === "generica" ? "G y estrellas" : "Estrellas"}</p>
+                <p className="mb-2 text-sm text-[#3f3a34]">
+                  {kind === "generica" ? "G, estrellas y TAP" : "Logo, estrellas y TAP"}
+                </p>
                 <div className="flex gap-3">
                   {ACCENT_COLORS.map((c) => (
                     <button

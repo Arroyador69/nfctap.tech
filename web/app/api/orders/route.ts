@@ -28,8 +28,11 @@ export async function POST(req: Request) {
   if (!isReviewUrl(design?.googleUrl || "")) {
     return NextResponse.json({ error: "Falta el enlace de reseña de Google" }, { status: 400 });
   }
-  if (kind === "personalizada" && !design?.line1?.trim()) {
-    return NextResponse.json({ error: "Falta el nombre del negocio" }, { status: 400 });
+  if (
+    kind === "personalizada" &&
+    !(typeof design?.logoDataUrl === "string" && design.logoDataUrl.startsWith("data:image/"))
+  ) {
+    return NextResponse.json({ error: "Falta el logo" }, { status: 400 });
   }
 
   let normalized: Address;
@@ -77,7 +80,7 @@ export async function POST(req: Request) {
     kind === "personalizada" &&
     typeof design?.logoDataUrl === "string" &&
     design.logoDataUrl.startsWith("data:image/") &&
-    design.logoDataUrl.length < 450_000
+    design.logoDataUrl.length < 1_200_000
       ? design.logoDataUrl
       : undefined;
 
@@ -109,12 +112,9 @@ export async function POST(req: Request) {
       kind,
       template: "clasica",
       bodyColor: design?.bodyColor ?? "negro",
-      accentColor: design?.accentColor ?? "oro",
-      line1: kind === "generica" ? "TAP" : design.line1.trim().slice(0, 24),
-      line2:
-        kind === "generica"
-          ? "RESEÑA"
-          : (design.line2 || "TAP para dejar tu reseña").trim().slice(0, 40),
+      accentColor: design?.accentColor ?? "amarillo",
+      line1: kind === "generica" ? "TAP" : design.line1.trim().slice(0, 22),
+      line2: "RESEÑA",
       logoDataUrl: logo,
       logoMask,
       googleUrl: design.googleUrl.trim(),
