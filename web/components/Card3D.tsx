@@ -32,14 +32,6 @@ function toGeometry(mesh: Mesh) {
   return g;
 }
 
-function shade(hex: string, amount: number) {
-  const n = hex.replace("#", "");
-  const r = Math.max(0, Math.min(255, parseInt(n.slice(0, 2), 16) + amount));
-  const g = Math.max(0, Math.min(255, parseInt(n.slice(2, 4), 16) + amount));
-  const b = Math.max(0, Math.min(255, parseInt(n.slice(4, 6), 16) + amount));
-  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
-}
-
 export function Card3D({ design, compact = false }: { design: CardDesign; compact?: boolean }) {
   return (
     <div
@@ -86,7 +78,6 @@ export function Card3D({ design, compact = false }: { design: CardDesign; compac
 function Atril({ design }: { design: CardDesign }) {
   const bodyHex = BODY_COLORS.find((c) => c.id === design.bodyColor)?.hex ?? "#141416";
   const accentHex = ACCENT_HEX[design.accentColor] ?? ACCENT_HEX.amarillo;
-  const wellHex = shade(bodyHex, design.bodyColor === "blanco" ? -28 : 18);
   const personalized = design.kind !== "generica";
 
   const meshes = useMemo(
@@ -117,18 +108,11 @@ function Atril({ design }: { design: CardDesign }) {
     () => new THREE.MeshStandardMaterial({ color: accentHex, roughness: 0.48, metalness: 0.08 }),
     [accentHex],
   );
-  const wellMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: wellHex, roughness: 0.9, metalness: 0 }),
-    [wellHex],
-  );
 
   return (
     <group scale={SCALE} position={[0, -0.64, -0.2]} rotation={[0.04, 0.14, 0]}>
       <mesh geometry={bodyGeo} material={bodyMat} castShadow />
       <mesh geometry={accentGeo} material={accentMat} castShadow />
-      <mesh position={[0, ATRIL.NFC_Y, ATRIL.Z_FLOOR + 0.04]} material={wellMat}>
-        <circleGeometry args={[ATRIL.SEAT_D / 2 - 0.15, 48]} />
-      </mesh>
       {personalized && design.logoDataUrl ? (
         <LogoPlate dataUrl={design.logoDataUrl} accent={accentHex} />
       ) : null}

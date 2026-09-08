@@ -358,8 +358,8 @@ export function atrilAccent(input: AtrilAccentInput = {}): Mesh {
     m.extend(logoMesh(input.logoMask, z0, z1));
   }
   const name = !generic ? printText(input.line1 || "").slice(0, 16) : "";
-  const tapY = name ? ATRIL.TAP_Y + 2.2 : ATRIL.TAP_Y;
-  const reseY = name ? ATRIL.RESE_Y - 1.4 : ATRIL.RESE_Y;
+  const tapY = name ? ATRIL.TAP_Y + 1.8 : ATRIL.TAP_Y;
+  const reseY = ATRIL.RESE_Y;
   m.extend(shifted(textMesh("TAP", ATRIL.TAP_PX, ATRIL.RELIEF, z0), 0, tapY));
   if (name) {
     m.extend(shifted(textMesh(name, ATRIL.NAME_PX, ATRIL.RELIEF, z0), 0, ATRIL.NAME_Y));

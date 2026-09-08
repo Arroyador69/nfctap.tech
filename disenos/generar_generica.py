@@ -49,13 +49,13 @@ WELL_D = 28.0
 SEAT_D = 26.0
 Z_FLOOR = 3.20
 Z_GUIDE = 3.60
-STAR_Y = 99.0
-MARK_Y = 73.0
-MARK_R = 15.2
-TAP_Y = 50.0
-RESE_Y = 41.0
-TAP_PX = 1.42
-RESE_PX = 1.08
+STAR_Y = 105.0
+MARK_Y = 78.0
+MARK_R = 16.5
+TAP_Y = 54.0
+RESE_Y = 43.5
+TAP_PX = 1.45
+RESE_PX = 1.10
 NFC_Y = 23.0
 RELIEF = 0.50
 
@@ -148,8 +148,6 @@ def write_preview(path: Path, cw: dict) -> None:
         f'<polygon points="{_star_svg(sx((i - 2) * 12.2), sy(STAR_Y), 4.3 * sc)}" fill="{acc}"/>'
         for i in range(5)
     )
-    well_fill = "#2a2a2e" if cw["cuerpo"] == "negro" else "#d8d2c6"
-    seat_fill = "#1a1a1c" if cw["cuerpo"] == "negro" else "#c4bdb0"
     face_x = sx(-FACE_W / 2)
     face_y = sy(FOOT_Y + FACE_H)
     svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1440" width="1080" height="1440">
@@ -161,9 +159,7 @@ def write_preview(path: Path, cw: dict) -> None:
   {google_g_svg(sx(0), sy(MARK_Y), MARK_R * sc, acc)}
   <text x="540" y="{sy(TAP_Y) + 18:.1f}" text-anchor="middle" fill="{acc}" font-family="Outfit, Helvetica, Arial, sans-serif" font-size="44" font-weight="700">TAP</text>
   <text x="540" y="{sy(RESE_Y) + 14:.1f}" text-anchor="middle" fill="{acc}" font-family="Outfit, Helvetica, Arial, sans-serif" font-size="32">RESEÑA</text>
-  <circle cx="540" cy="{sy(NFC_Y):.1f}" r="{WELL_D / 2 * sc:.1f}" fill="{well_fill}"/>
-  <circle cx="540" cy="{sy(NFC_Y):.1f}" r="{SEAT_D / 2 * sc:.1f}" fill="{seat_fill}"/>
-  <circle cx="540" cy="{sy(NFC_Y):.1f}" r="{STICKER_D / 2 * sc:.1f}" fill="none" stroke="{acc}" stroke-width="1.5" stroke-dasharray="6 5" opacity="0.45"/>
+  <circle cx="540" cy="{sy(NFC_Y):.1f}" r="{WELL_D / 2 * sc:.1f}" fill="{bg}"/>
   <rect x="{sx(-FOOT_W / 2):.1f}" y="{sy(FOOT_Y) + 4:.1f}" width="{FOOT_W * sc:.1f}" height="48" rx="8" fill="{body_c}"/>
   <text x="540" y="{sy(FOOT_Y) + 36:.1f}" text-anchor="middle" fill="{acc}" font-family="Georgia, serif" font-size="20" letter-spacing="3">NFCTAP.TECH</text>
   <text x="540" y="1288" text-anchor="middle" fill="#1C1915" font-family="Georgia, serif" font-size="22">Hueco NFC abierto · TAP para tu reseña en Google</text>
@@ -295,8 +291,6 @@ def raster_preview(svg_path: Path) -> None:
     def sy(y: float) -> float:
         return top + (FOOT_Y + FACE_H - y) * sc
 
-    well_c = (42, 42, 46) if cw["cuerpo"] == "negro" else (216, 210, 198)
-    seat_c = (26, 26, 28) if cw["cuerpo"] == "negro" else (196, 189, 176)
     draw.text((540, 70), "NFCTap", font=title, fill=(28, 25, 21), anchor="mt")
     draw.text((540, 118), f"Genérica 15 € · {cw['cuerpo']} + {cw['acento']}", font=sub, fill=(122, 106, 82), anchor="mt")
     draw.rounded_rectangle(
@@ -316,8 +310,8 @@ def raster_preview(svg_path: Path) -> None:
     draw.text((540, sy(TAP_Y)), "TAP", font=toca, fill=acc, anchor="mm")
     draw.text((540, sy(RESE_Y)), "RESEÑA", font=rese, fill=acc, anchor="mm")
     nx, ny = sx(0), sy(NFC_Y)
-    draw.ellipse((nx - WELL_D / 2 * sc, ny - WELL_D / 2 * sc, nx + WELL_D / 2 * sc, ny + WELL_D / 2 * sc), fill=well_c)
-    draw.ellipse((nx - SEAT_D / 2 * sc, ny - SEAT_D / 2 * sc, nx + SEAT_D / 2 * sc, ny + SEAT_D / 2 * sc), fill=seat_c)
+    bg = tuple(int(cw["hex_fondo"][i : i + 2], 16) for i in (1, 3, 5))
+    draw.ellipse((nx - WELL_D / 2 * sc, ny - WELL_D / 2 * sc, nx + WELL_D / 2 * sc, ny + WELL_D / 2 * sc), fill=bg)
     draw.rounded_rectangle((sx(-FOOT_W / 2), sy(FOOT_Y) + 4, sx(FOOT_W / 2), sy(FOOT_Y) + 52), 8, fill=body)
     draw.text((540, sy(FOOT_Y) + 28), "NFCTAP.TECH", font=firm, fill=acc, anchor="mm")
     draw.text((540, 1288), "Hueco NFC abierto · TAP para tu reseña en Google", font=sub, fill=(28, 25, 21), anchor="mt")

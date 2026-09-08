@@ -21,14 +21,6 @@ function py(y: number) {
   return PAD_TOP + (ATRIL.FOOT_Y + ATRIL.FACE_H - y) * SCALE;
 }
 
-function shade(hex: string, amount: number) {
-  const n = hex.replace("#", "");
-  const r = Math.max(0, Math.min(255, parseInt(n.slice(0, 2), 16) + amount));
-  const g = Math.max(0, Math.min(255, parseInt(n.slice(2, 4), 16) + amount));
-  const b = Math.max(0, Math.min(255, parseInt(n.slice(4, 6), 16) + amount));
-  return `rgb(${r},${g},${b})`;
-}
-
 export function drawCardFace(
   ctx: CanvasRenderingContext2D,
   design: CardDesign,
@@ -37,8 +29,6 @@ export function drawCardFace(
   const generic = design.kind === "generica";
   const body = BODY_COLORS.find((c) => c.id === design.bodyColor)?.hex ?? "#171513";
   const accent = ACCENT_HEX[design.accentColor] ?? ACCENT_HEX.amarillo;
-  const well = shade(body, design.bodyColor === "blanco" ? -32 : 22);
-  const floor = shade(body, design.bodyColor === "blanco" ? -48 : 8);
 
   ctx.clearRect(0, 0, CARD_W, CARD_H);
   ctx.fillStyle = "#f3eee4";
@@ -52,27 +42,16 @@ export function drawCardFace(
   ctx.fillStyle = body;
   ctx.fill();
 
+  ctx.beginPath();
+  ctx.arc(px(0), py(ATRIL.NFC_Y), (ATRIL.WELL_D / 2) * SCALE, 0, Math.PI * 2);
+  ctx.fillStyle = "#f3eee4";
+  ctx.fill();
+
   const footTop = py(ATRIL.FOOT_Y + 1.2);
   const footBot = footTop + 58;
   roundRect(ctx, px(-ATRIL.FOOT_W / 2), footTop, ATRIL.FOOT_W * SCALE, footBot - footTop, 10);
   ctx.fillStyle = body;
   ctx.fill();
-
-  ctx.beginPath();
-  ctx.arc(px(0), py(ATRIL.NFC_Y), (ATRIL.WELL_D / 2) * SCALE, 0, Math.PI * 2);
-  ctx.fillStyle = well;
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(px(0), py(ATRIL.NFC_Y), (ATRIL.SEAT_D / 2) * SCALE, 0, Math.PI * 2);
-  ctx.fillStyle = floor;
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(px(0), py(ATRIL.NFC_Y), (ATRIL.STICKER_D / 2) * SCALE, 0, Math.PI * 2);
-  ctx.strokeStyle = shade(body, design.bodyColor === "blanco" ? -18 : 36);
-  ctx.lineWidth = 1.5;
-  ctx.setLineDash([5, 4]);
-  ctx.stroke();
-  ctx.setLineDash([]);
 
   for (let i = 0; i < 5; i++) {
     star(ctx, px((i - 2) * 12.2), py(ATRIL.STAR_Y), 4.3 * SCALE, accent);
@@ -95,11 +74,10 @@ export function drawCardFace(
   }
 
   const name = !generic ? printText(design.line1 || "").slice(0, 16) : "";
-  const tapY = name ? ATRIL.TAP_Y + 2.2 : ATRIL.TAP_Y;
-  const reseY = name ? ATRIL.RESE_Y - 1.4 : ATRIL.RESE_Y;
+  const tapY = name ? ATRIL.TAP_Y + 1.8 : ATRIL.TAP_Y;
   drawPixelText(ctx, "TAP", px(0), py(tapY), ATRIL.TAP_PX * SCALE, accent);
   if (name) drawPixelText(ctx, name, px(0), py(ATRIL.NAME_Y), ATRIL.NAME_PX * SCALE, accent);
-  drawPixelText(ctx, "RESEÑA", px(0), py(reseY), ATRIL.RESE_PX * SCALE, accent);
+  drawPixelText(ctx, "RESEÑA", px(0), py(ATRIL.RESE_Y), ATRIL.RESE_PX * SCALE, accent);
   drawPixelText(ctx, "NFCTAP.TECH", px(0), (footTop + footBot) / 2, 0.62 * SCALE, accent);
 }
 
