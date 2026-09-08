@@ -210,8 +210,8 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
                     </label>
                     <p className="mt-2 text-xs text-[#8a8173]">
                       PNG con fondo transparente si puedes. Cuadrado o redondo, unos 800×800 px. Se
-                      imprime en el color de acento, del mismo tamaño que la G (~28 mm), encima del
-                      hueco NFC (el hueco no lleva tinta encima).
+                      imprime en el color de acento, en el mismo sitio y tamaño que la G (~33 mm).
+                      El hueco NFC va abajo: no lleva tinta encima.
                     </p>
                     {design.logoDataUrl && (
                       <button

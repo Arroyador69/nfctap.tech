@@ -3,13 +3,13 @@
   <text x="540" y="78" text-anchor="middle" fill="#1C1915" font-family="Georgia, serif" font-size="40">NFCTap</text>
   <text x="540" y="118" text-anchor="middle" fill="#7A6A52" font-family="Georgia, serif" font-size="20">Genérica 15 € · negro + amarillo</text>
   <rect x="330.0" y="200.0" width="420.0" height="596.8" rx="33.2" fill="#141416"/>
-  <polygon points="405.2,264.7 411.0,280.3 427.8,281.1 414.6,291.5 419.1,307.6 405.2,298.4 391.2,307.6 395.7,291.5 382.6,281.1 399.3,280.3" fill="#E2B43A"/> <polygon points="472.6,264.7 478.4,280.3 495.2,281.1 482.1,291.5 486.5,307.6 472.6,298.4 458.6,307.6 463.1,291.5 450.0,281.1 466.7,280.3" fill="#E2B43A"/> <polygon points="540.0,264.7 545.9,280.3 562.6,281.1 549.5,291.5 554.0,307.6 540.0,298.4 526.0,307.6 530.5,291.5 517.4,281.1 534.1,280.3" fill="#E2B43A"/> <polygon points="607.4,264.7 613.3,280.3 630.0,281.1 616.9,291.5 621.4,307.6 607.4,298.4 593.5,307.6 597.9,291.5 584.8,281.1 601.6,280.3" fill="#E2B43A"/> <polygon points="674.8,264.7 680.7,280.3 697.4,281.1 684.3,291.5 688.8,307.6 674.8,298.4 660.9,307.6 665.4,291.5 652.2,281.1 669.0,280.3" fill="#E2B43A"/>
-  <g transform="translate(462.632 316.053) scale(8.59649)"><path d="M9.001 10.71V7.362h8.424c.126.567.225 1.098.225 1.845 0 5.139-3.447 8.793-8.64 8.793-4.968 0-9-4.032-9-9s4.032-9 9-9c2.43 0 4.464.891 6.021 2.349l-2.556 2.484c-.648-.612-1.782-1.332-3.465-1.332-2.979 0-5.409 2.475-5.409 5.508s2.43 5.508 5.409 5.508c3.447 0 4.716-2.385 4.95-3.798H9.001v-.009z" fill="#E2B43A"/></g>
-  <text x="540" y="510.9" text-anchor="middle" fill="#E2B43A" font-family="Outfit, Helvetica, Arial, sans-serif" font-size="44" font-weight="700">TAP</text>
-  <text x="540" y="562.2" text-anchor="middle" fill="#E2B43A" font-family="Outfit, Helvetica, Arial, sans-serif" font-size="32">RESEÑA</text>
-  <circle cx="540" cy="686.3" r="93.9" fill="#2a2a2e"/>
-  <circle cx="540" cy="686.3" r="82.9" fill="#1a1a1c"/>
-  <circle cx="540" cy="686.3" r="69.1" fill="none" stroke="#E2B43A" stroke-width="1.5" stroke-dasharray="6 5" opacity="0.45"/>
+  <polygon points="405.2,253.6 411.0,269.3 427.8,270.0 414.6,280.5 419.1,296.6 405.2,287.3 391.2,296.6 395.7,280.5 382.6,270.0 399.3,269.3" fill="#E2B43A"/> <polygon points="472.6,253.6 478.4,269.3 495.2,270.0 482.1,280.5 486.5,296.6 472.6,287.3 458.6,296.6 463.1,280.5 450.0,270.0 466.7,269.3" fill="#E2B43A"/> <polygon points="540.0,253.6 545.9,269.3 562.6,270.0 549.5,280.5 554.0,296.6 540.0,287.3 526.0,296.6 530.5,280.5 517.4,270.0 534.1,269.3" fill="#E2B43A"/> <polygon points="607.4,253.6 613.3,269.3 630.0,270.0 616.9,280.5 621.4,296.6 607.4,287.3 593.5,296.6 597.9,280.5 584.8,270.0 601.6,269.3" fill="#E2B43A"/> <polygon points="674.8,253.6 680.7,269.3 697.4,270.0 684.3,280.5 688.8,296.6 674.8,287.3 660.9,296.6 665.4,280.5 652.2,270.0 669.0,269.3" fill="#E2B43A"/>
+  <g transform="translate(448.816 324.342) scale(10.13158)"><path d="M9.001 10.71V7.362h8.424c.126.567.225 1.098.225 1.845 0 5.139-3.447 8.793-8.64 8.793-4.968 0-9-4.032-9-9s4.032-9 9-9c2.43 0 4.464.891 6.021 2.349l-2.556 2.484c-.648-.612-1.782-1.332-3.465-1.332-2.979 0-5.409 2.475-5.409 5.508s2.43 5.508 5.409 5.508c3.447 0 4.716-2.385 4.95-3.798H9.001v-.009z" fill="#E2B43A"/></g>
+  <text x="540" y="566.2" text-anchor="middle" fill="#E2B43A" font-family="Outfit, Helvetica, Arial, sans-serif" font-size="44" font-weight="700">TAP</text>
+  <text x="540" y="622.9" text-anchor="middle" fill="#E2B43A" font-family="Outfit, Helvetica, Arial, sans-serif" font-size="32">RESEÑA</text>
+  <circle cx="540" cy="713.9" r="77.4" fill="#2a2a2e"/>
+  <circle cx="540" cy="713.9" r="71.8" fill="#1a1a1c"/>
+  <circle cx="540" cy="713.9" r="69.1" fill="none" stroke="#E2B43A" stroke-width="1.5" stroke-dasharray="6 5" opacity="0.45"/>
   <rect x="296.8" y="800.8" width="486.3" height="48" rx="8" fill="#141416"/>
   <text x="540" y="832.8" text-anchor="middle" fill="#E2B43A" font-family="Georgia, serif" font-size="20" letter-spacing="3">NFCTAP.TECH</text>
   <text x="540" y="1288" text-anchor="middle" fill="#1C1915" font-family="Georgia, serif" font-size="22">Hueco NFC abierto · TAP para tu reseña en Google</text>

@@ -43,19 +43,18 @@ FOOT_Y = 8.0
 FOOT_Z = 54.0
 FOOT_W = 88.0
 
-# Pegatina Ø25: pozo ABIERTO (se ve). Nada de acento encima → no montañita.
-# Ø34 cabe entero en la placa (Ø38 rozaba el borde de abajo y tapaba el hueco).
+# Pegatina Ø25: pozo ABIERTO abajo. G/logo grande con holgura, como en Flash.
 STICKER_D = 25.0
-WELL_D = 34.0
-SEAT_D = 30.0
+WELL_D = 28.0
+SEAT_D = 26.0
 Z_FLOOR = 3.20
 Z_GUIDE = 3.60
-STAR_Y = 100.0
-MARK_Y = 81.0
-MARK_R = 14.0
-TAP_Y = 63.0
-RESE_Y = 53.0
-NFC_Y = 28.0
+STAR_Y = 102.0
+MARK_Y = 77.0
+MARK_R = 16.5
+TAP_Y = 53.0
+RESE_Y = 42.0
+NFC_Y = 23.0
 RELIEF = 0.50
 
 COLORWAYS = (

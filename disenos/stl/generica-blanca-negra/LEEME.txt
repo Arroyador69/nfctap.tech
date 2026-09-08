@@ -17,7 +17,7 @@ Imprime
 Agrupar 01 + 02. NO Reparar el modelo.
 Capa 0,20 mm, 3 perímetros, gyroid 15 %, Arachne.
 NO hace falta pausa: el pozo queda abierto.
-Pozo Ø34, asiento Ø30, pegatina Ø25 HUNDIDA.
+Pozo Ø28, asiento Ø26, pegatina Ø25 HUNDIDA.
 Al terminar, mete la pegatina en el hueco (adhesivo al asiento).
 Se imprime tumbada (cara arriba). Se pone de pie.
 
