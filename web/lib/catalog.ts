@@ -70,9 +70,14 @@ export function qtysFor(kind: ProductKind): Qty[] {
   return kind === "unica" ? [1] : [1, 2];
 }
 
-export function parseKind(value: unknown): ProductKind {
-  if (value === "generica" || value === "unica" || value === "personalizada") return value;
+export function parseKind(value: unknown, allowUnica = false): ProductKind {
+  if (value === "generica" || value === "personalizada") return value;
+  if (allowUnica && value === "unica") return "unica";
   return "personalizada";
+}
+
+export function kindsFor(admin: boolean): ProductKind[] {
+  return admin ? ["generica", "personalizada", "unica"] : ["generica", "personalizada"];
 }
 
 export function productLabel(kind: ProductKind, qty: Qty) {

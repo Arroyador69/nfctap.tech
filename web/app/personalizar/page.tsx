@@ -19,7 +19,7 @@ export default async function PersonalizarPage({
         Encarga tu NFCTap
       </h1>
       <p className="mt-2 max-w-xl text-sm text-[#5c564c] sm:text-base">
-        Gíralo en 3D. Es lo que se imprime. Luego pones a dónde lo enviamos.
+        Gíralo en 3D. Es lo que se imprime. Luego pones a dónde lo enviamos. Sale en 24 h.
       </p>
       <div className="mt-5">
         <Designer initialKind={initial} shipping={await getShipping()} />

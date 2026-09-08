@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     template: "%s · NFCTap",
   },
   description:
-    "Atril NFC para reseñas de Google. Lo ves en 3D y lo encargas. Desde 15 €. Impreso en España.",
+    "Atril NFC para reseñas de Google. Lo ves en 3D y lo encargas. Desde 15 €. Envío en 24 h. Pago con tarjeta, Apple Pay o Bizum. Impreso en España.",
   applicationName: "NFCTap",
   appleWebApp: {
     capable: true,

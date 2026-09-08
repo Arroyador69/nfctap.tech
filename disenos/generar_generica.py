@@ -49,11 +49,13 @@ WELL_D = 28.0
 SEAT_D = 26.0
 Z_FLOOR = 3.20
 Z_GUIDE = 3.60
-STAR_Y = 102.0
-MARK_Y = 77.0
-MARK_R = 16.5
-TAP_Y = 53.0
-RESE_Y = 42.0
+STAR_Y = 99.0
+MARK_Y = 73.0
+MARK_R = 15.2
+TAP_Y = 50.0
+RESE_Y = 41.0
+TAP_PX = 1.42
+RESE_PX = 1.08
 NFC_Y = 23.0
 RELIEF = 0.50
 
@@ -118,8 +120,8 @@ def accent() -> Mesh:
 
     m.extend(google_g_mesh(0.0, MARK_Y, MARK_R, z0, z1 + 0.08))
 
-    m.extend(shifted(text_mesh("TAP", pixel=1.55, height=RELIEF, z0=z0), 0.0, TAP_Y))
-    m.extend(shifted(text_mesh("RESEÑA", pixel=1.15, height=RELIEF, z0=z0), 0.0, RESE_Y))
+    m.extend(shifted(text_mesh("TAP", pixel=TAP_PX, height=RELIEF, z0=z0), 0.0, TAP_Y))
+    m.extend(shifted(text_mesh("RESEÑA", pixel=RESE_PX, height=RELIEF, z0=z0), 0.0, RESE_Y))
 
     m.extend(
         shifted(

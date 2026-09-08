@@ -2,7 +2,7 @@ import { isAdmin } from "@/lib/auth";
 import { PRICES, needsLogo, parseKind, qtysFor } from "@/lib/catalog";
 import { newId } from "@/lib/ids";
 import { isEmail, isHttpUrl, isPhone, isPostalCode, isReviewUrl } from "@/lib/logo";
-import { createPolarCheckout, polarReady } from "@/lib/polar";
+import { createPolarCheckout, customerIp, polarReady } from "@/lib/polar";
 import { shippingCost, zoneFromPostalCode } from "@/lib/shipping";
 import { addOrder, getShipping, listOrders } from "@/lib/store";
 import type { Address, CardDesign, Handover, Qty } from "@/lib/types";
@@ -20,7 +20,13 @@ export async function POST(req: Request) {
   const admin = await isAdmin();
   const fromAdmin = admin && body.source === "admin";
   const handover: Handover = fromAdmin && body.handover === "mano" ? "mano" : "envio";
-  const kind = parseKind(body.kind);
+  if (!fromAdmin && body.kind === "unica") {
+    return NextResponse.json(
+      { error: "La pieza única se encarga por email, no desde la web." },
+      { status: 400 },
+    );
+  }
+  const kind = parseKind(body.kind, fromAdmin);
   const qty = (qtysFor(kind).includes(2) && Number(body.qty) === 2 ? 2 : 1) as Qty;
   const design = body.design as CardDesign;
   const address = (body.address || {}) as Address;
@@ -108,7 +114,7 @@ export async function POST(req: Request) {
 
   const settings = await getShipping();
   const productPrice = PRICES[kind][qty];
-  const shippingPrice = handover === "mano" ? 0 : shippingCost(normalized.zone, productPrice, settings);
+  const shippingPrice = handover === "mano" ? 0 : shippingCost(normalized.zone, settings);
   const id = newId();
 
   const order = await addOrder({
@@ -155,10 +161,23 @@ export async function POST(req: Request) {
       qty,
       orderId: id,
       email: normalized.email,
+      name: normalized.name,
       successUrl: `${origin}/pedido/ok?id=${id}&checkout_id={CHECKOUT_ID}`,
+      totalEuros: order.total,
+      customerIp: customerIp(req),
+      city: normalized.city,
+      postalCode: normalized.postalCode,
+      line1: normalized.line1,
     });
   } catch {
     checkoutUrl = null;
+  }
+
+  if (polarReady() && !checkoutUrl) {
+    return NextResponse.json(
+      { error: "No se pudo abrir el pago. Prueba de nuevo en un momento." },
+      { status: 502 },
+    );
   }
 
   return NextResponse.json({

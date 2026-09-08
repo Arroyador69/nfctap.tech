@@ -15,8 +15,8 @@ export default function LegalPage() {
       </p>
       <p className="mt-4">
         No publica el logotipo oficial de Google. El NFC se programa con el enlace de
-        reseña que facilita el comprador. El pago con Polar se activará en una fase
-        posterior.
+        reseña que facilita el comprador. El pago lo gestiona Polar (tarjeta, Apple Pay y
+        Bizum en España).
       </p>
       <p className="mt-4">Contacto: {BRAND.email}</p>
     </div>

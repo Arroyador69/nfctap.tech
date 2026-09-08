@@ -18,7 +18,8 @@ export default function HomePage() {
           </h1>
           <p className="mt-5 max-w-md text-lg text-[#5c564c]">
             Atril NFC impreso en España. El cliente acerca el móvil y se abre tu reseña.
-            Lo ves en 3D, lo encargas aquí y te llega programado.
+            Lo ves en 3D, lo encargas aquí y sale en 24 h. Pagas con tarjeta, Apple Pay o
+            Bizum.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
@@ -38,9 +39,9 @@ export default function HomePage() {
       <section className="mx-auto max-w-6xl px-5 pb-16">
         <div className="grid gap-4 md:grid-cols-3">
           {[
-            ["1. Eliges", "Genérica con la G, personalizada con tu logo, o pieza única de tu negocio con dos NFC."],
+            ["1. Eliges", "Genérica con la G de Google, o personalizada con el logo de tu negocio."],
             ["2. TAP", "Acerca el móvil. Se abre Google Reviews. Sin app, sin QR sucio."],
-            ["3. Te lo enviamos", "Impreso en PLA, hueco NFC a la vista, programado a tu enlace. España."],
+            ["3. En 24 h", "Lo imprimimos, programamos el NFC y lo enviamos. España."],
           ].map(([t, d]) => (
             <article key={t} className="rounded-[24px] border border-[#e6ddd0] bg-white/70 p-5">
               <h3 className="font-semibold">{t}</h3>
@@ -51,12 +52,12 @@ export default function HomePage() {
       </section>
 
       <section id="precios" className="mx-auto max-w-6xl px-5 pb-20">
-        <h2 className="font-[family-name:var(--font-display)] text-4xl">Tres maneras de encargar</h2>
+        <h2 className="font-[family-name:var(--font-display)] text-4xl">Encarga la tuya</h2>
         <p className="mt-3 max-w-xl text-[#5c564c]">
-          El mismo atril que ves en 3D es el que se imprime. Precios en euros, IVA no incluido si
-          aplica. Envío a España.
+          El mismo atril que ves en 3D es el que se imprime. Precios en euros. Envío a
+          España en 24 h. Pago con tarjeta, Apple Pay o Bizum.
         </p>
-        <div className="mt-8 grid gap-5 md:grid-cols-3">
+        <div className="mt-8 grid gap-5 md:grid-cols-2">
           <article className="flex flex-col rounded-[28px] border border-[#e6ddd0] bg-white p-6">
             <h3 className="text-xl font-semibold">Genérica</h3>
             <p className="mt-2 flex-1 text-sm text-[#6f675c]">
@@ -88,23 +89,17 @@ export default function HomePage() {
               Crear la mía
             </Link>
           </article>
-          <article className="flex flex-col rounded-[28px] border border-[#e6ddd0] bg-white p-6">
-            <p className="text-xs uppercase tracking-wider text-[#b0892c]">A medida</p>
-            <h3 className="mt-1 text-xl font-semibold">Pieza única</h3>
-            <p className="mt-2 flex-1 text-sm text-[#6f675c]">
-              La de tu negocio: logo y dos NFC (reseña Google + carta, Instagram o menú). Una
-              pieza.
-            </p>
-            <p className="mt-6 text-4xl font-semibold">{euros(PRICES.unica[1])}</p>
-            <p className="text-sm text-[#8a8173]">una · envío península gratis</p>
-            <Link
-              href="/personalizar?kind=unica"
-              className="mt-6 inline-block rounded-full bg-[#f3eee4] px-5 py-2.5 text-center text-sm"
-            >
-              Encargar pieza única
-            </Link>
-          </article>
         </div>
+
+        <p className="mt-10 max-w-2xl text-sm leading-6 text-[#6f675c]">
+          <span className="font-semibold text-[#1c1915]">Pieza única · {euros(PRICES.unica[1])}. </span>
+          Pieza a medida de tu negocio (forma, logo, dos NFC). Cada caso se diseña aparte: no
+          se encarga desde aquí. Escríbenos a{" "}
+          <a className="underline decoration-[#d9cfc0] underline-offset-2" href={`mailto:${BRAND.email}`}>
+            {BRAND.email}
+          </a>{" "}
+          y lo vemos.
+        </p>
       </section>
     </>
   );

@@ -28,12 +28,8 @@ export function zoneFromPostalCode(cp: string): ShippingZone {
 
 export function shippingCost(
   zone: ShippingZone,
-  productPrice: number,
   settings: ShippingSettings = DEFAULT_SHIPPING,
 ) {
-  if (zone === "peninsula" && productPrice >= settings.freePeninsulaFrom) {
-    return 0;
-  }
   return settings[zone];
 }
 

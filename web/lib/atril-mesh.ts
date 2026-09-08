@@ -357,12 +357,14 @@ export function atrilAccent(input: AtrilAccentInput = {}): Mesh {
   } else if (input.logoMask) {
     m.extend(logoMesh(input.logoMask, z0, z1));
   }
-  m.extend(shifted(textMesh("TAP", 1.55, ATRIL.RELIEF, z0), 0, ATRIL.TAP_Y));
-  m.extend(shifted(textMesh("RESEÑA", 1.15, ATRIL.RELIEF, z0), 0, ATRIL.RESE_Y));
   const name = !generic ? printText(input.line1 || "").slice(0, 16) : "";
+  const tapY = name ? ATRIL.TAP_Y + 2.2 : ATRIL.TAP_Y;
+  const reseY = name ? ATRIL.RESE_Y - 1.4 : ATRIL.RESE_Y;
+  m.extend(shifted(textMesh("TAP", ATRIL.TAP_PX, ATRIL.RELIEF, z0), 0, tapY));
   if (name) {
-    m.extend(shifted(textMesh(name, 0.72, ATRIL.RELIEF, z0), 0, ATRIL.NAME_Y));
+    m.extend(shifted(textMesh(name, ATRIL.NAME_PX, ATRIL.RELIEF, z0), 0, ATRIL.NAME_Y));
   }
+  m.extend(shifted(textMesh("RESEÑA", ATRIL.RESE_PX, ATRIL.RELIEF, z0), 0, reseY));
   m.extend(
     shifted(textMesh("NFCTAP.TECH", 0.62, 0.7, ATRIL.FOOT_Z, 6), 0, ATRIL.FOOT_Y / 2 + 0.15),
   );

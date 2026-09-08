@@ -17,13 +17,24 @@ npm run dev
 
 ## Vercel
 
-1. Importa el repo.
-2. **Root Directory:** `web`
-3. Variables: `DASHBOARD_PASSWORD`, `DASHBOARD_SECRET`
-4. Polar más adelante: `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET`, `POLAR_PRODUCT_*`
+1. Importa el repo. **Root Directory:** `web`
+2. Variables: `DASHBOARD_PASSWORD`, `DASHBOARD_SECRET`
+3. Blob: `BLOB_READ_WRITE_TOKEN` (Storage → Blob)
+4. Polar (producción): ver abajo
 
-Los pedidos se guardan en memoria/`/tmp` en Vercel (vale para empezar). Cuando haya volumen, se conecta Neon/Postgres en `lib/store.ts`.
+## Polar
 
-## Polar (aún no)
+En [polar.sh](https://polar.sh) (organización NFCTap, **producción**, no sandbox):
 
-Crea 5 productos one-time (genérica 15 / 25 €, personalizada 30 / 55 €, pieza única 70 €) y pega los IDs en `POLAR_PRODUCT_GENERIC_1`, `_2`, `CUSTOM_1`, `_2` y `UNICA_1`. Webhook: `/api/webhook/polar`.
+1. Settings → Organization Access Token con permiso de checkouts.
+2. Settings → Webhooks → endpoint `https://nfctap.tech/api/webhook/polar` (formato Raw). Eventos: `checkout.updated`, `checkout.confirmed`, `order.created`, `order.paid`. Copia el secret `whsec_…`.
+3. Products → 4 productos **one-time, EUR, no recurrentes**:
+   - Genérica × 1 → 15 € → `POLAR_PRODUCT_GENERIC_1`
+   - Genérica × 2 → 25 € → `POLAR_PRODUCT_GENERIC_2`
+   - Personalizada × 1 → 30 € → `POLAR_PRODUCT_CUSTOM_1`
+   - Personalizada × 2 → 55 € → `POLAR_PRODUCT_CUSTOM_2`
+4. En Vercel: `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET`, `POLAR_SERVER=production` y los cuatro IDs.
+
+**Bizum** no se activa a mano. Polar lo muestra en el checkout cuando el comprador está en España (EUR, pago único). La web le pasa la IP y el país ES. El cliente confirma en su banco; Polar cobra, envía el recibo y avisa a la web por webhook. No uses Bizum al número de teléfono de la tienda: eso es entre particulares, no hay confirmación automática del pedido.
+
+La pieza única (70 €) no se vende en Polar: se cierra por email.

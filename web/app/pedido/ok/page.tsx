@@ -18,8 +18,8 @@ export default async function OkPage({
       <h1 className="mt-3 font-[family-name:var(--font-display)] text-4xl">Pedido recibido</h1>
       <p className="mt-3 text-[#5c564c]">
         {order
-          ? `Referencia ${order.id}. Total ${euros(order.total)}. Te escribimos a ${order.address.email} cuando salga de imprenta.`
-          : "Gracias. Te escribimos cuando el pedido salga de imprenta."}
+          ? `Referencia ${order.id}. Total ${euros(order.total)}. Polar te confirma el pago (tarjeta, Apple Pay o Bizum). Te escribimos a ${order.address.email} cuando salga de imprenta.`
+          : "Gracias. Polar te confirma el pago. Te escribimos cuando el pedido salga de imprenta."}
       </p>
       <Link
         href="/"

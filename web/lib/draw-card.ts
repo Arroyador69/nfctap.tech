@@ -94,10 +94,12 @@ export function drawCardFace(
     ctx.globalAlpha = 1;
   }
 
-  drawPixelText(ctx, "TAP", px(0), py(ATRIL.TAP_Y), 1.55 * SCALE, accent);
-  drawPixelText(ctx, "RESEÑA", px(0), py(ATRIL.RESE_Y), 1.15 * SCALE, accent);
   const name = !generic ? printText(design.line1 || "").slice(0, 16) : "";
-  if (name) drawPixelText(ctx, name, px(0), py(ATRIL.NAME_Y), 0.72 * SCALE, accent);
+  const tapY = name ? ATRIL.TAP_Y + 2.2 : ATRIL.TAP_Y;
+  const reseY = name ? ATRIL.RESE_Y - 1.4 : ATRIL.RESE_Y;
+  drawPixelText(ctx, "TAP", px(0), py(tapY), ATRIL.TAP_PX * SCALE, accent);
+  if (name) drawPixelText(ctx, name, px(0), py(ATRIL.NAME_Y), ATRIL.NAME_PX * SCALE, accent);
+  drawPixelText(ctx, "RESEÑA", px(0), py(reseY), ATRIL.RESE_PX * SCALE, accent);
   drawPixelText(ctx, "NFCTAP.TECH", px(0), (footTop + footBot) / 2, 0.62 * SCALE, accent);
 }
 

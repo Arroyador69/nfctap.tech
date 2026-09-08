@@ -21,8 +21,7 @@ export function ShippingForm({ shipping }: { shipping: ShippingSettings }) {
     <section className="mt-12 rounded-3xl border border-[#e6ddd0] bg-white p-6">
       <h2 className="text-xl font-semibold">Envíos Correos (editables)</h2>
       <p className="mt-2 text-sm text-[#6f675c]">
-        Partimos de carta/sobre, no de Paq Estándar (13,65 € en península se come una genérica).
-        Cambia los importes cuando quieras.
+        Partimos de carta/sobre. Sale en 24 h. Cambia los importes cuando quieras.
       </p>
       <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {(
@@ -31,7 +30,6 @@ export function ShippingForm({ shipping }: { shipping: ShippingSettings }) {
             ["baleares", ZONE_LABEL.baleares],
             ["canarias", ZONE_LABEL.canarias],
             ["ceuta_melilla", ZONE_LABEL.ceuta_melilla],
-            ["freePeninsulaFrom", "Península gratis a partir de (€)"],
           ] as const
         ).map(([key, label]) => (
           <label key={key} className="text-sm">

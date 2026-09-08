@@ -8,6 +8,7 @@ import {
   KIND_META,
   PRICES,
   defaultDesign,
+  kindsFor,
   needsLogo,
   productLabel,
   qtysFor,
@@ -28,11 +29,13 @@ type Step = "diseno" | "envio";
 
 export function Designer({ initialKind = "personalizada", shipping, mode = "public" }: Props) {
   const admin = mode === "admin";
+  const startKind =
+    !admin && initialKind === "unica" ? "personalizada" : initialKind;
   const [step, setStep] = useState<Step>("diseno");
   const [handover, setHandover] = useState<Handover>("envio");
-  const [kind, setKind] = useState<ProductKind>(initialKind);
+  const [kind, setKind] = useState<ProductKind>(startKind);
   const [qty, setQty] = useState<Qty>(1);
-  const [design, setDesign] = useState<CardDesign>(defaultDesign(initialKind));
+  const [design, setDesign] = useState<CardDesign>(defaultDesign(startKind));
   const [preview, setPreview] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -50,7 +53,7 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
 
   const zone: ShippingZone = zoneFromPostalCode(form.postalCode);
   const productPrice = PRICES[kind][qty];
-  const ship = handover === "mano" ? 0 : shippingCost(zone, productPrice, shipping);
+  const ship = handover === "mano" ? 0 : shippingCost(zone, shipping);
   const total = productPrice + ship;
   const patch = (p: Partial<CardDesign>) => setDesign((d) => ({ ...d, ...p }));
 
@@ -168,12 +171,12 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
                   Elige y encarga
                 </h2>
                 <p className="mt-1 text-sm text-[#6f675c]">
-                  Lo que ves en 3D es lo que se imprime. Luego el envío.
+                  Lo que ves en 3D es lo que se imprime. Luego el envío, en 24 h.
                 </p>
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
-                {(["generica", "personalizada", "unica"] as ProductKind[]).map((k) => (
+              <div className={`grid gap-2 ${admin ? "grid-cols-3" : "grid-cols-2"}`}>
+                {kindsFor(admin).map((k) => (
                   <button
                     key={k}
                     type="button"
@@ -359,7 +362,7 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
               <p className="text-sm text-[#6f675c]">
                 {admin
                   ? "En mano o a Correos. El ZIP (01_cuerpo + 02_acento) es el mismo atril que ves aquí."
-                  : "España. El código postal elige la tarifa de Correos. Solo se encarga: no hay descarga."}
+                  : "España. El código postal elige la tarifa de Correos. Sale en 24 h. En Polar pagas con tarjeta, Apple Pay o Bizum: confirmas en tu banco y Polar (y esta web) te dan el pedido por pagado."}
               </p>
 
               {admin && (
@@ -467,7 +470,7 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
 
               {handover === "envio" && (
                 <>
-                  <p className="text-xs text-[#8a8173]">Envío a España · Correos</p>
+                  <p className="text-xs text-[#8a8173]">Envío a España · Correos · sale en 24 h</p>
                   <Rates shipping={shipping} zone={form.postalCode.length === 5 ? zone : null} />
                 </>
               )}
@@ -553,10 +556,7 @@ function Rates({
           <span>{euros(r.price)}</span>
         </li>
       ))}
-      <li className="px-1 text-xs text-[#8a8173]">
-        Península gratis desde {euros(shipping.freePeninsulaFrom)} (2 personalizadas o pieza
-        única).
-      </li>
+      <li className="px-1 text-xs text-[#8a8173]">Salimos como muy tarde en 24 h.</li>
     </ul>
   );
 }
