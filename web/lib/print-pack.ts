@@ -29,7 +29,9 @@ Hueco NFC abierto Ø${ATRIL.WELL_D} (sin pausa). Pegatina Ø${ATRIL.STICKER_D} a
   );
   folder.file(
     "NFC.txt",
-    `URL a grabar en el chip (NFC Tap Config → URL):\n${spec.googleUrl}\n\nCliente: ${spec.cliente}\nPedido: ${spec.orderId}\n`,
+    spec.kind === "unica"
+      ? `Pieza única — dos NFC\n\n1. Reseña Google:\n${spec.googleUrl}\n\n2. Segundo enlace:\n${spec.extraUrl || "(pendiente)"}\n\nCliente: ${spec.cliente}\nPedido: ${spec.orderId}\n`
+      : `URL a grabar en el chip (NFC Tap Config → URL):\n${spec.googleUrl}\n\nCliente: ${spec.cliente}\nPedido: ${spec.orderId}\n`,
   );
   if (order.previewDataUrl?.startsWith("data:image/")) {
     const b64 = order.previewDataUrl.split(",")[1] || "";
@@ -47,7 +49,8 @@ Hueco NFC abierto Ø${ATRIL.WELL_D} (sin pausa). Pegatina Ø${ATRIL.STICKER_D} a
 6. Al terminar, mete la pegatina Timeskey Ø25 en el asiento (adhesivo abajo).
 7. Graba el enlace de NFC.txt.
 
-Genérica = G de Google. Personalizada = tu logo en acento. TAP / RESEÑA siempre.
+Genérica = G de Google. Personalizada = logo en acento.
+Pieza única = logo + dos NFC (reseña + segundo enlace de NFC.txt).
 `,
   );
   return zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });

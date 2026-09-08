@@ -40,6 +40,7 @@ export type PrintSpec = {
   nombreNegocio?: string;
   logoMask?: string;
   googleUrl: string;
+  extraUrl?: string;
   colores: {
     cuerpo: string;
     acento: string;
@@ -85,6 +86,7 @@ export function orderToSpec(order: Order): PrintSpec {
     nombreNegocio: generic ? undefined : order.design.line1,
     logoMask: generic ? undefined : order.design.logoMask,
     googleUrl: order.design.googleUrl,
+    extraUrl: order.kind === "unica" ? order.design.extraUrl : undefined,
     colores: {
       cuerpo: `${order.design.bodyColor} (${body})`,
       acento: `${accent} (${ACCENT_HEX[accent] ?? accent})`,

@@ -9,8 +9,9 @@ export const BRAND = {
 };
 
 export const PRICES: Record<ProductKind, Record<Qty, number>> = {
-  generica: { 1: 15, 2: 30 },
-  personalizada: { 1: 30, 2: 45 },
+  generica: { 1: 15, 2: 25 },
+  personalizada: { 1: 30, 2: 55 },
+  unica: { 1: 70, 2: 70 },
 };
 
 export const BODY_COLORS: { id: BodyColor; label: string; hex: string }[] = [
@@ -52,8 +53,31 @@ export const TEMPLATES = [
   },
 ];
 
+export const KIND_META: Record<
+  ProductKind,
+  { label: string; short: string }
+> = {
+  generica: { label: "Genérica", short: "G de Google" },
+  personalizada: { label: "Personalizada", short: "Tu logo" },
+  unica: { label: "Pieza única", short: "Tu negocio · 2 NFC" },
+};
+
+export function needsLogo(kind: ProductKind) {
+  return kind !== "generica";
+}
+
+export function qtysFor(kind: ProductKind): Qty[] {
+  return kind === "unica" ? [1] : [1, 2];
+}
+
+export function parseKind(value: unknown): ProductKind {
+  if (value === "generica" || value === "unica" || value === "personalizada") return value;
+  return "personalizada";
+}
+
 export function productLabel(kind: ProductKind, qty: Qty) {
-  const base = kind === "generica" ? "Genérica" : "Personalizada";
+  const base = KIND_META[kind].label;
+  if (kind === "unica") return base;
   return qty === 2 ? `${base} × 2` : `${base} × 1`;
 }
 
@@ -66,5 +90,6 @@ export function defaultDesign(kind: ProductKind) {
     line1: kind === "generica" ? "TAP" : "",
     line2: "RESEÑA",
     googleUrl: "",
+    extraUrl: "",
   };
 }

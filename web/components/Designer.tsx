@@ -1,8 +1,18 @@
 "use client";
 
 import { CardPreview } from "@/components/CardPreview";
-import { ACCENT_COLORS, ACCENT_HEX, BODY_COLORS, PRICES, defaultDesign, productLabel } from "@/lib/catalog";
-import { isEmail, isPhone, isPostalCode, isReviewUrl, prepareLogo } from "@/lib/logo";
+import {
+  ACCENT_COLORS,
+  ACCENT_HEX,
+  BODY_COLORS,
+  KIND_META,
+  PRICES,
+  defaultDesign,
+  needsLogo,
+  productLabel,
+  qtysFor,
+} from "@/lib/catalog";
+import { isEmail, isHttpUrl, isPhone, isPostalCode, isReviewUrl, prepareLogo } from "@/lib/logo";
 import { PROVINCIAS } from "@/lib/provinces";
 import { euros, shippingCost, zoneFromPostalCode, ZONE_LABEL } from "@/lib/shipping";
 import type { CardDesign, Handover, ProductKind, Qty, ShippingSettings, ShippingZone } from "@/lib/types";
@@ -56,9 +66,10 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
 
   const designOk = useMemo(() => {
     if (!isReviewUrl(design.googleUrl)) return false;
-    if (kind === "personalizada" && !design.logoDataUrl) return false;
+    if (needsLogo(kind) && !design.logoDataUrl) return false;
+    if (kind === "unica" && !isHttpUrl(design.extraUrl || "")) return false;
     return true;
-  }, [design.googleUrl, design.logoDataUrl, kind]);
+  }, [design.googleUrl, design.logoDataUrl, design.extraUrl, kind]);
 
   const shipOk = useMemo(() => {
     if (admin && handover === "mano") return Boolean(form.name.trim());
@@ -78,8 +89,10 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
     setError("");
     if (!designOk) {
       setError(
-        kind === "personalizada"
-          ? "Sube el logo y pega el enlace de reseña de Google."
+        needsLogo(kind)
+          ? kind === "unica"
+            ? "Sube el logo, el enlace de Google y el segundo NFC (carta, Instagram o menú)."
+            : "Sube el logo y pega el enlace de reseña de Google."
           : "Falta el enlace de reseña de Google (el de Pedir reseñas).",
       );
       return;
@@ -112,7 +125,8 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
           design: {
             ...design,
             kind,
-            logoDataUrl: kind === "generica" ? undefined : design.logoDataUrl,
+            logoDataUrl: needsLogo(kind) ? design.logoDataUrl : undefined,
+            extraUrl: kind === "unica" ? design.extraUrl : undefined,
           },
           previewDataUrl: preview,
           address: { ...form, zone },
@@ -151,34 +165,35 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
             <>
               <div>
                 <h2 className="font-[family-name:var(--font-display)] text-2xl text-[#1c1915] sm:text-3xl">
-                  Crea la tarjeta
+                  Elige y encarga
                 </h2>
                 <p className="mt-1 text-sm text-[#6f675c]">
-                  Un modelo. Lo editas aquí y se encarga. No se descarga.
+                  Lo que ves en 3D es lo que se imprime. Luego el envío.
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                {(["personalizada", "generica"] as ProductKind[]).map((k) => (
+              <div className="grid grid-cols-3 gap-2">
+                {(["generica", "personalizada", "unica"] as ProductKind[]).map((k) => (
                   <button
                     key={k}
                     type="button"
                     onClick={() => {
                       setKind(k);
+                      setQty(qtysFor(k)[0]);
                       setDesign(defaultDesign(k));
                       setTried(false);
                     }}
-                    className={`min-h-12 rounded-2xl px-3 py-3 text-sm font-medium ${
+                    className={`min-h-12 rounded-2xl px-2 py-3 text-xs font-medium sm:text-sm ${
                       kind === k ? "bg-[#1c1915] text-[#f6f1e7]" : "bg-[#f3eee4] text-[#5c564c]"
                     }`}
                   >
-                    {k === "personalizada" ? "Personalizada" : "Genérica"}
+                    {KIND_META[k].label}
                   </button>
                 ))}
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                {([1, 2] as Qty[]).map((q) => (
+              <div className={`grid gap-2 ${qtysFor(kind).length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+                {qtysFor(kind).map((q) => (
                   <button
                     key={q}
                     type="button"
@@ -193,7 +208,7 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
                 ))}
               </div>
 
-              {kind === "personalizada" ? (
+              {needsLogo(kind) ? (
                 <>
                   <div>
                     <p className="mb-2 text-sm text-[#3f3a34]">
@@ -235,9 +250,30 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
                 </>
               ) : (
                 <p className="rounded-2xl bg-[#faf6ee] px-4 py-3 text-sm text-[#5c564c]">
-                  Genérica: G de Google, TAP / RESEÑA, pie NFCTap y hueco NFC abierto. Elige cuerpo, acento y el enlace.
+                  Genérica: G de Google, TAP / RESEÑA, pie NFCTap y hueco NFC abierto. Elige
+                  cuerpo, acento y el enlace.
                 </p>
               )}
+
+              {kind === "unica" ? (
+                <Field
+                  label="Segundo NFC (carta, Instagram, menú…)"
+                  hint={
+                    tried && !isHttpUrl(design.extraUrl || "")
+                      ? "Pon el segundo enlace https"
+                      : ""
+                  }
+                >
+                  <input
+                    inputMode="url"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    placeholder="https://…"
+                    value={design.extraUrl || ""}
+                    onChange={(e) => patch({ extraUrl: e.target.value })}
+                  />
+                </Field>
+              ) : null}
 
               <Field
                 label="Enlace de reseña Google"
@@ -518,7 +554,8 @@ function Rates({
         </li>
       ))}
       <li className="px-1 text-xs text-[#8a8173]">
-        Península gratis desde {euros(shipping.freePeninsulaFrom)} (pack 2 personalizadas).
+        Península gratis desde {euros(shipping.freePeninsulaFrom)} (2 personalizadas o pieza
+        única).
       </li>
     </ul>
   );

@@ -322,7 +322,7 @@ export function atrilBody(): Mesh {
 }
 
 export type AtrilAccentInput = {
-  kind?: "generica" | "personalizada";
+  kind?: "generica" | "personalizada" | "unica";
   logoMask?: string;
   line1?: string;
 };

@@ -14,16 +14,16 @@ export function Footer() {
         <p>
           © {new Date().getFullYear()} {BRAND.name}. Taller en España. NFC a tu Google.
         </p>
-        <div className="flex gap-5">
+        <div className="flex flex-wrap gap-5">
           <Link href="/envios" className="hover:text-[#1c1915]">
             Envíos
           </Link>
           <Link href="/legal" className="hover:text-[#1c1915]">
             Legal
           </Link>
-          <Link href="/dashboard" className="hover:text-[#1c1915]">
-            Dashboard
-          </Link>
+          <a href={`mailto:${BRAND.email}`} className="hover:text-[#1c1915]">
+            {BRAND.email}
+          </a>
         </div>
       </div>
     </footer>

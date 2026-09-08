@@ -34,7 +34,7 @@ export function drawCardFace(
   design: CardDesign,
   logo?: HTMLImageElement | null,
 ) {
-  const generic = design.kind !== "personalizada";
+  const generic = design.kind === "generica";
   const body = BODY_COLORS.find((c) => c.id === design.bodyColor)?.hex ?? "#171513";
   const accent = ACCENT_HEX[design.accentColor] ?? ACCENT_HEX.amarillo;
   const well = shade(body, design.bodyColor === "blanco" ? -32 : 22);

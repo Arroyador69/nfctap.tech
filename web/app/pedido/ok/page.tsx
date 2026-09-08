@@ -19,7 +19,7 @@ export default async function OkPage({
       <p className="mt-3 text-[#5c564c]">
         {order
           ? `Referencia ${order.id}. Total ${euros(order.total)}. Te escribimos a ${order.address.email} cuando salga de imprenta.`
-          : "Gracias. Si el pago con Polar aún no está activo, el pedido ya está en el dashboard para producirlo."}
+          : "Gracias. Te escribimos cuando el pedido salga de imprenta."}
       </p>
       <Link
         href="/"

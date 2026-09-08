@@ -1,4 +1,4 @@
-export type ProductKind = "generica" | "personalizada";
+export type ProductKind = "generica" | "personalizada" | "unica";
 export type Qty = 1 | 2;
 export type BodyColor = "negro" | "blanco" | "rojo";
 export type AccentColor = "oro" | "amarillo" | "blanco" | "rojo" | "negro";
@@ -25,6 +25,8 @@ export type CardDesign = {
   logoDataUrl?: string;
   logoMask?: string;
   googleUrl: string;
+  /** Segundo NFC (pieza única): carta, Instagram, menú… */
+  extraUrl?: string;
 };
 
 export type Address = {

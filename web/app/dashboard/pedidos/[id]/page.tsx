@@ -69,6 +69,7 @@ export default async function OrderPage({
         />
         <Item k="Cara" v={`${order.kind === "generica" ? "G de Google" : order.design.line1 || "Logo"} · TAP / RESEÑA`} />
         <Item k="Google / NFC" v={order.design.googleUrl || "Pendiente"} />
+        {order.kind === "unica" ? <Item k="Segundo NFC" v={order.design.extraUrl || "Pendiente"} /> : null}
         <Item k="Cuerpo" v={spec.colores.cuerpo} />
         <Item k="Acento" v={spec.colores.acento} />
         <Item k="Envío" v={euros(order.shippingPrice)} />

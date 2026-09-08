@@ -6,7 +6,7 @@ export function polarReady() {
 }
 
 export function productEnvKey(kind: ProductKind, qty: Qty) {
-  const k = kind === "generica" ? "GENERIC" : "CUSTOM";
+  const k = kind === "generica" ? "GENERIC" : kind === "unica" ? "UNICA" : "CUSTOM";
   return `POLAR_PRODUCT_${k}_${qty}`;
 }
 

@@ -26,4 +26,4 @@ Los pedidos se guardan en memoria/`/tmp` en Vercel (vale para empezar). Cuando h
 
 ## Polar (aún no)
 
-Crea 4 productos one-time (15 / 30 / 30 / 45 €) y pega los IDs en las env `POLAR_PRODUCT_GENERIC_1` etc. Webhook: `/api/webhook/polar`.
+Crea 5 productos one-time (genérica 15 / 25 €, personalizada 30 / 55 €, pieza única 70 €) y pega los IDs en `POLAR_PRODUCT_GENERIC_1`, `_2`, `CUSTOM_1`, `_2` y `UNICA_1`. Webhook: `/api/webhook/polar`.

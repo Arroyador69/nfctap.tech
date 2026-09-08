@@ -25,7 +25,7 @@ export function Header() {
             href="/personalizar"
             className="rounded-full bg-[#1c1915] px-4 py-2 font-medium text-[#f6f1e7]"
           >
-            Crear tarjeta
+            Encargar
           </Link>
         </nav>
       </div>

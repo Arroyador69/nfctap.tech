@@ -87,7 +87,7 @@ function Atril({ design }: { design: CardDesign }) {
   const bodyHex = BODY_COLORS.find((c) => c.id === design.bodyColor)?.hex ?? "#141416";
   const accentHex = ACCENT_HEX[design.accentColor] ?? ACCENT_HEX.amarillo;
   const wellHex = shade(bodyHex, design.bodyColor === "blanco" ? -28 : 18);
-  const personalized = design.kind === "personalizada";
+  const personalized = design.kind !== "generica";
 
   const meshes = useMemo(
     () =>

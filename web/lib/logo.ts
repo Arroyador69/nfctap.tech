@@ -144,9 +144,13 @@ export function resizeLogo(file: File) {
   return prepareLogo(file).then((r) => r.dataUrl);
 }
 
+export function isHttpUrl(value: string) {
+  return /^https?:\/\/\S+/i.test(value.trim());
+}
+
 export function isReviewUrl(value: string) {
   const t = value.trim();
-  if (!/^https?:\/\/\S+/i.test(t)) return false;
+  if (!isHttpUrl(t)) return false;
   return /g\.page|google\.|goo\.gl|maps\.app/i.test(t);
 }
 

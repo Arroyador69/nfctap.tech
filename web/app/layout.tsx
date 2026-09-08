@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     template: "%s · NFCTap",
   },
   description:
-    "Editor 3D para atriles NFC. TAP y se abre la reseña en Google. Desde 15 €. Impreso en España.",
+    "Atril NFC para reseñas de Google. Lo ves en 3D y lo encargas. Desde 15 €. Impreso en España.",
   applicationName: "NFCTap",
   appleWebApp: {
     capable: true,

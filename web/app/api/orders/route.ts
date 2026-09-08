@@ -1,11 +1,11 @@
 import { isAdmin } from "@/lib/auth";
-import { PRICES } from "@/lib/catalog";
+import { PRICES, needsLogo, parseKind, qtysFor } from "@/lib/catalog";
 import { newId } from "@/lib/ids";
-import { isEmail, isPhone, isPostalCode, isReviewUrl } from "@/lib/logo";
+import { isEmail, isHttpUrl, isPhone, isPostalCode, isReviewUrl } from "@/lib/logo";
 import { createPolarCheckout, polarReady } from "@/lib/polar";
 import { shippingCost, zoneFromPostalCode } from "@/lib/shipping";
 import { addOrder, getShipping, listOrders } from "@/lib/store";
-import type { Address, CardDesign, Handover, ProductKind, Qty } from "@/lib/types";
+import type { Address, CardDesign, Handover, Qty } from "@/lib/types";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -20,8 +20,8 @@ export async function POST(req: Request) {
   const admin = await isAdmin();
   const fromAdmin = admin && body.source === "admin";
   const handover: Handover = fromAdmin && body.handover === "mano" ? "mano" : "envio";
-  const kind = (body.kind === "generica" ? "generica" : "personalizada") as ProductKind;
-  const qty = (Number(body.qty) === 2 ? 2 : 1) as Qty;
+  const kind = parseKind(body.kind);
+  const qty = (qtysFor(kind).includes(2) && Number(body.qty) === 2 ? 2 : 1) as Qty;
   const design = body.design as CardDesign;
   const address = (body.address || {}) as Address;
 
@@ -29,11 +29,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Falta el enlace de reseña de Google" }, { status: 400 });
   }
   if (
-    kind === "personalizada" &&
+    needsLogo(kind) &&
     !(typeof design?.logoDataUrl === "string" && design.logoDataUrl.startsWith("data:image/"))
   ) {
     return NextResponse.json({ error: "Falta el logo" }, { status: 400 });
   }
+  const extraRaw = typeof design?.extraUrl === "string" ? design.extraUrl.trim() : "";
+  if (kind === "unica" && !isHttpUrl(extraRaw)) {
+    return NextResponse.json(
+      { error: "Falta el segundo NFC (carta, Instagram o menú)" },
+      { status: 400 },
+    );
+  }
+  const extraUrl = kind === "unica" ? extraRaw : undefined;
 
   let normalized: Address;
   if (handover === "mano") {
@@ -77,7 +85,7 @@ export async function POST(req: Request) {
   }
 
   const logo =
-    kind === "personalizada" &&
+    needsLogo(kind) &&
     typeof design?.logoDataUrl === "string" &&
     design.logoDataUrl.startsWith("data:image/") &&
     design.logoDataUrl.length < 1_200_000
@@ -85,7 +93,7 @@ export async function POST(req: Request) {
       : undefined;
 
   const logoMask =
-    kind === "personalizada" &&
+    needsLogo(kind) &&
     typeof design?.logoMask === "string" &&
     /^[01]{64,2500}$/.test(design.logoMask)
       ? design.logoMask
@@ -113,11 +121,12 @@ export async function POST(req: Request) {
       template: "clasica",
       bodyColor: design?.bodyColor ?? "negro",
       accentColor: design?.accentColor ?? "amarillo",
-      line1: kind === "generica" ? "TAP" : design.line1.trim().slice(0, 22),
+      line1: kind === "generica" ? "TAP" : (design.line1 || "").trim().slice(0, 22),
       line2: "RESEÑA",
       logoDataUrl: logo,
       logoMask,
       googleUrl: design.googleUrl.trim(),
+      extraUrl,
     },
     address: normalized,
     productPrice,
