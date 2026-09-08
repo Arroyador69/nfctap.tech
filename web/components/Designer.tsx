@@ -210,7 +210,8 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
                     </label>
                     <p className="mt-2 text-xs text-[#8a8173]">
                       PNG con fondo transparente si puedes. Cuadrado o redondo, unos 800×800 px. Se
-                      imprime en el color de acento, del mismo tamaño que la G (~34 mm).
+                      imprime en el color de acento, del mismo tamaño que la G (~28 mm), encima del
+                      hueco NFC (el hueco no lleva tinta encima).
                     </p>
                     {design.logoDataUrl && (
                       <button
@@ -227,14 +228,14 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
                       value={design.line1}
                       maxLength={22}
                       autoComplete="organization"
-                      placeholder="Se imprime sobre TAP / RESEÑA"
+                      placeholder="Entre TAP y RESEÑA"
                       onChange={(e) => patch({ line1: e.target.value })}
                     />
                   </Field>
                 </>
               ) : (
                 <p className="rounded-2xl bg-[#faf6ee] px-4 py-3 text-sm text-[#5c564c]">
-                  Genérica: G de Google, TAP / RESEÑA y pie NFCTap. Elige cuerpo, acento y el enlace de Google.
+                  Genérica: G de Google, TAP / RESEÑA, pie NFCTap y hueco NFC abierto. Elige cuerpo, acento y el enlace.
                 </p>
               )}
 
@@ -321,7 +322,7 @@ export function Designer({ initialKind = "personalizada", shipping, mode = "publ
               </h2>
               <p className="text-sm text-[#6f675c]">
                 {admin
-                  ? "En mano o a Correos. El pedido queda listo para bajar el ZIP de impresión."
+                  ? "En mano o a Correos. El ZIP (01_cuerpo + 02_acento) es el mismo atril que ves aquí."
                   : "España. El código postal elige la tarifa de Correos. Solo se encarga: no hay descarga."}
               </p>
 

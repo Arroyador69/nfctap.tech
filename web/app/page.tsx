@@ -40,7 +40,7 @@ export default function HomePage() {
           {[
             ["1. Eliges color", "Genérica negra + amarilla, o blanco + negro, o negro + rojo. La personalizada pone tu logo en el acento."],
             ["2. TAP", "Acerca el móvil. Se abre Google Reviews. Sin app, sin QR sucio."],
-            ["3. Lo fabricamos", "Atril con pie, NFC hundido. Llega programado a tu enlace."],
+            ["3. Lo fabricamos", "Atril con pie y hueco NFC a la vista. Llega programado a tu enlace."],
           ].map(([t, d]) => (
             <article key={t} className="rounded-[24px] border border-[#e6ddd0] bg-white/70 p-5">
               <h3 className="font-semibold">{t}</h3>
@@ -56,7 +56,7 @@ export default function HomePage() {
           <article className="rounded-[28px] border border-[#e6ddd0] bg-white p-6">
             <h3 className="text-xl font-semibold">Genérica</h3>
             <p className="mt-2 text-sm text-[#6f675c]">
-              Atril con pie. G de Google, TAP / RESEÑA y cinco estrellas. Programada a tu enlace de Google.
+              Atril con pie. G de Google, TAP / RESEÑA, cinco estrellas y hueco NFC abierto. Programada a tu enlace.
             </p>
             <p className="mt-6 text-4xl font-semibold">{euros(PRICES.generica[1])}</p>
             <p className="text-sm text-[#8a8173]">una · dos {euros(PRICES.generica[2])}</p>
@@ -71,7 +71,7 @@ export default function HomePage() {
             <p className="text-xs uppercase tracking-wider text-[#e2b43a]">La que más se pide</p>
             <h3 className="mt-1 text-xl font-semibold">Personalizada</h3>
             <p className="mt-2 text-sm text-[#d5cbb8]">
-              El mismo atril. Tu logo en el color de acento, TAP / RESEÑA y estrellas. El nombre es opcional.
+              El mismo atril y el mismo hueco NFC. Tu logo en el acento, TAP / RESEÑA y estrellas. El nombre es opcional.
             </p>
             <p className="mt-6 text-4xl font-semibold">{euros(PRICES.personalizada[1])}</p>
             <p className="text-sm text-[#b9ae99]">

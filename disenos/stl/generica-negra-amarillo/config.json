@@ -12,9 +12,9 @@
   "pie_z": 54.0,
   "nfc": {
     "sticker": 25.0,
-    "well": 36.0,
+    "well": 34.0,
     "seat": 30.0,
-    "z_pause": 4.8
+    "open": true
   },
   "textos": [
     "TAP",

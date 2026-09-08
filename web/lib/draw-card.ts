@@ -1,68 +1,103 @@
-import { ACCENT_HEX, BODY_COLORS, BRAND } from "./catalog";
+import { ACCENT_HEX, BODY_COLORS } from "./catalog";
+import { ATRIL } from "./atril-geom";
+import { PIXEL_FONT } from "./atril-mesh";
 import { drawGoogleG } from "./google-g";
+import { printText } from "./print-spec";
 import type { CardDesign } from "./types";
 
 export const CARD_W = 750;
 export const CARD_H = 1200;
-/** Mismo hueco que la G impresa (~34 mm en la placa de 76 mm). */
-export const MARK_SIZE = 200;
+export const MARK_SIZE = ATRIL.MARK_R * 2;
+
+const PAD_TOP = 72;
+const SCALE = CARD_W / ATRIL.FOOT_W;
+
+function px(x: number) {
+  return CARD_W / 2 + x * SCALE;
+}
+
+function py(y: number) {
+  return PAD_TOP + (ATRIL.FOOT_Y + ATRIL.FACE_H - y) * SCALE;
+}
+
+function shade(hex: string, amount: number) {
+  const n = hex.replace("#", "");
+  const r = Math.max(0, Math.min(255, parseInt(n.slice(0, 2), 16) + amount));
+  const g = Math.max(0, Math.min(255, parseInt(n.slice(2, 4), 16) + amount));
+  const b = Math.max(0, Math.min(255, parseInt(n.slice(4, 6), 16) + amount));
+  return `rgb(${r},${g},${b})`;
+}
 
 export function drawCardFace(
   ctx: CanvasRenderingContext2D,
   design: CardDesign,
   logo?: HTMLImageElement | null,
 ) {
-  const w = CARD_W;
-  const h = CARD_H;
   const generic = design.kind !== "personalizada";
   const body = BODY_COLORS.find((c) => c.id === design.bodyColor)?.hex ?? "#171513";
   const accent = ACCENT_HEX[design.accentColor] ?? ACCENT_HEX.amarillo;
-  const light = design.bodyColor === "blanco";
-  const muted = light ? "rgba(28,25,21,0.55)" : "rgba(246,241,231,0.62)";
-  const r = 42;
+  const well = shade(body, design.bodyColor === "blanco" ? -32 : 22);
+  const floor = shade(body, design.bodyColor === "blanco" ? -48 : 8);
 
-  ctx.clearRect(0, 0, w, h);
-  roundRect(ctx, 0, 0, w, h, r);
+  ctx.clearRect(0, 0, CARD_W, CARD_H);
+  ctx.fillStyle = "#f3eee4";
+  ctx.fillRect(0, 0, CARD_W, CARD_H);
+
+  const faceTop = py(ATRIL.FOOT_Y + ATRIL.FACE_H);
+  const faceBot = py(ATRIL.FOOT_Y);
+  const faceL = px(-ATRIL.FACE_W / 2);
+  const faceR = px(ATRIL.FACE_W / 2);
+  roundRect(ctx, faceL, faceTop, faceR - faceL, faceBot - faceTop, ATRIL.FACE_R * SCALE);
   ctx.fillStyle = body;
   ctx.fill();
 
+  const footTop = py(ATRIL.FOOT_Y + 1.2);
+  const footBot = footTop + 58;
+  roundRect(ctx, px(-ATRIL.FOOT_W / 2), footTop, ATRIL.FOOT_W * SCALE, footBot - footTop, 10);
+  ctx.fillStyle = body;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(px(0), py(ATRIL.NFC_Y), (ATRIL.WELL_D / 2) * SCALE, 0, Math.PI * 2);
+  ctx.fillStyle = well;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(px(0), py(ATRIL.NFC_Y), (ATRIL.SEAT_D / 2) * SCALE, 0, Math.PI * 2);
+  ctx.fillStyle = floor;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(px(0), py(ATRIL.NFC_Y), (ATRIL.STICKER_D / 2) * SCALE, 0, Math.PI * 2);
+  ctx.strokeStyle = shade(body, design.bodyColor === "blanco" ? -18 : 36);
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([5, 4]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
   for (let i = 0; i < 5; i++) {
-    star(ctx, w / 2 + (i - 2) * 78, 168, 22, accent);
+    star(ctx, px((i - 2) * 12.2), py(ATRIL.STAR_Y), 4.3 * SCALE, accent);
   }
 
   if (generic) {
-    drawGoogleG(ctx, w / 2, 455, MARK_SIZE, accent);
+    drawGoogleG(ctx, px(0), py(ATRIL.MARK_Y), MARK_SIZE * SCALE, accent);
   } else if (logo) {
-    drawAccentLogo(ctx, logo, w / 2, 455, MARK_SIZE, accent);
+    drawAccentLogo(ctx, logo, px(0), py(ATRIL.MARK_Y), MARK_SIZE * SCALE, accent);
   } else {
     ctx.beginPath();
-    ctx.arc(w / 2, 455, MARK_SIZE / 2, 0, Math.PI * 2);
-    ctx.strokeStyle = muted;
-    ctx.setLineDash([10, 8]);
-    ctx.lineWidth = 4;
+    ctx.arc(px(0), py(ATRIL.MARK_Y), (MARK_SIZE / 2) * SCALE, 0, Math.PI * 2);
+    ctx.strokeStyle = accent;
+    ctx.globalAlpha = 0.35;
+    ctx.setLineDash([8, 6]);
+    ctx.lineWidth = 3;
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = muted;
-    ctx.textAlign = "center";
-    ctx.font = "600 22px Outfit, Arial, sans-serif";
-    ctx.fillText("LOGO", w / 2, 460);
+    ctx.globalAlpha = 1;
   }
 
-  ctx.textAlign = "center";
-  ctx.fillStyle = accent;
-  const name = !generic ? design.line1.trim() : "";
-  if (name) {
-    ctx.font = "700 36px Outfit, Arial, sans-serif";
-    wrap(ctx, name.toUpperCase(), w / 2, 600, w - 110, 40);
-  }
-  ctx.font = "700 64px Outfit, Arial, sans-serif";
-  ctx.fillText("TAP", w / 2, name ? 700 : 700);
-  ctx.font = "600 42px Outfit, Arial, sans-serif";
-  ctx.fillText("RESEÑA", w / 2, name ? 760 : 760);
-
-  ctx.fillStyle = muted;
-  ctx.font = "500 18px Outfit, Arial, sans-serif";
-  ctx.fillText(BRAND.domain, w / 2, h - 70);
+  drawPixelText(ctx, "TAP", px(0), py(ATRIL.TAP_Y), 1.55 * SCALE, accent);
+  drawPixelText(ctx, "RESEÑA", px(0), py(ATRIL.RESE_Y), 1.15 * SCALE, accent);
+  const name = !generic ? printText(design.line1 || "").slice(0, 16) : "";
+  if (name) drawPixelText(ctx, name, px(0), py(ATRIL.NAME_Y), 0.72 * SCALE, accent);
+  drawPixelText(ctx, "NFCTAP.TECH", px(0), (footTop + footBot) / 2, 0.62 * SCALE, accent);
 }
 
 function hexRgb(hex: string): [number, number, number] {
@@ -70,7 +105,6 @@ function hexRgb(hex: string): [number, number, number] {
   return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
 }
 
-/** Logo a un color (el acento). Oscuro o tinta = filamento; el fondo se come. */
 function drawAccentLogo(
   ctx: CanvasRenderingContext2D,
   img: HTMLImageElement,
@@ -111,26 +145,36 @@ function drawAccentLogo(
   ctx.drawImage(off, cx - size / 2, cy - size / 2);
 }
 
-function wrap(
+export function drawPixelText(
   ctx: CanvasRenderingContext2D,
   text: string,
-  x: number,
-  y: number,
-  max: number,
-  lh: number,
+  cx: number,
+  cy: number,
+  pixel: number,
+  color: string,
 ) {
-  const words = text.split(" ");
-  let line = "";
-  let yy = y;
-  for (const word of words) {
-    const test = line ? `${line} ${word}` : word;
-    if (ctx.measureText(test).width > max) {
-      ctx.fillText(line, x, yy);
-      line = word;
-      yy += lh;
-    } else line = test;
+  const cells: [number, number][] = [];
+  let x = 0;
+  for (const ch of text.toUpperCase()) {
+    const glyph = PIXEL_FONT[ch] ?? PIXEL_FONT[" "];
+    glyph.forEach((line, row) => {
+      [...line].forEach((bit, col) => {
+        if (bit === "1") cells.push([x + col, 6 - row]);
+      });
+    });
+    x += 6;
   }
-  if (line) ctx.fillText(line, x, yy);
+  if (!cells.length) return;
+  const xs = cells.map((p) => p[0]);
+  const ys = cells.map((p) => p[1]);
+  const w = (Math.max(...xs) + 1) * pixel;
+  const h = (Math.max(...ys) + 1) * pixel;
+  const ox = cx - w / 2;
+  const oy = cy - h / 2;
+  ctx.fillStyle = color;
+  for (const [col, row] of cells) {
+    ctx.fillRect(ox + col * pixel, oy + row * pixel, pixel * 0.92, pixel * 0.92);
+  }
 }
 
 function roundRect(
@@ -156,7 +200,7 @@ function star(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, 
   ctx.beginPath();
   for (let i = 0; i < 10; i++) {
     const ang = -Math.PI / 2 + (i * Math.PI) / 5;
-    const rad = i % 2 === 0 ? r : r * 0.4;
+    const rad = i % 2 === 0 ? r : r * 0.42;
     const x = cx + Math.cos(ang) * rad;
     const y = cy + Math.sin(ang) * rad;
     if (i === 0) ctx.moveTo(x, y);

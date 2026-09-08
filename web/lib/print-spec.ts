@@ -1,24 +1,25 @@
 import { ACCENT_HEX, BODY_COLORS } from "./catalog";
+import { ATRIL } from "./atril-geom";
 import type { Order } from "./types";
 
 /** Timeskey Amazon B08LD99GZT: pegatina PET NTAG215 Ø25 × ~0,2 mm. */
 export const NFC_STOCK = {
   id: "moneda_25" as const,
-  tagDiameter: 25,
-  /** Hueco real (preset 28 mm + 0,4 mm de holgura de impresora). */
-  cavityDiameter: 28.4,
-  cavityThickness: 0.8,
+  tagDiameter: ATRIL.STICKER_D,
+  cavityDiameter: ATRIL.WELL_D,
+  seatDiameter: ATRIL.SEAT_D,
+  cavityThickness: ATRIL.Z_GUIDE - ATRIL.Z_FLOOR,
 };
 
 export const STAND = {
-  ancho: 70,
-  alto: 112,
-  grosor: 4,
-  radio: 6,
+  ancho: ATRIL.FACE_W,
+  alto: ATRIL.FACE_H,
+  grosor: ATRIL.FACE_T,
+  radio: ATRIL.FACE_R,
   nfc: NFC_STOCK.id,
-  nfc_desde_base: 1.2,
+  nfc_desde_base: ATRIL.Z_FLOOR,
   nfc_grosor: NFC_STOCK.cavityThickness,
-  relieve: 0.4,
+  relieve: ATRIL.RELIEF,
 };
 
 export type PrintSpec = {
@@ -36,14 +37,12 @@ export type PrintSpec = {
   relieve: number;
   linea1: string;
   linea2: string;
+  nombreNegocio?: string;
   logoMask?: string;
   googleUrl: string;
   colores: {
     cuerpo: string;
-    estrellas: string;
-    texto: string;
-    icono: string;
-    soporte: string;
+    acento: string;
   };
   cliente: string;
 };
@@ -73,7 +72,7 @@ export function slugName(order: Order) {
 export function orderToSpec(order: Order): PrintSpec {
   const generic = order.kind === "generica";
   const body = BODY_COLORS.find((c) => c.id === order.design.bodyColor)?.label ?? "negro";
-  const stars = order.design.accentColor;
+  const accent = order.design.accentColor;
   return {
     version: 1,
     orderId: order.id,
@@ -83,20 +82,18 @@ export function orderToSpec(order: Order): PrintSpec {
     ...STAND,
     linea1: "TAP",
     linea2: "RESEÑA",
+    nombreNegocio: generic ? undefined : order.design.line1,
     logoMask: generic ? undefined : order.design.logoMask,
     googleUrl: order.design.googleUrl,
     colores: {
       cuerpo: `${order.design.bodyColor} (${body})`,
-      estrellas: `${stars} (${ACCENT_HEX[stars] ?? stars})`,
-      texto: `${stars}`,
-      icono: `${stars}`,
-      soporte: `${order.design.bodyColor} (${body})`,
+      acento: `${accent} (${ACCENT_HEX[accent] ?? accent})`,
     },
     cliente: order.address.name,
   };
 }
 
-export function pauseLayer(spec: PrintSpec) {
-  const z = spec.nfc_desde_base + STAND.nfc_grosor;
-  return { z, layer: Math.round(z / 0.2) };
+/** Hueco abierto: no hay pausa. Se deja por compatibilidad del dashboard. */
+export function pauseLayer(_spec: PrintSpec) {
+  return { z: 0, layer: 0, open: true as const };
 }

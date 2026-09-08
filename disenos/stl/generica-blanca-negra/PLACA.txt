@@ -5,4 +5,4 @@ Importa los 4 STL:
   01_cuerpo_a.stl + 02_acento_a.stl  → Agrupar (pieza 1)
   01_cuerpo_b.stl + 02_acento_b.stl  → Agrupar (pieza 2)
 NO Reparar. No uses un STL x2 viejo.
-Misma pausa capa 24 en las dos. Una pegatina por hueco.
+Hueco abierto: una pegatina por pozo al terminar, sin pausa.

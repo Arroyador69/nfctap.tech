@@ -1,12 +1,43 @@
 "use client";
 
-import { BODY_COLORS } from "@/lib/catalog";
-import { CARD_H, CARD_W, drawCardFace } from "@/lib/draw-card";
+import { ACCENT_HEX, BODY_COLORS } from "@/lib/catalog";
+import { ATRIL } from "@/lib/atril-geom";
+import { buildAtrilMeshes, type Mesh } from "@/lib/atril-mesh";
 import type { CardDesign } from "@/lib/types";
 import { ContactShadows, OrbitControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import * as THREE from "three";
+
+const SCALE = 0.0132;
+
+function toGeometry(mesh: Mesh) {
+  const pos = new Float32Array(mesh.tris.length * 9);
+  let i = 0;
+  for (const [a, b, c] of mesh.tris) {
+    pos[i++] = a[0];
+    pos[i++] = a[1];
+    pos[i++] = a[2];
+    pos[i++] = b[0];
+    pos[i++] = b[1];
+    pos[i++] = b[2];
+    pos[i++] = c[0];
+    pos[i++] = c[1];
+    pos[i++] = c[2];
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  g.computeVertexNormals();
+  return g;
+}
+
+function shade(hex: string, amount: number) {
+  const n = hex.replace("#", "");
+  const r = Math.max(0, Math.min(255, parseInt(n.slice(0, 2), 16) + amount));
+  const g = Math.max(0, Math.min(255, parseInt(n.slice(2, 4), 16) + amount));
+  const b = Math.max(0, Math.min(255, parseInt(n.slice(4, 6), 16) + amount));
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+}
 
 export function Card3D({ design, compact = false }: { design: CardDesign; compact?: boolean }) {
   return (
@@ -20,79 +51,71 @@ export function Card3D({ design, compact = false }: { design: CardDesign; compac
       onContextMenu={(e) => e.preventDefault()}
     >
       <Canvas
-        camera={{ position: [0.35, 0.12, 2.55], fov: 32 }}
+        camera={{ position: [0.42, 0.28, 2.35], fov: 32 }}
         gl={{ antialias: true, preserveDrawingBuffer: false }}
         dpr={[1, 1.75]}
         style={{ touchAction: "none" }}
       >
         <color attach="background" args={["#f3eee4"]} />
-        <ambientLight intensity={0.9} />
-        <spotLight position={[3, 5, 5]} intensity={1.15} angle={0.45} penumbra={0.85} />
-        <directionalLight position={[-2, 2, 3]} intensity={0.3} />
-        <Plaque design={design} />
+        <ambientLight intensity={0.85} />
+        <spotLight position={[2.4, 4.2, 4.2]} intensity={1.2} angle={0.5} penumbra={0.8} />
+        <directionalLight position={[-2.2, 2.4, 2.8]} intensity={0.35} />
+        <directionalLight position={[0.2, 1.6, 3.2]} intensity={0.45} />
+        <Atril design={design} />
         <OrbitControls
           enablePan={false}
           enableZoom={false}
           autoRotate={false}
-          rotateSpeed={0.4}
-          minPolarAngle={Math.PI / 2 - 0.18}
-          maxPolarAngle={Math.PI / 2 + 0.08}
-          minAzimuthAngle={-0.35}
-          maxAzimuthAngle={0.35}
-          target={[0, -0.08, 0]}
+          rotateSpeed={0.45}
+          minPolarAngle={Math.PI / 2 - 0.55}
+          maxPolarAngle={Math.PI / 2 + 0.12}
+          minAzimuthAngle={-0.7}
+          maxAzimuthAngle={0.7}
+          target={[0, -0.02, 0.18]}
         />
-        <ContactShadows position={[0, -1.08, 0]} opacity={0.18} scale={3.8} blur={2.8} />
+        <ContactShadows position={[0, -0.86, 0.22]} opacity={0.2} scale={3.6} blur={2.6} />
       </Canvas>
     </div>
   );
 }
 
-function Plaque({ design }: { design: CardDesign }) {
+function Atril({ design }: { design: CardDesign }) {
   const bodyHex = BODY_COLORS.find((c) => c.id === design.bodyColor)?.hex ?? "#141416";
+  const accentHex = ACCENT_HEX[design.accentColor] ?? ACCENT_HEX.amarillo;
+  const wellHex = shade(bodyHex, design.bodyColor === "blanco" ? -28 : 18);
 
-  const texture = useMemo(() => {
-    const canvas = document.createElement("canvas");
-    canvas.width = CARD_W;
-    canvas.height = CARD_H;
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.anisotropy = 8;
-    return tex;
-  }, []);
+  const meshes = useMemo(
+    () =>
+      buildAtrilMeshes({
+        kind: design.kind === "personalizada" ? "personalizada" : "generica",
+        logoMask: design.logoMask,
+        line1: design.line1,
+      }),
+    [design.kind, design.logoMask, design.line1],
+  );
 
-  useEffect(() => {
-    const canvas = texture.image as HTMLCanvasElement;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+  const bodyGeo = useMemo(() => toGeometry(meshes.cuerpo), [meshes]);
+  const accentGeo = useMemo(() => toGeometry(meshes.acento), [meshes]);
 
-    const apply = (logo?: HTMLImageElement) => {
-      drawCardFace(ctx, design, logo);
-      texture.needsUpdate = true;
-    };
-
-    if (design.logoDataUrl && design.kind !== "generica") {
-      const img = new Image();
-      img.onload = () => apply(img);
-      img.src = design.logoDataUrl;
-    } else apply();
-  }, [design, texture]);
-
-  const edge = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: bodyHex, roughness: 0.72, metalness: 0.04 }),
+  const bodyMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: bodyHex, roughness: 0.78, metalness: 0.03 }),
     [bodyHex],
   );
-  const front = useMemo(
-    () => new THREE.MeshStandardMaterial({ map: texture, roughness: 0.55, metalness: 0.05 }),
-    [texture],
+  const accentMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: accentHex, roughness: 0.48, metalness: 0.08 }),
+    [accentHex],
+  );
+  const wellMat = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: wellHex, roughness: 0.9, metalness: 0 }),
+    [wellHex],
   );
 
   return (
-    <group rotation={[0.04, 0.18, 0]} position={[0, 0.04, 0]}>
-      <mesh castShadow material={[edge, edge, edge, edge, front, edge]} position={[0, 0.06, 0]}>
-        <boxGeometry args={[1.08, 1.62, 0.09]} />
-      </mesh>
-      <mesh castShadow material={edge} position={[0, -0.82, 0.22]}>
-        <boxGeometry args={[1.22, 0.12, 0.72]} />
+    <group scale={SCALE} position={[0, -0.78, -0.12]} rotation={[0.06, 0.2, 0]}>
+      <mesh geometry={bodyGeo} material={bodyMat} castShadow />
+      <mesh geometry={accentGeo} material={accentMat} castShadow />
+      <mesh position={[0, ATRIL.NFC_Y, ATRIL.Z_FLOOR + 0.04]} material={wellMat}>
+        <circleGeometry args={[ATRIL.SEAT_D / 2 - 0.15, 48]} />
       </mesh>
     </group>
   );

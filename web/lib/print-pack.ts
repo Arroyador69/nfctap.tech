@@ -1,12 +1,12 @@
 import JSZip from "jszip";
-import { orderToSpec, pauseLayer } from "./print-spec";
+import { ATRIL } from "./atril-geom";
+import { orderToSpec } from "./print-spec";
 import { buildCardStls, pauseNote } from "./stl-card";
 import type { Order } from "./types";
 
 export async function buildPrintPack(order: Order) {
   const spec = orderToSpec(order);
   const files = buildCardStls(spec);
-  const { z, layer } = pauseLayer(spec);
   const zip = new JSZip();
   const folder = zip.folder(spec.nombre)!;
   for (const [name, buf] of Object.entries(files)) {
@@ -16,21 +16,20 @@ export async function buildPrintPack(order: Order) {
   folder.file("PAUSA_NFC.txt", pauseNote(spec));
   folder.file(
     "COLORES.txt",
-    `Asigna en Orca-Flashforge (IFS, 4 canales)
+    `Flash Studio / Orca-Flashforge — AD5X
 
-01_cuerpo.stl     → ${spec.colores.cuerpo}
-02_estrellas.stl  → ${spec.colores.estrellas}
-03_texto.stl      → ${spec.colores.texto}
-04_icono.stl      → ${spec.colores.icono}
-05_soporte.stl    → ${spec.colores.soporte}
+01_cuerpo.stl  → ${spec.colores.cuerpo}
+02_acento.stl  → ${spec.colores.acento}
 
+Agrupar 01 + 02. NO Reparar el modelo.
+Capa 0,20 mm, 3 perímetros, gyroid 15 %, Arachne.
 Cantidad: ${spec.qty}
-Pausa NFC: ${z.toFixed(2)} mm / capa ${layer}
+Hueco NFC abierto Ø${ATRIL.WELL_D} (sin pausa). Pegatina Ø${ATRIL.STICKER_D} al terminar.
 `,
   );
   folder.file(
     "NFC.txt",
-    `URL a grabar en el chip (NFC Tools → URL):\n${spec.googleUrl}\n\nCliente: ${spec.cliente}\nPedido: ${spec.orderId}\n`,
+    `URL a grabar en el chip (NFC Tap Config → URL):\n${spec.googleUrl}\n\nCliente: ${spec.cliente}\nPedido: ${spec.orderId}\n`,
   );
   if (order.previewDataUrl?.startsWith("data:image/")) {
     const b64 = order.previewDataUrl.split(",")[1] || "";
@@ -38,14 +37,17 @@ Pausa NFC: ${z.toFixed(2)} mm / capa ${layer}
   }
   folder.file(
     "LEEME.txt",
-    `Este zip es el modelo que se diseñó en el editor.
+    `Este zip es el mismo atril que ves en la web (y en Flash).
 
-1. Abre Orca-Flashforge, impresora AD5X.
-2. Arrastra 01_cuerpo + 02_estrellas + 03_texto + 04_icono (y 05_soporte aparte o en la misma placa).
-3. Si no coinciden: seleccionar → Ensamblar.
-4. Color por pieza según COLORES.txt
-5. Pausa en la capa de PAUSA_NFC.txt
-6. Al terminar, graba el enlace de NFC.txt (Timeskey NTAG215 Ø25 mm)
+1. Abre Flash Studio / Orca-Flashforge, impresora AD5X.
+2. Importa 01_cuerpo.stl + 02_acento.stl.
+3. Selecciónalos → Agrupar. NO pulses Reparar.
+4. Color: cuerpo = ${spec.colores.cuerpo}, acento = ${spec.colores.acento}.
+5. Imprime entero. El hueco NFC queda abierto (se ve, más grande que la pegatina).
+6. Al terminar, mete la pegatina Timeskey Ø25 en el asiento (adhesivo abajo).
+7. Graba el enlace de NFC.txt.
+
+Genérica = G de Google. Personalizada = tu logo en acento. TAP / RESEÑA siempre.
 `,
   );
   return zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });

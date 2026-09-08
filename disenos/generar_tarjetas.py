@@ -244,6 +244,79 @@ def extrude_ring(outer: list[tuple[float, float]], inner: list[tuple[float, floa
     return m
 
 
+def _ray_hit_poly(
+    ox: float, oy: float, dx: float, dy: float, poly: list[tuple[float, float]]
+) -> tuple[float, float] | None:
+    best_t = 1e18
+    hit: tuple[float, float] | None = None
+    for i, (ax, ay) in enumerate(poly):
+        bx, by = poly[(i + 1) % len(poly)]
+        ex, ey = bx - ax, by - ay
+        det = dx * ey - dy * ex
+        if abs(det) < 1e-12:
+            continue
+        tx, ty = ax - ox, ay - oy
+        t = (tx * ey - ty * ex) / det
+        u = (tx * dy - ty * dx) / det
+        if t > 1e-8 and -1e-6 <= u <= 1.0 + 1e-6 and t < best_t:
+            best_t = t
+            hit = (ox + t * dx, oy + t * dy)
+    return hit
+
+
+def extrude_matched_ring(
+    outer_pts: list[tuple[float, float]],
+    inner_pts: list[tuple[float, float]],
+    z0: float,
+    z1: float,
+) -> Mesh:
+    """Anillo 1:1 (outer[i] con inner[i]). No reordenar: si no, el hueco se tapa."""
+    n = len(inner_pts)
+    m = Mesh()
+
+    def cap(z: float, flip: bool) -> None:
+        for s in range(n):
+            o1, i1 = outer_pts[s], inner_pts[s]
+            o2, i2 = outer_pts[(s + 1) % n], inner_pts[(s + 1) % n]
+            if flip:
+                m.add((o1[0], o1[1], z), (i1[0], i1[1], z), (o2[0], o2[1], z))
+                m.add((o2[0], o2[1], z), (i1[0], i1[1], z), (i2[0], i2[1], z))
+            else:
+                m.add((o1[0], o1[1], z), (o2[0], o2[1], z), (i1[0], i1[1], z))
+                m.add((o2[0], o2[1], z), (i2[0], i2[1], z), (i1[0], i1[1], z))
+
+    cap(z0, flip=True)
+    cap(z1, flip=False)
+    for i in range(n):
+        x1, y1 = outer_pts[i]
+        x2, y2 = outer_pts[(i + 1) % n]
+        m.add((x1, y1, z0), (x2, y2, z0), (x2, y2, z1))
+        m.add((x1, y1, z0), (x2, y2, z1), (x1, y1, z1))
+        x1, y1 = inner_pts[i]
+        x2, y2 = inner_pts[(i + 1) % n]
+        m.add((x1, y1, z0), (x1, y1, z1), (x2, y2, z1))
+        m.add((x1, y1, z0), (x2, y2, z1), (x2, y2, z0))
+    return m
+
+
+def extrude_plate_hole(
+    outer: list[tuple[float, float]],
+    hole: list[tuple[float, float]],
+    z0: float,
+    z1: float,
+) -> Mesh:
+    """Placa con hueco convexo (también si el pozo no está centrado). No tapa el centro."""
+    outer = ensure_ccw(outer)
+    hole_ccw = ensure_ccw(hole)
+    cx = sum(p[0] for p in hole_ccw) / len(hole_ccw)
+    cy = sum(p[1] for p in hole_ccw) / len(hole_ccw)
+    hits: list[tuple[float, float]] = []
+    for x, y in hole_ccw:
+        h = _ray_hit_poly(cx, cy, x - cx, y - cy, outer)
+        hits.append(h if h is not None else (x, y))
+    return extrude_matched_ring(hits, hole_ccw, z0, z1)
+
+
 # ---------------------------------------------------------------------------
 # Fuente bitmap 5x7 (mayúsculas + dígitos + algunos signos)
 # ---------------------------------------------------------------------------

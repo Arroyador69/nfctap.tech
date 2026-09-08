@@ -22,7 +22,7 @@ from generar_tarjetas import (  # noqa: E402
     Mesh,
     circle,
     extrude,
-    extrude_ring,
+    extrude_plate_hole,
     google_g_mesh,
     google_g_pil,
     google_g_svg,
@@ -44,16 +44,19 @@ FOOT_Y = 8.0
 FOOT_Z = 54.0
 FOOT_W = 88.0
 
-# Pegatina Ø25: pozo holgado + asiento. Si el hueco es justo, al reanudar
-# se forma la "montañita" sobre el borde de la pegatina.
+# Pegatina Ø25: pozo ABIERTO (se ve). Nada de acento encima → no montañita.
+# Ø34 cabe entero en la placa (Ø38 rozaba el borde de abajo y tapaba el hueco).
 STICKER_D = 25.0
-WELL_D = 36.0
+WELL_D = 34.0
 SEAT_D = 30.0
 Z_FLOOR = 3.20
 Z_GUIDE = 3.60
-Z_PAUSE = 4.80
-COVER = FACE_T - Z_PAUSE
-NFC_Y = FOOT_Y + FACE_H * 0.54
+STAR_Y = FOOT_Y + FACE_H - 11.0
+MARK_Y = 86.0
+MARK_R = 14.0
+TAP_Y = 65.0
+RESE_Y = 54.0
+NFC_Y = 30.0
 RELIEF = 0.50
 
 COLORWAYS = (
@@ -97,9 +100,8 @@ def body() -> Mesh:
     seat = circle(0.0, NFC_Y, SEAT_D / 2, 48)
     m = Mesh()
     m.extend(extrude(outer, 0.0, Z_FLOOR))
-    m.extend(extrude_ring(outer, well, Z_FLOOR, Z_GUIDE))
-    m.extend(extrude_ring(outer, seat, Z_GUIDE, Z_PAUSE))
-    m.extend(extrude(outer, Z_PAUSE, FACE_T))
+    m.extend(extrude_plate_hole(outer, seat, Z_FLOOR, Z_GUIDE))
+    m.extend(extrude_plate_hole(outer, well, Z_GUIDE, FACE_T))
     m.extend(
         shifted(
             extrude(rounded_rect(FOOT_W, FOOT_Y + 2.4, 2.2, 8), 0.0, FOOT_Z),
@@ -113,14 +115,13 @@ def body() -> Mesh:
 def accent() -> Mesh:
     m = Mesh()
     z0, z1 = FACE_T, FACE_T + RELIEF
-    star_y = FOOT_Y + FACE_H - 13.0
     for i in range(5):
-        m.extend(extrude(star((i - 2) * 12.2, star_y, 4.3), z0, z1))
+        m.extend(extrude(star((i - 2) * 12.2, STAR_Y, 4.3), z0, z1))
 
-    m.extend(google_g_mesh(0.0, NFC_Y, 16.8, z0, z1 + 0.08))
+    m.extend(google_g_mesh(0.0, MARK_Y, MARK_R, z0, z1 + 0.08))
 
-    m.extend(shifted(text_mesh("TAP", pixel=1.55, height=RELIEF, z0=z0), 0.0, NFC_Y - 28.0))
-    m.extend(shifted(text_mesh("RESEÑA", pixel=1.15, height=RELIEF, z0=z0), 0.0, NFC_Y - 40.5))
+    m.extend(shifted(text_mesh("TAP", pixel=1.55, height=RELIEF, z0=z0), 0.0, TAP_Y))
+    m.extend(shifted(text_mesh("RESEÑA", pixel=1.15, height=RELIEF, z0=z0), 0.0, RESE_Y))
 
     m.extend(
         shifted(
@@ -135,28 +136,43 @@ def accent() -> Mesh:
 
 def write_preview(path: Path, cw: dict) -> None:
     body_c, acc, bg = cw["hex_cuerpo"], cw["hex_acento"], cw["hex_fondo"]
-    ink = "#F6F1E7" if cw["cuerpo"] == "negro" else "#1C1915"
+    sc = 420 / FACE_W
+    top = 200.0
+
+    def sx(x: float) -> float:
+        return 540 + x * sc
+
+    def sy(y: float) -> float:
+        return top + (FOOT_Y + FACE_H - y) * sc
+
     stars = " ".join(
-        f'<polygon points="{_star_svg(540 + (i - 2) * 52, 210, 16)}" fill="{acc}"/>' for i in range(5)
+        f'<polygon points="{_star_svg(sx((i - 2) * 12.2), sy(STAR_Y), 4.3 * sc)}" fill="{acc}"/>'
+        for i in range(5)
     )
+    well_fill = "#2a2a2e" if cw["cuerpo"] == "negro" else "#d8d2c6"
+    seat_fill = "#1a1a1c" if cw["cuerpo"] == "negro" else "#c4bdb0"
+    face_x = sx(-FACE_W / 2)
+    face_y = sy(FOOT_Y + FACE_H)
     svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1440" width="1080" height="1440">
   <rect width="1080" height="1440" fill="{bg}"/>
   <text x="540" y="78" text-anchor="middle" fill="#1C1915" font-family="Georgia, serif" font-size="40">NFCTap</text>
   <text x="540" y="118" text-anchor="middle" fill="#7A6A52" font-family="Georgia, serif" font-size="20">Genérica 15 € · {cw["cuerpo"]} + {cw["acento"]}</text>
-  <rect x="330" y="168" width="420" height="980" rx="28" fill="{body_c}"/>
+  <rect x="{face_x:.1f}" y="{face_y:.1f}" width="{FACE_W * sc:.1f}" height="{FACE_H * sc:.1f}" rx="{FACE_R * sc:.1f}" fill="{body_c}"/>
   {stars}
-  {google_g_svg(540, 520, 92, acc)}
-  <text x="540" y="720" text-anchor="middle" fill="{acc}" font-family="Outfit, Helvetica, Arial, sans-serif" font-size="54" font-weight="700">TAP</text>
-  <text x="540" y="790" text-anchor="middle" fill="{acc}" font-family="Outfit, Helvetica, Arial, sans-serif" font-size="40">RESEÑA</text>
-  <rect x="300" y="1148" width="480" height="52" rx="8" fill="{body_c}"/>
-  <text x="540" y="1184" text-anchor="middle" fill="{acc}" font-family="Georgia, serif" font-size="22" letter-spacing="3">NFCTAP.TECH</text>
-  <text x="540" y="1290" text-anchor="middle" fill="#1C1915" font-family="Georgia, serif" font-size="22">TAP para dejar tu reseña en Google</text>
-  <text x="540" y="1330" text-anchor="middle" fill="#7A6A52" font-family="Georgia, serif" font-size="16">{cw["nota"]}</text>
-  <text x="540" y="1388" text-anchor="middle" fill="#7A6A52" font-family="Georgia, serif" font-size="14">Atril integrado · PLA {cw["cuerpo"]} + {cw["acento"]} · NFCTap.tech</text>
+  {google_g_svg(sx(0), sy(MARK_Y), MARK_R * sc, acc)}
+  <text x="540" y="{sy(TAP_Y) + 18:.1f}" text-anchor="middle" fill="{acc}" font-family="Outfit, Helvetica, Arial, sans-serif" font-size="44" font-weight="700">TAP</text>
+  <text x="540" y="{sy(RESE_Y) + 14:.1f}" text-anchor="middle" fill="{acc}" font-family="Outfit, Helvetica, Arial, sans-serif" font-size="32">RESEÑA</text>
+  <circle cx="540" cy="{sy(NFC_Y):.1f}" r="{WELL_D / 2 * sc:.1f}" fill="{well_fill}"/>
+  <circle cx="540" cy="{sy(NFC_Y):.1f}" r="{SEAT_D / 2 * sc:.1f}" fill="{seat_fill}"/>
+  <circle cx="540" cy="{sy(NFC_Y):.1f}" r="{STICKER_D / 2 * sc:.1f}" fill="none" stroke="{acc}" stroke-width="1.5" stroke-dasharray="6 5" opacity="0.45"/>
+  <rect x="{sx(-FOOT_W / 2):.1f}" y="{sy(FOOT_Y) + 4:.1f}" width="{FOOT_W * sc:.1f}" height="48" rx="8" fill="{body_c}"/>
+  <text x="540" y="{sy(FOOT_Y) + 36:.1f}" text-anchor="middle" fill="{acc}" font-family="Georgia, serif" font-size="20" letter-spacing="3">NFCTAP.TECH</text>
+  <text x="540" y="1288" text-anchor="middle" fill="#1C1915" font-family="Georgia, serif" font-size="22">Hueco NFC abierto · TAP para tu reseña en Google</text>
+  <text x="540" y="1328" text-anchor="middle" fill="#7A6A52" font-family="Georgia, serif" font-size="16">{cw["nota"]}</text>
+  <text x="540" y="1386" text-anchor="middle" fill="#7A6A52" font-family="Georgia, serif" font-size="14">Atril integrado · PLA {cw["cuerpo"]} + {cw["acento"]} · NFCTap.tech</text>
 </svg>
 """
     path.write_text(svg, encoding="utf-8")
-    _ = ink
 
 
 def _star_svg(cx: float, cy: float, r: float) -> str:
@@ -173,46 +189,47 @@ LEEME = """Atril genérico NFCTap — reseña Google (15 €)
 
 Que es
 ------
-Placa vertical + pie integrado (una pieza). TAP en la G
-y se abre Google Reviews. G oficial de Google (un color de acento).
+Placa vertical + pie integrado. G de Google, TAP / RESEÑA y
+hueco NFC ABIERTO (se ve, más grande que la pegatina).
+Nada de acento encima del hueco: no hay montañita.
 
   01_cuerpo.stl / 02_acento.stl     una pieza (agrupar, no Reparar)
   01_cuerpo_a/b.stl + 02_acento_a/b.stl   dos SUELTAS en la cama
-                                    (no es un STL pegado)
 
-Personalizada (30 €): el MISMO cuerpo. Se cambia el logo y los
-textos. No se rediseña el atril.
+Personalizada (30 €): el MISMO cuerpo. Logo en acento en vez de la G.
 
 Imprime
 -------
 Agrupar 01 + 02. NO Reparar el modelo.
 Capa 0,20 mm, 3 perímetros, gyroid 15 %, Arachne.
-Pausa NFC: capa {capa} ({pause:.2f} mm).
-Pozo Ø36, asiento Ø30: la pegatina Ø25 queda HUNDIDA.
-Adhesivo a la cama. Si sobresale, no reanudes (montañita).
-Se imprime tumbada (cara arriba). Se pone de pie (el pie en la mesa).
+NO hace falta pausa: el pozo queda abierto.
+Pozo Ø{well:.0f}, asiento Ø{seat:.0f}, pegatina Ø{sticker:.0f} HUNDIDA.
+Al terminar, mete la pegatina en el hueco (adhesivo al asiento).
+Se imprime tumbada (cara arriba). Se pone de pie.
 
 Colores de esta carpeta: cuerpo = {cuerpo}, acento = {acento}.
 """
 
 
 def write_notes(dest: Path, cw: dict) -> None:
-    capa = int(round(Z_PAUSE / 0.20))
     (dest / "LEEME.txt").write_text(
-        LEEME.format(capa=capa, pause=Z_PAUSE, cuerpo=cw["cuerpo"], acento=cw["acento"]),
+        LEEME.format(
+            well=WELL_D,
+            seat=SEAT_D,
+            sticker=STICKER_D,
+            cuerpo=cw["cuerpo"],
+            acento=cw["acento"],
+        ),
         encoding="utf-8",
     )
     (dest / "PAUSA_NFC.txt").write_text(
         (
-            "Pausa NFC — atril genérico\n"
-            "==========================\n"
-            f"Altura: {Z_PAUSE:.2f} mm · capa {capa} a 0,20 mm\n"
-            f"Pozo Ø{WELL_D:.0f} · asiento Ø{SEAT_D:.0f} · pegatina Ø{STICKER_D:.0f}\n"
-            f"Tapa encima: {COVER:.2f} mm\n\n"
-            f"Capa {capa} -> Añadir pausa.\n"
-            "Pegatina Timeskey NTAG215 Ø25, plana, adhesivo hacia la cama.\n"
-            "Centrada en el asiento (hundida, no al ras). Reanudar.\n"
-            "Si sobresale, no reanudes: la capa de encima hace montañita.\n"
+            "Hueco NFC — abierto, sin pausa\n"
+            "==============================\n"
+            f"Pozo Ø{WELL_D:.0f} (se ve) · asiento Ø{SEAT_D:.0f} · pegatina Ø{STICKER_D:.0f}\n"
+            f"Suelo del pozo: {Z_FLOOR:.2f} mm. La cara no tapa el hueco.\n\n"
+            "Imprime entero. Al terminar, mete la pegatina Timeskey Ø25\n"
+            "en el asiento (hundida, adhesivo abajo). No hay filamento encima.\n"
         ),
         encoding="utf-8",
     )
@@ -236,7 +253,7 @@ def write_notes(dest: Path, cw: dict) -> None:
             "sticker": STICKER_D,
             "well": WELL_D,
             "seat": SEAT_D,
-            "z_pause": Z_PAUSE,
+            "open": True,
         },
         "textos": ["TAP", "RESEÑA", "NFCTAP.TECH"],
         "nota": cw["nota"],
@@ -270,24 +287,42 @@ def raster_preview(svg_path: Path) -> None:
     rese = ImageFont.truetype(str(sans), 36)
     firm = ImageFont.truetype(str(sans), 22)
     tiny = ImageFont.truetype(str(georgia), 16)
+    sc = 420 / FACE_W
+    top = 200.0
+
+    def sx(x: float) -> float:
+        return 540 + x * sc
+
+    def sy(y: float) -> float:
+        return top + (FOOT_Y + FACE_H - y) * sc
+
+    well_c = (42, 42, 46) if cw["cuerpo"] == "negro" else (216, 210, 198)
+    seat_c = (26, 26, 28) if cw["cuerpo"] == "negro" else (196, 189, 176)
     draw.text((540, 70), "NFCTap", font=title, fill=(28, 25, 21), anchor="mt")
     draw.text((540, 118), f"Genérica 15 € · {cw['cuerpo']} + {cw['acento']}", font=sub, fill=(122, 106, 82), anchor="mt")
-    draw.rounded_rectangle((330, 168, 750, 1148), 28, fill=body)
+    draw.rounded_rectangle(
+        (sx(-FACE_W / 2), sy(FOOT_Y + FACE_H), sx(FACE_W / 2), sy(FOOT_Y)),
+        FACE_R * sc,
+        fill=body,
+    )
     for i in range(5):
-        cx, cy, r = 540 + (i - 2) * 52, 210, 16
+        cx, cy, r = sx((i - 2) * 12.2), sy(STAR_Y), 4.3 * sc
         pts = []
         for k in range(10):
             a = math.radians(-90 + k * 36)
             rr = r if k % 2 == 0 else r * 0.42
             pts.append((cx + rr * math.cos(a), cy + rr * math.sin(a)))
         draw.polygon(pts, fill=acc)
-    google_g_pil(draw, 540, 520, 92, acc, cut=body)
-    draw.text((540, 700), "TAP", font=toca, fill=acc, anchor="mt")
-    draw.text((540, 768), "RESEÑA", font=rese, fill=acc, anchor="mt")
-    draw.rounded_rectangle((300, 1148, 780, 1200), 8, fill=body)
-    draw.text((540, 1174), "NFCTAP.TECH", font=firm, fill=acc, anchor="mm")
-    draw.text((540, 1288), "TAP para dejar tu reseña en Google", font=sub, fill=(28, 25, 21), anchor="mt")
-    draw.text((540, 1330), cw["nota"], font=tiny, fill=(122, 106, 82), anchor="mt")
+    google_g_pil(draw, sx(0), sy(MARK_Y), MARK_R * sc, acc, cut=body)
+    draw.text((540, sy(TAP_Y)), "TAP", font=toca, fill=acc, anchor="mm")
+    draw.text((540, sy(RESE_Y)), "RESEÑA", font=rese, fill=acc, anchor="mm")
+    nx, ny = sx(0), sy(NFC_Y)
+    draw.ellipse((nx - WELL_D / 2 * sc, ny - WELL_D / 2 * sc, nx + WELL_D / 2 * sc, ny + WELL_D / 2 * sc), fill=well_c)
+    draw.ellipse((nx - SEAT_D / 2 * sc, ny - SEAT_D / 2 * sc, nx + SEAT_D / 2 * sc, ny + SEAT_D / 2 * sc), fill=seat_c)
+    draw.rounded_rectangle((sx(-FOOT_W / 2), sy(FOOT_Y) + 4, sx(FOOT_W / 2), sy(FOOT_Y) + 52), 8, fill=body)
+    draw.text((540, sy(FOOT_Y) + 28), "NFCTAP.TECH", font=firm, fill=acc, anchor="mm")
+    draw.text((540, 1288), "Hueco NFC abierto · TAP para tu reseña en Google", font=sub, fill=(28, 25, 21), anchor="mt")
+    draw.text((540, 1328), cw["nota"], font=tiny, fill=(122, 106, 82), anchor="mt")
     draw.text((540, 1386), f"Atril integrado · PLA {cw['cuerpo']} + {cw['acento']} · NFCTap.tech", font=tiny, fill=(122, 106, 82), anchor="mt")
     img.save(png, "PNG")
     img.save(jpg, "JPEG", quality=92, optimize=True)
@@ -348,7 +383,7 @@ def generate_one(cw: dict) -> None:
                 "  01_cuerpo_a.stl + 02_acento_a.stl  → Agrupar (pieza 1)\n"
                 "  01_cuerpo_b.stl + 02_acento_b.stl  → Agrupar (pieza 2)\n"
                 "NO Reparar. No uses un STL x2 viejo.\n"
-                "Misma pausa capa 24 en las dos. Una pegatina por hueco.\n"
+                "Hueco abierto: una pegatina por pozo al terminar, sin pausa.\n"
             ),
             encoding="utf-8",
         )
@@ -362,7 +397,7 @@ def generate_one(cw: dict) -> None:
 
 def generate() -> None:
     print(f"\nAtril genérico  {FACE_W:.0f}x{FACE_H:.0f}x{FACE_T:.0f} mm  pie {FOOT_Z:.0f} mm")
-    print(f"Pausa NFC {Z_PAUSE:.2f} mm  tapa {COVER:.2f} mm")
+    print(f"Hueco NFC abierto Ø{WELL_D:.0f}  asiento Ø{SEAT_D:.0f}")
     for cw in COLORWAYS:
         generate_one(cw)
 

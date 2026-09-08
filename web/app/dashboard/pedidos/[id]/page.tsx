@@ -3,7 +3,8 @@ export const dynamic = "force-dynamic";
 import { DashboardNav } from "@/components/DashboardNav";
 import { isAdmin } from "@/lib/auth";
 import { productLabel } from "@/lib/catalog";
-import { orderToSpec, pauseLayer } from "@/lib/print-spec";
+import { ATRIL } from "@/lib/atril-geom";
+import { orderToSpec } from "@/lib/print-spec";
 import { euros, ZONE_LABEL } from "@/lib/shipping";
 import { getOrder } from "@/lib/store";
 import Link from "next/link";
@@ -20,7 +21,6 @@ export default async function OrderPage({
   const order = await getOrder(id);
   if (!order) notFound();
   const spec = orderToSpec(order);
-  const pause = pauseLayer(spec);
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-10">
@@ -39,11 +39,11 @@ export default async function OrderPage({
         href={`/api/orders/${order.id}/print`}
         className="mt-6 inline-flex min-h-12 items-center rounded-full bg-[#1c1915] px-5 font-semibold text-[#f6f1e7]"
       >
-        Descargar ZIP para Orca
+        Descargar ZIP para Flash
       </a>
       <p className="mt-2 text-sm text-[#6f675c]">
-        STL del modelo + colores + pausa NFC capa {pause.layer} ({pause.z.toFixed(2)} mm) + URL del
-        chip. Lo que se editó es lo que se imprime.
+        Mismo atril que la web: 01_cuerpo + 02_acento, hueco NFC abierto Ø{ATRIL.WELL_D} (sin
+        pausa) y URL del chip. Lo que se ve es lo que se imprime.
       </p>
 
       {order.previewDataUrl && (
@@ -70,7 +70,7 @@ export default async function OrderPage({
         <Item k="Cara" v={`${order.kind === "generica" ? "G de Google" : order.design.line1 || "Logo"} · TAP / RESEÑA`} />
         <Item k="Google / NFC" v={order.design.googleUrl || "Pendiente"} />
         <Item k="Cuerpo" v={spec.colores.cuerpo} />
-        <Item k="Estrellas" v={spec.colores.estrellas} />
+        <Item k="Acento" v={spec.colores.acento} />
         <Item k="Envío" v={euros(order.shippingPrice)} />
         <Item k="Estado" v={order.status} />
       </dl>
