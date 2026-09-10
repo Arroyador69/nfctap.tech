@@ -11,5 +11,6 @@ nfctap-config/ios
 nfctap-config/android
 .DS_Store
 disenos/.venv/
+.venv-mesh/
 __pycache__/
 *.pyc

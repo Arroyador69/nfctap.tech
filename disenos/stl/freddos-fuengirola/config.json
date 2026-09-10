@@ -1,12 +1,13 @@
 {
   "nombre": "freddos-fuengirola",
+  "escala": 0.8,
   "grano": {
-    "rx": 80.0,
-    "ry": 108.0,
+    "rx": 64.0,
+    "ry": 86.4,
     "tilt_deg": -33.0,
     "bbox": [
-      178.4,
-      201.0,
+      142.8,
+      160.8,
       8.0
     ]
   },
@@ -14,9 +15,54 @@
     "sticker": 25.0,
     "well": 36.0,
     "seat": 30.0,
+    "pad": 24.0,
     "z_pause": 4.8,
+    "layer": 24,
     "left": "TAP RESEÑA / Google",
     "right": "TAP PUNTOS / club"
+  },
+  "encaje": {
+    "slot_w": 8.6,
+    "lip": 8.5,
+    "nest": 34.0,
+    "sit": 6.0,
+    "peg_d": 5.8,
+    "peg_hole": 6.6,
+    "peg_len": 7.0,
+    "pegs": [
+      [
+        -41.37,
+        -79.12
+      ],
+      [
+        -19.37,
+        -83.9
+      ],
+      [
+        4.63,
+        -79.4
+      ]
+    ],
+    "s_hueca": true,
+    "crease_span": 0.93,
+    "nest_web": 26.0,
+    "lastre_m8": 16.0
+  },
+  "montado": {
+    "alto": 199.8,
+    "letras_alto": 33.0,
+    "nido_alto": 34.0,
+    "grano_alto": 160.8,
+    "grano_ancho": 142.8,
+    "ancho_pie": 158.8,
+    "fondo_pie": 72.0,
+    "grano_grosor": 8.0,
+    "holgura_ranura": 0.6,
+    "tetones": 3,
+    "y_min": 39.0,
+    "y_max": 199.8,
+    "x_min": -71.4,
+    "x_max": 71.4
   },
   "colores": {
     "cuerpo": "negro",

@@ -1,0 +1,24 @@
+Atril genérico NFCTap — WhatsApp (15 €)
+=======================================
+
+Que es
+------
+Mismas medidas que la genérica Google. Arriba el wordmark WhatsApp,
+en el centro el logo (globo + teléfono), TAP debajo y NFCTAP.TECH en el pie.
+NFC DENTRO, en el centro del logo. Pausa a mitad.
+Antes de pausar se imprime un disco de acento en el suelo del pozo:
+eso es la mira. La pegatina Timeskey Ø25 va ENCIMA de ese círculo.
+
+  01_cuerpo.stl / 02_acento.stl     una pieza (agrupar, no Reparar)
+  01_cuerpo_a/b.stl + 02_acento_a/b.stl   dos SUELTAS en la cama
+
+Imprime
+-------
+Agrupar 01 + 02. NO Reparar el modelo.
+Capa 0,20 mm, 3 perímetros, gyroid 15 %, Arachne.
+Pausa OBLIGATORIA capa 24 (4.80 mm). Ver PAUSA_NFC.txt.
+Pozo Ø28, asiento Ø26, pegatina Ø25.
+Se imprime con la cara de la placa hacia arriba (el pie sale hacia Z).
+Al acabar se pone de pie.
+
+Colores de esta carpeta: cuerpo = negro, acento = amarillo.

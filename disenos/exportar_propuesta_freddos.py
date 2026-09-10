@@ -9,15 +9,11 @@ import struct
 from pathlib import Path
 
 from generar_freddos import (
-    BEAN_T,
-    SLOT_Z0,
-    SLOT_Z1,
     bean_body,
     bean_gold,
-    logo_on_baseline,
+    nest_layout,
     stand_black,
     stand_gold,
-    _bean_envelope,
 )
 from generar_tarjetas import Mesh, shifted
 
@@ -32,11 +28,8 @@ GEORGIA_BOLD = Path("/System/Library/Fonts/Supplemental/Georgia Bold.ttf")
 
 
 def _assembly() -> tuple[Mesh, Mesh, float]:
-    _letters, letter_top = logo_on_baseline()
-    _env, ymin = _bean_envelope()
-    nest_y0 = letter_top - 2.5
-    lift = (nest_y0 + 3.0) - ymin
-    dz = (SLOT_Z0 + SLOT_Z1) / 2.0 - BEAN_T / 2.0
+    lay = nest_layout()
+    lift, dz = lay["lift"], lay["dz"]
 
     negro = stand_black()
     negro.extend(shifted(bean_body(), 0.0, lift, dz))
@@ -199,8 +192,8 @@ def _render_real(negro: Mesh, amarillo: Mesh, width: int, height: int) -> "objec
     import numpy as np
     from PIL import Image, ImageDraw, ImageFilter
 
-    yaw = math.radians(48.0)
-    pitch = math.radians(-14.0)
+    yaw = math.radians(28.0)
+    pitch = math.radians(-6.0)
     faces: list[tuple] = []
     xs: list[float] = []
     ys: list[float] = []
@@ -223,8 +216,8 @@ def _render_real(negro: Mesh, amarillo: Mesh, width: int, height: int) -> "objec
     cx = (min(xs) + max(xs)) / 2.0
     cy = (min(ys) + max(ys)) / 2.0
     span = max(max(xs) - min(xs), max(ys) - min(ys), 1.0)
-    scale = (min(width, height) * 0.78) / span
-    ox, oy = width * 0.50, height * 0.54
+    scale = (min(width, height) * 0.70) / span
+    ox, oy = width * 0.50, height * 0.58
 
     def proj(p: tuple[float, float, float]) -> tuple[float, float, float]:
         return ox + (p[0] - cx) * scale, oy - (p[1] - cy) * scale, p[2]
@@ -331,7 +324,7 @@ def write_html_viewer(path: Path) -> None:
     shadow-intensity="0.55"
     exposure="1.55"
     environment-image="neutral"
-    camera-orbit="48deg 72deg 0.50m"
+    camera-orbit="28deg 78deg 0.55m"
     min-camera-orbit="auto 45deg auto"
     max-camera-orbit="auto 105deg auto"
     interaction-prompt="auto"

@@ -1,0 +1,27 @@
+Pausa NFC — genérica (WhatsApp)
+================================================================
+Altura: 4.80 mm · capa 24 (primera 0,25 + 0,20 mm)
+Centro del pozo = centro del logo de WhatsApp (y=56 mm). NO va abajo.
+Pozo Ø28 · asiento Ø26 · mira Ø24 · pegatina Ø25
+Tapa encima: 3.20 mm. Luego se imprime el logo de WhatsApp encima.
+
+Proyecto NUEVO en Flash. No reutilices el 3mf/G-code viejo.
+Importa 01_cuerpo.stl + 02_acento.stl → Agrupar → NO Reparar.
+Rebanar 0,20 mm Standard @FF AD5X.
+
+La mira se imprime ANTES de la pausa (capas ~16–20):
+disco de amarillo Ø24 en el suelo, justo donde irá el logo de WhatsApp.
+
+En Previsualización:
+1. Slider DERECHO BAJA hasta la capa 24 (~4.80 mm).
+   Mitad-arriba de la placa: HUECO REDONDO + círculo amarillo.
+   Ese círculo es el sitio del logo de WhatsApp. No busques el hueco abajo.
+   Capa 270+ = solo el pie. Baja el slider.
+2. Clic derecho en esa capa → Añadir pausa.
+3. Imprime.
+
+Cuando pare (mira desde ARRIBA):
+- El círculo amarillo (donde irá el logo de WhatsApp) = aquí la pegatina.
+- Timeskey Ø25 ENCIMA de ese círculo, hundida, adhesivo ABAJO.
+- Que no sobresalga. No apagues. Continuar.
+- Si sobresale, no reanudes (montañita).

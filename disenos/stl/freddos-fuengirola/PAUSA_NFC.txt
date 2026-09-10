@@ -1,9 +1,16 @@
 Pausa NFC — grano Freddo's (rugby)
 =================================
-Altura: 4.80 mm · capa 24 a 0,20 mm
-Hueco Ø36 · asiento Ø30 · pegatina Ø25
+Altura: 4.80 mm · capa 24 (primera 0,25 + 0,20 mm)
+Dos pozos: IZQ reseña · DER puntos. Mismo sistema que la genérica.
+Pozo Ø36 · asiento Ø30 · mira Ø24 · pegatina Ø25
 Tapa encima: 3.20 mm
 
-Capa 24 -> Anadir pausa.
-Anillo amarillo = mira. Pegatina hundida, adhesivo a la cama.
-IZQ = RESEÑA (Google). DER = PUNTOS (club).
+Proyecto NUEVO. Importa 01_grano_negro + 02_grano_oro → Agrupar → NO Reparar.
+Rebanar 0,20 mm Standard @FF AD5X.
+Slider a la capa 24 (~4.80 mm): dos huecos + círculos amarillos.
+Clic derecho → Añadir pausa.
+
+Cuando pare (mira desde ARRIBA):
+- Círculo amarillo = aquí la pegatina Timeskey Ø25.
+- Hundida, adhesivo ABAJO. Que no sobresalga. Continuar.
+- IZQ = RESEÑA (Google). DER = PUNTOS (club).

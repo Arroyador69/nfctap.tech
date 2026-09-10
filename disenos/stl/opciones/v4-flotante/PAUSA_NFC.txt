@@ -1,7 +1,7 @@
 Pausa NFC — genérica y personalizada (mismo pozo, bajo la G / logo)
 ================================================================
 Altura: 4.80 mm · capa 24 (primera 0,25 + 0,20 mm)
-Centro del pozo = centro de la G / logo (y=78 mm). NO va abajo.
+Centro del pozo = centro de la G / logo (y=56 mm). NO va abajo.
 Pozo Ø28 · asiento Ø26 · mira Ø24 · pegatina Ø25
 Tapa encima: 3.20 mm. Luego se imprime la G / el logo encima.
 

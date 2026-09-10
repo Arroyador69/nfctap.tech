@@ -2,7 +2,7 @@
 
 export const ATRIL = {
   FACE_W: 76,
-  FACE_H: 108,
+  FACE_H: 86,
   FACE_T: 8,
   FACE_R: 6,
   FOOT_Y: 8,
@@ -19,12 +19,12 @@ export const ATRIL = {
   PAD_D: 24,
   PAD_H: 0.5,
   RING_H: 0.45,
-  STAR_Y: 109,
-  MARK_Y: 78,
+  STAR_Y: 87,
+  MARK_Y: 56,
   MARK_R: 16.5,
   TAP_Y: 22,
   RESE_Y: 30,
-  NAME_Y: 18,
+  NAME_Y: 13,
   TAP_H: 7,
   TAP_TRACK: 2.4,
   RESE_H: 5,
@@ -32,6 +32,6 @@ export const ATRIL = {
   NAME_H: 4.4,
   NAME_TRACK: 1.4,
   /** Mismo centro que MARK_Y: el NFC queda bajo la G / el logo. */
-  NFC_Y: 78,
+  NFC_Y: 56,
   RELIEF: 0.5,
 } as const;

@@ -1,0 +1,19 @@
+SOLO ESTOS STL
+==============
+
+CAMA 1 — GRANO (pausa NFC capa 24, NO Reparar)
+  01_grano_negro.stl
+  02_grano_oro.stl
+
+CAMA 2 — CUNA (sin pausa, NO Reparar)
+  03_cuna_letras_negras.stl
+  04_letras_oro.stl
+  Espalda plana en la cama. Freddo's arriba.
+
+Si FlashPrint dice "contornos con geometría incorrecta", NO imprimas.
+Proyecto NUEVO. No reabrir .3mf viejos.
+
+NO imprimir: carpeta comprobar/ (es el conjunto montado, solo para mirar).
+NO mezclar grano y cuna en la misma cama.
+
+Antes de las 8-9 h: test-encaje/ (stub + cuna sin letras, 30-40 min).

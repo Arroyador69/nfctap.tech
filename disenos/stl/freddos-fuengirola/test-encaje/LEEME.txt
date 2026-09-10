@@ -1,0 +1,7 @@
+Test de encaje Freddo's (30-40 min, SIN NFC)
+===========================================
+01_stub_grano + 02_cuna_nido. Negro los dos.
+Cuna de pie. Stub de canto, tetones primero.
+Prueba: encajar, tap con un móvil, tirar hacia arriba, empujar.
+Si no sale ni baila, imprime la pieza buena (01-04).
+Pega cinta 3M bajo el pie ANTES de juzgar el vuelco.

@@ -3,25 +3,53 @@ Freddo's Fuengirola — grano NFC + cuna-letras
 
 Que es
 ------
-1. GRANO rugby inclinado, S que lo corta. Disco amarillo + TAP negro
-   (RESEÑA / PUNTOS, horizontal). Dos NFC Ø25.
-2. CUNA = las letras del logo. Freddo's abajo, el grano se ENCAJA
-   arriba en una ranura con labio, respaldo y topes. No se cae.
+1. GRANO rugby inclinado, S HUECA como el logo (se ve el aire).
+   Los lóbulos son UNA pieza: carne en las puntas + enlace oculto en el nido.
+   Disco amarillo + TAP negro. Dos NFC Ø25. Abajo: tetones.
+2. CUNA = las letras del logo ENTERAS (no cortadas). Freddo's abajo.
+   El grano CAE de arriba, nido DETRÁS/ENCIMA del wordmark:
+   ranura 8,6 mm, labio 8,5 mm, nido 34 mm, agujeros de los tetones.
 3. Firma en el pie, debajo de Freddo's: NFCTAP.TECH
 
 Montaje
 -------
         [        GRANO (de lado)        ]
+        [   tetones → agujeros del nido ]
         [   ranura en lo alto de Freddo's ]
         [  F r e d d o ' s              ]
         [  NFCTAP.TECH                  ]
-        [=========== pie 64 mm =========]
+        [=========== pie 72 mm =========]
 
 Imprime
 -------
-Grano: 01 + 02 agrupados. Pausa capa 24. NO Reparar.
-Cuna:  03 + 04 agrupados. Negro=03, amarillo=04. Sin pausa.
-Al acabar, la cuna se pone DE PIE (el pie en la mesa).
-El grano entra de canto en la ranura de ARRIBA.
+ANTES de las 8 h: test-encaje/ (stub + cuna sin letras). Prueba el tap.
+
+GRANO: solo 01 + 02. Agrupar. Pausa capa 24. NO Reparar.
+CUNA:  solo 03 + 04. Agrupar. Negro=03, amarillo=04. Sin pausa.
+       NO mezclar el grano en la misma cama.
+       Coloca la cuna APOYADA EN LA ESPALDA (la cara plana trasera
+       en la cama). Amarillo = último, la cara de Freddo's arriba.
+       Sin soportes. Si avisa de regiones flotantes, está mal girada.
+
+Al acabar: cuna DE PIE. Grano de canto, de ARRIBA, tetones primero. Clac.
+Los agujeros del nido abren HACIA ARRIBA (caen los tetones). De cara al
+cliente no se ven: delante hay pared. Si FlashPrint avisa de contornos
+con geometría incorrecta, NO imprimas — el STL está mal.
+
+Pie
+---
+Fondo 72 mm. Hueco único debajo, delante: caben 3 tuercas M8.
+No se ve de cara. Se tapa con cinta 3M. Lastre + el stand pegado.
+Sin cinta, un empujón alto vuelca cualquier PLA de 20 cm.
 
 Colores: negro + amarillo. Los dos como PLA.
+
+Medidas (80 % del original, NFC igual)
+--------------------------------------
+Alto montado sobre mesa: 200 mm
+Letras Freddo's (hasta la ranura): 33 mm
+Grano suelto: 143 × 161 × 8 mm
+Pie: 159 mm de ancho × 72 mm de fondo
+Nido 34 mm · ranura 8.6 mm (holgura 0.6) · labio 8.5 mm
+Tetones: 3 × Ø5.8 / agujero Ø6.6 × 7 mm
+NFC: pozo Ø36 · asiento Ø30 · pegatina Ø25 (no escala)

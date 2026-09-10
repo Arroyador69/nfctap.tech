@@ -1,0 +1,10 @@
+---
+description: Las muestras al cliente son el modelo 3D real que se va a imprimir
+alwaysApply: true
+---
+
+# Propuestas a cliente
+
+JPG, HTML y GLB de una propuesta NFCTap deben mostrar el **conjunto montado que se imprime** (cuna, pie, encaje, colores de filamento). Prohibido mandar un esquema plano o un grano hueco que no sea la pieza.
+
+Flujo completo: skill `propuesta-cliente-nfc`.
