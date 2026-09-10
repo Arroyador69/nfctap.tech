@@ -85,25 +85,28 @@ WORD_W = 148.0 * SCALE
 # Pie + letras = cuna. Z = profundidad (apoyo en mesa). Y = alto.
 FOOT_Y = 8.0
 FOOT_Z = 72.0
-FOOT_PLATE_Y = 14.0
+FOOT_BACK_Y = 14.0
+# El estante que se ve DELANTE no puede subir hasta las letras: las comía.
+FOOT_FRONT_Y = 6.0
 LETTER_Z0 = 19.2
 LETTER_Z1 = 30.4
-# Ranura como la genérica: 0,6 mm de holgura, labio de verdad.
-SLOT_W = 8.6
+# Ranura: holgura para que entre a la primera (PLA + AD5X).
+SLOT_W = 8.8
 LIP = 8.5
 LIP_T = 3.0
 SLOT_Z1 = LETTER_Z1 - LIP_T
 SLOT_Z0 = SLOT_Z1 - SLOT_W
 NEST = 34.0
-SIT = 6.0
-# 0: el nido empieza en lo alto de las letras. Si es >0, el suelo negro las corta.
+# Aire negro encima del wordmark (las d y la F no tocan el nido).
+LETTER_CLEAR = 8.0
+SIT = 3.0
 NEST_OVERLAP = 0.0
 STOP_W = 6.0
-MAX_ALTO = 200.0
+MAX_ALTO = 210.0
 
 # Tetones en el canto (caen en la cuna). Eje = grosor del grano.
 PEG_D = 5.8
-PEG_HOLE_D = 6.6
+PEG_HOLE_D = 6.8
 PEG_LEN = 7.0
 PEG_CORNER = 1.2
 
@@ -262,8 +265,8 @@ def s_nest_web_poly() -> list[tuple[float, float]]:
 def nest_layout() -> dict:
     letters, letter_top = logo_on_baseline()
     env, ymin = _bean_envelope()
-    nest_y0 = letter_top - NEST_OVERLAP
-    nest_y1 = letter_top + NEST
+    nest_y0 = letter_top - NEST_OVERLAP + LETTER_CLEAR
+    nest_y1 = nest_y0 + NEST
     lift = (nest_y0 + SIT) - ymin
     xs = sorted(env)
     x0, x1 = (xs[0] - 7.0, xs[-1] + 7.0) if xs else (-80.0, 80.0)
@@ -852,42 +855,35 @@ def _csg_diff(body, cuts: list, nombre: str):
 
 
 def build_cuna_tm(with_letters: bool):
-    """Cuna: letras enteras en la cara; nido DETRÁS/ARRIBA, sin cruzar el wordmark."""
+    """Placa negra continua: Freddo's (04) encima, nido ARRIBA con aire, sin cortar glifos."""
     spec = nest_spec()
     lay = spec["lay"]
     x0, x1 = lay["x0"], lay["x1"]
     nest_y0, nest_y1 = lay["nest_y0"], lay["nest_y1"]
-    letter_top = lay["letter_top"]
     fw = lay["foot_w"] + 8.0
     fy0, fy1 = spec["floor_y0"], spec["floor_y1"]
     nombre = "cuna" if with_letters else "cuna_test"
-    # Frente del nido (z > SLOT_Z1) solo por ENCIMA de las letras.
-    nest_front_y0 = max(nest_y0, letter_top)
+    del with_letters  # la cara es placa; el wordmark entero va en 04
     parts = [
-        _tm_box(-fw / 2.0, 0.0, 0.0, fw / 2.0, FOOT_PLATE_Y, FOOT_Z),
+        # Pie TRASERO: no sale a la cara, no tapa Freddo's.
+        _tm_box(-fw / 2.0, 0.0, 0.0, fw / 2.0, FOOT_BACK_Y, SLOT_Z1),
+        # Estante DELANTERO, más bajo que el wordmark.
+        _tm_box(-fw / 2.0, 0.0, SLOT_Z1, fw / 2.0, FOOT_FRONT_Y, FOOT_Z),
         _tm_box(x0, 0.0, 0.0, x1, nest_y1, SLOT_Z0),
-        # Placa detrás de las letras (no llega a la cara: no las rellena ni las corta).
-        _tm_box(x0, FOOT_PLATE_Y - 0.4, SLOT_Z0, x1, letter_top + 0.2, SLOT_Z1),
-        # Suelo del nido: grosor del grano, no la cara Freddo's.
+        _tm_box(x0, FOOT_FRONT_Y, SLOT_Z0, x1, nest_y0, SLOT_Z1),
+        # Cara: desde encima del estante hasta el nido. Letras (04) encima, enteras.
+        _tm_box(x0, FOOT_FRONT_Y, SLOT_Z1, x1, nest_y0, LETTER_Z1),
         _tm_box(x0, fy0 - 0.4, SLOT_Z0 - 0.4, x1, fy1, SLOT_Z1),
         _tm_box(x0 + STOP_W, nest_y1 - LIP, SLOT_Z1 - 0.4, x1 - STOP_W, nest_y1, LETTER_Z1),
-        _tm_box(x0, nest_front_y0, SLOT_Z0, x0 + STOP_W, nest_y1, LETTER_Z1),
-        _tm_box(x1 - STOP_W, nest_front_y0, SLOT_Z0, x1, nest_y1, LETTER_Z1),
+        _tm_box(x0, nest_y0, SLOT_Z0, x0 + STOP_W, nest_y1, LETTER_Z1),
+        _tm_box(x1 - STOP_W, nest_y0, SLOT_Z0, x1, nest_y1, LETTER_Z1),
     ]
-    if with_letters:
-        glyphs, _top = logo_glyphs_on_baseline()
-        for g in glyphs:
-            letter = _letter_tm(g["outer"], g["holes"], SLOT_Z1 - 0.4, LETTER_Z1)
-            if abs(letter.volume) >= 0.05:
-                parts.append(letter)
-            else:
-                print("  cuna: letra sin volumen, la placa negra la cubre")
     body = _csg_union(parts, nombre)
     cuts = [
         _tm_box(f["hole"]["x0"], f["hole"]["y0"], f["hole"]["z0"], f["hole"]["x1"], f["hole"]["y1"], f["hole"]["z1"])
         for f in spec["fits"]
     ]
-    cuts.append(_tm_box(-35.0, -0.6, FOOT_Z - 26.0, 35.0, LASTRE_H, FOOT_Z - 8.0))
+    cuts.append(_tm_box(-35.0, -0.6, 6.0, 35.0, min(LASTRE_H, FOOT_BACK_Y - 1.0), SLOT_Z1 - 2.0))
     return _csg_diff(body, cuts, nombre)
 
 
@@ -918,10 +914,20 @@ def assert_encaje() -> None:
         if p["y0"] >= fy1:
             raise SystemExit(f"  Tetón {i} no llega al suelo del nido")
     top = spec["lay"]["letter_top"]
-    if spec["lay"]["nest_y0"] < top - 0.05:
+    gap = spec["lay"]["nest_y0"] - top
+    if gap < LETTER_CLEAR - 0.05:
         raise SystemExit(
-            f"  Nido Y0 {spec['lay']['nest_y0']:.2f} corta las letras (alto {top:.2f} mm)"
+            f"  Nido Y0 {spec['lay']['nest_y0']:.2f} corta las letras "
+            f"(alto {top:.2f} mm, aire {gap:.2f} < {LETTER_CLEAR:.1f})"
         )
+    glyphs, _t = logo_glyphs_on_baseline()
+    ymin = min(p[1] for g in glyphs for p in g["outer"])
+    ymax = max(p[1] for g in glyphs for p in g["outer"])
+    if ymin < FOOT_FRONT_Y + 1.2:
+        raise SystemExit(f"  Estante del pie (y={FOOT_FRONT_Y:.1f}) come el wordmark (y0={ymin:.1f})")
+    if ymax > spec["lay"]["nest_y0"] - 6.0:
+        raise SystemExit(f"  Nido (y={spec['lay']['nest_y0']:.1f}) sigue encima de las letras (y1={ymax:.1f})")
+    print(f"  Wordmark libre  pie {FOOT_FRONT_Y:.1f} → letras {ymin:.1f}…{ymax:.1f} → nido {spec['lay']['nest_y0']:.1f}")
     print(
         f"  Encaje OK  ranura {SLOT_W:.1f} (grano {BEAN_T:.1f}, holgura Z {holgura_z:.2f} mm)  "
         f"{len(spec['fits'])} tetones Ø{PEG_D} en bolsillos Ø{PEG_HOLE_D} (abren ARRIBA)"
@@ -953,6 +959,33 @@ def assert_encaje_mesh() -> None:
         if not (h["x0"] < mx < h["x1"] and h["y0"] < my < h["y1"] and h["z0"] < mz < h["z1"]):
             raise SystemExit(f"  Tetón {i} raíz ({mx:.1f},{my:.1f},{mz:.1f}) fuera del bolsillo")
     print("  Encaje mesh OK  tetones dentro · solape bajo")
+
+
+def assert_insercion() -> None:
+    """El grano tiene que CAER de arriba sin rozar. Si choca a mitad, no imprimas."""
+    spec = nest_spec()
+    lay = spec["lay"]
+    np, trimesh = _require_trimesh()
+    grain0 = _mesh_to_tm(shifted(bean_body(), 0.0, lay["lift"], lay["dz"]))
+    cuna = build_cuna_tm(True)
+    ny0, ny1 = lay["nest_y0"], lay["nest_y1"]
+    verts = np.asarray(grain0.vertices)
+    in_nest = (verts[:, 1] >= ny0 - 0.2) & (verts[:, 1] <= ny1 + 0.2)
+    zmin, zmax = float(verts[in_nest, 2].min()), float(verts[in_nest, 2].max())
+    hol_lo, hol_hi = zmin - SLOT_Z0, SLOT_Z1 - zmax
+    if hol_lo < 0.15 or hol_hi < 0.15:
+        raise SystemExit(f"  En el nido el grano Z[{zmin:.2f},{zmax:.2f}] no cabe en la ranura")
+    for dy in (40.0, 20.0, 8.0, 2.0, 0.0):
+        g = grain0.copy()
+        g.apply_translation([0.0, dy, 0.0])
+        try:
+            inter = trimesh.boolean.intersection([g, cuna], engine="manifold", check_volume=False)
+        except Exception as err:
+            raise SystemExit(f"  Inserción y+{dy:.0f}: {err}") from err
+        vol = 0.0 if inter is None or inter.is_empty else abs(float(inter.volume))
+        if vol > 50.0:
+            raise SystemExit(f"  Grano choca al caer (y+{dy:.0f} mm, {vol:.0f} mm³). No imprimir.")
+    print(f"  Inserción OK  holgura Z en nido {hol_lo:.2f}/{hol_hi:.2f} mm  cae sin rozar")
 
 
 def encaje_report() -> str:
@@ -1073,7 +1106,7 @@ def stand_gold() -> Mesh:
         shifted(
             text_mesh("NFCTAP.TECH", pixel=0.70, height=0.80, z0=FOOT_Z, advance=6),
             0.0,
-            FOOT_PLATE_Y / 2,
+            FOOT_FRONT_Y / 2,
         )
     )
     return m
@@ -1135,7 +1168,7 @@ def write_preview(path: Path) -> None:
   <ellipse cx="620" cy="175" rx="16" ry="58" fill="#111" stroke="#E6C36A" stroke-width="1.4" transform="rotate(-33 620 175)"/>
   <rect x="602" y="228" width="12" height="36" fill="#E6C36A"/>
   <rect x="590" y="262" width="80" height="18" rx="2" fill="#111" stroke="#E6C36A"/>
-  <text x="700" y="170" fill="#9a7a48" font-size="11">tetones + ranura 8,6 mm</text>
+  <text x="700" y="170" fill="#9a7a48" font-size="11">tetones + ranura 8,8 mm</text>
   <text x="700" y="248" fill="#9a7a48" font-size="11">Freddo's = cuna</text>
   <text x="700" y="274" fill="#9a7a48" font-size="11">pie {FOOT_Z:.0f} mm + cinta 3M</text>
 
@@ -1160,9 +1193,10 @@ Que es
 1. GRANO rugby inclinado, S HUECA como el logo (se ve el aire).
    Los lóbulos son UNA pieza: carne en las puntas + enlace oculto en el nido.
    Disco amarillo + TAP negro. Dos NFC Ø25. Abajo: tetones.
-2. CUNA = las letras del logo ENTERAS (no cortadas). Freddo's abajo.
-   El grano CAE de arriba, nido DETRÁS/ENCIMA del wordmark:
-   ranura 8,6 mm, labio 8,5 mm, nido 34 mm, agujeros de los tetones.
+2. CUNA = placa negra + Freddo's ENTERO en amarillo (04). El nido va
+   8 mm POR ENCIMA del wordmark. El pie delantero queda BAJO las letras,
+   no las tapa. Grano de arriba:
+   ranura 8,8 mm, labio 8,5 mm, nido 34 mm, agujeros de los tetones.
 3. Firma en el pie, debajo de Freddo's: NFCTAP.TECH
 
 Montaje
@@ -1192,8 +1226,9 @@ con geometría incorrecta, NO imprimas — el STL está mal.
 
 Pie
 ---
-Fondo 72 mm. Hueco único debajo, delante: caben 3 tuercas M8.
-No se ve de cara. Se tapa con cinta 3M. Lastre + el stand pegado.
+Fondo 72 mm. Hueco de lastre en el pie TRASERO (tuercas M8).
+El estante delantero es bajo: no tapa Freddo's.
+Se tapa el hueco con cinta 3M. Lastre + el stand pegado.
 Sin cinta, un empujón alto vuelca cualquier PLA de 20 cm.
 
 Colores: negro + amarillo. Los dos como PLA.
@@ -1311,6 +1346,7 @@ def generate() -> None:
     cuna.write_stl(dest / "03_cuna_letras_negras.stl", "cuna_letras")
     verify_solid_stl(dest / "03_cuna_letras_negras.stl")
     assert_encaje_mesh()
+    assert_insercion()
     stand_gold().write_stl(dest / "04_letras_oro.stl", "freddos")
     ver = dest / "comprobar"
     ver.mkdir(parents=True, exist_ok=True)

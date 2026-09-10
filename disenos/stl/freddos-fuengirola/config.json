@@ -22,12 +22,12 @@
     "right": "TAP PUNTOS / club"
   },
   "encaje": {
-    "slot_w": 8.6,
+    "slot_w": 8.8,
     "lip": 8.5,
     "nest": 34.0,
-    "sit": 6.0,
+    "sit": 3.0,
     "peg_d": 5.8,
-    "peg_hole": 6.6,
+    "peg_hole": 6.8,
     "peg_len": 7.0,
     "pegs": [
       [
@@ -49,7 +49,7 @@
     "lastre_m8": 16.0
   },
   "montado": {
-    "alto": 199.8,
+    "alto": 204.8,
     "letras_alto": 33.0,
     "nido_alto": 34.0,
     "grano_alto": 160.8,
@@ -57,10 +57,10 @@
     "ancho_pie": 158.8,
     "fondo_pie": 72.0,
     "grano_grosor": 8.0,
-    "holgura_ranura": 0.6,
+    "holgura_ranura": 0.8,
     "tetones": 3,
-    "y_min": 39.0,
-    "y_max": 199.8,
+    "y_min": 44.0,
+    "y_max": 204.8,
     "x_min": -71.4,
     "x_max": 71.4
   },

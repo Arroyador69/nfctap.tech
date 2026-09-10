@@ -6,9 +6,10 @@ Que es
 1. GRANO rugby inclinado, S HUECA como el logo (se ve el aire).
    Los lóbulos son UNA pieza: carne en las puntas + enlace oculto en el nido.
    Disco amarillo + TAP negro. Dos NFC Ø25. Abajo: tetones.
-2. CUNA = las letras del logo ENTERAS (no cortadas). Freddo's abajo.
-   El grano CAE de arriba, nido DETRÁS/ENCIMA del wordmark:
-   ranura 8,6 mm, labio 8,5 mm, nido 34 mm, agujeros de los tetones.
+2. CUNA = placa negra + Freddo's ENTERO en amarillo (04). El nido va
+   8 mm POR ENCIMA del wordmark. El pie delantero queda BAJO las letras,
+   no las tapa. Grano de arriba:
+   ranura 8,8 mm, labio 8,5 mm, nido 34 mm, agujeros de los tetones.
 3. Firma en el pie, debajo de Freddo's: NFCTAP.TECH
 
 Montaje
@@ -38,18 +39,19 @@ con geometría incorrecta, NO imprimas — el STL está mal.
 
 Pie
 ---
-Fondo 72 mm. Hueco único debajo, delante: caben 3 tuercas M8.
-No se ve de cara. Se tapa con cinta 3M. Lastre + el stand pegado.
+Fondo 72 mm. Hueco de lastre en el pie TRASERO (tuercas M8).
+El estante delantero es bajo: no tapa Freddo's.
+Se tapa el hueco con cinta 3M. Lastre + el stand pegado.
 Sin cinta, un empujón alto vuelca cualquier PLA de 20 cm.
 
 Colores: negro + amarillo. Los dos como PLA.
 
 Medidas (80 % del original, NFC igual)
 --------------------------------------
-Alto montado sobre mesa: 200 mm
+Alto montado sobre mesa: 205 mm
 Letras Freddo's (hasta la ranura): 33 mm
 Grano suelto: 143 × 161 × 8 mm
 Pie: 159 mm de ancho × 72 mm de fondo
-Nido 34 mm · ranura 8.6 mm (holgura 0.6) · labio 8.5 mm
-Tetones: 3 × Ø5.8 / agujero Ø6.6 × 7 mm
+Nido 34 mm · ranura 8.8 mm (holgura 0.8) · labio 8.5 mm
+Tetones: 3 × Ø5.8 / agujero Ø6.8 × 7 mm
 NFC: pozo Ø36 · asiento Ø30 · pegatina Ø25 (no escala)

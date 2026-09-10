@@ -5,17 +5,17 @@ Montaje: cuna DE PIE. Grano de CANTO, se deja CAER de ARRIBA.
 Los tetones entran en bolsillos del suelo del nido. Abren hacia ARRIBA.
 No son agujeros de cara al cliente: delante hay pared (labio + frente).
 
-Ranura Z  18.80 → 27.40 mm  (hueco 8.60)
-Grano  Z  19.10 → 27.10 mm  (grosor 8.00, holgura 0.30)
-Suelo nido Y 33.00 → 38.65 mm
-Nido Y     33.00 → 67.00 mm
+Ranura Z  18.60 → 27.40 mm  (hueco 8.80)
+Grano  Z  19.00 → 27.00 mm  (grosor 8.00, holgura 0.40)
+Suelo nido Y 41.00 → 43.65 mm
+Nido Y     41.00 → 75.00 mm
 
-Tetón 1  peg X[-44.27,-38.47] Y[36.78,43.78] Z[19.10,27.10]
-         hole X[-44.67,-38.07] Y[35.98,40.25] Z[18.85,27.35]  abre↑ y1=40.25 > suelo 38.65
-Tetón 2  peg X[-22.27,-16.47] Y[31.99,38.99] Z[19.10,27.10]
-         hole X[-22.67,-16.07] Y[31.19,40.25] Z[18.85,27.35]  abre↑ y1=40.25 > suelo 38.65
-Tetón 3  peg X[1.73,7.53] Y[36.49,43.49] Z[19.10,27.10]
-         hole X[1.33,7.93] Y[35.69,40.25] Z[18.85,27.35]  abre↑ y1=40.25 > suelo 38.65
+Tetón 1  peg X[-44.27,-38.47] Y[41.78,48.78] Z[19.00,27.00]
+         hole X[-44.77,-37.97] Y[40.98,45.25] Z[18.65,27.35]  abre↑ y1=45.25 > suelo 43.65
+Tetón 2  peg X[-22.27,-16.47] Y[36.99,43.99] Z[19.00,27.00]
+         hole X[-22.77,-15.97] Y[36.19,45.25] Z[18.65,27.35]  abre↑ y1=45.25 > suelo 43.65
+Tetón 3  peg X[1.73,7.53] Y[41.49,48.49] Z[19.00,27.00]
+         hole X[1.23,8.03] Y[40.69,45.25] Z[18.65,27.35]  abre↑ y1=45.25 > suelo 43.65
 
 Corte de lado (Z →, Y ↑). El cliente mira desde la derecha.
 
