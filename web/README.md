@@ -29,8 +29,8 @@ En [polar.sh](https://polar.sh) (organización NFCTap, **producción**, no sandb
 1. Settings → Organization Access Token con permiso de checkouts.
 2. Settings → Webhooks → endpoint `https://nfctap.tech/api/webhook/polar` (formato Raw). Eventos: `checkout.updated`, `checkout.confirmed`, `order.created`, `order.paid`. Copia el secret `whsec_…`.
 3. Products → 4 productos **one-time, EUR, no recurrentes**:
-   - Genérica × 1 → 15 € → `POLAR_PRODUCT_GENERIC_1`
-   - Genérica × 2 → 25 € → `POLAR_PRODUCT_GENERIC_2`
+   - Genérica × 1 → 20 € → `POLAR_PRODUCT_GENERIC_1`
+   - Genérica × 2 → 35 € → `POLAR_PRODUCT_GENERIC_2`
    - Personalizada × 1 → 30 € → `POLAR_PRODUCT_CUSTOM_1`
    - Personalizada × 2 → 55 € → `POLAR_PRODUCT_CUSTOM_2`
 4. En Vercel: `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET`, `POLAR_SERVER=production` y los cuatro IDs.

@@ -5,11 +5,11 @@ export const BRAND = {
   domain: "nfctap.tech",
   legacyDomain: "nfctab.tech",
   tagline: "Toca. Opina. En Google.",
-  email: "hola@nfctap.tech",
+  email: "contacto@nfctap.tech",
 };
 
 export const PRICES: Record<ProductKind, Record<Qty, number>> = {
-  generica: { 1: 15, 2: 25 },
+  generica: { 1: 20, 2: 35 },
   personalizada: { 1: 30, 2: 55 },
   unica: { 1: 70, 2: 70 },
 };

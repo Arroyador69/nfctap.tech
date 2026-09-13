@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NFCTap — Redes para locales</title>
+  <style>
+    :root {
+      --bg: #f3eee4;
+      --ink: #1c1915;
+      --muted: #6f675c;
+      --gold: #c49a3c;
+      --card: #fffdf8;
+      --line: #e6ddd0;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: Georgia, "Times New Roman", serif; }
+    .page { max-width: 1040px; margin: 0 auto; padding: 44px 24px 64px; }
+    .kicker {
+      letter-spacing: 0.22em; text-transform: uppercase; font-size: 11px;
+      color: var(--gold); font-family: system-ui, sans-serif;
+    }
+    h1 { font-size: 40px; line-height: 1.08; font-weight: 400; margin: 12px 0 10px; }
+    .lead { color: var(--muted); font-size: 18px; max-width: 42em; }
+    .local {
+      margin: 28px 0 8px; padding: 22px; border: 1px solid var(--line);
+      border-radius: 20px; background: var(--card);
+    }
+    .local h2 { font-size: 22px; font-weight: 400; margin: 0 0 8px; }
+    .packs {
+      display: grid; gap: 16px;
+      grid-template-columns: 1fr 1fr;
+      margin: 28px 0;
+    }
+    .pack {
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: 22px; padding: 24px 22px; display: flex; flex-direction: column;
+    }
+    .pack.featured { background: var(--ink); color: #f6f1e7; border-color: var(--ink); }
+    .pack.top { background: #2a2318; color: #f6f1e7; border-color: #2a2318; }
+    .tag {
+      font-family: system-ui, sans-serif; font-size: 10px; letter-spacing: 0.16em;
+      text-transform: uppercase; color: var(--gold);
+    }
+    .pack.featured .tag, .pack.top .tag { color: #e2b43a; }
+    h3 { font-size: 26px; font-weight: 400; margin: 8px 0 0; }
+    .amount { font-size: 34px; margin: 12px 0 4px; }
+    .iva { font-size: 13px; color: var(--muted); }
+    .pack.featured .iva, .pack.top .iva { color: #d5cbb8; }
+    ul { margin: 14px 0 0; padding: 0; list-style: none; }
+    li { padding: 8px 0; border-top: 1px solid var(--line); font-size: 15px; }
+    .pack.featured li, .pack.top li { border-top-color: #3a3530; }
+    .reach {
+      margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line);
+      font-size: 14px; color: var(--muted);
+    }
+    .pack.featured .reach, .pack.top .reach { border-top-color: #3a3530; color: #d5cbb8; }
+    .reach strong { color: var(--ink); }
+    .pack.featured .reach strong, .pack.top .reach strong { color: #e2b43a; }
+    .note { font-size: 14px; color: var(--muted); }
+    footer { margin-top: 32px; color: var(--muted); font-size: 14px; }
+    @media (max-width: 720px) { .packs { grid-template-columns: 1fr; } h1 { font-size: 32px; } }
+    @media print { body { background: white; } .page { padding: 8px; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <p class="kicker">NFCTap · nfctap.tech · negocios locales</p>
+    <h1>Cuatro packs. Cuatro redes.<br />Todo el contenido, desde el más barato.</h1>
+    <p class="lead">
+      Instagram, TikTok, Facebook y YouTube. El mismo vídeo sale en las cuatro.
+      Barrio ya lleva el servicio completo (vídeos, feed, stories y textos):
+      no es un pack recortado. Subes de volumen, no de “qué incluye”.
+    </p>
+
+    <div class="local">
+      <h2>Enfoque 100 % local</h2>
+      <p class="lead" style="margin:0">
+        Caras nuevas de tu zona: vecinos, de paso y turismo de la ciudad.
+        No perseguimos seguidores de otros países. El objetivo es que entre
+        gente que todavía no cruzaba tu puerta.
+      </p>
+    </div>
+
+    <div class="packs">
+      <div class="pack">
+        <p class="tag">El económico · servicio completo</p>
+        <h3>Barrio</h3>
+        <p class="amount">150 €</p>
+        <p class="iva">/ mes · IVA no incluido</p>
+        <ul>
+          <li>10 vídeos cortos (Reels / TikTok / Shorts / Facebook)</li>
+          <li>15 imágenes de feed</li>
+          <li>16 stories</li>
+          <li>Textos + calendario</li>
+          <li>Las 4 redes</li>
+        </ul>
+        <p class="reach">
+          <strong>Estimación / mes</strong> (orgánico)<br />
+          12.000–28.000 visualizaciones · 250–600 visitas a perfiles
+        </p>
+      </div>
+
+      <div class="pack featured">
+        <p class="tag">El que más se pide</p>
+        <h3>Calle</h3>
+        <p class="amount">450 €</p>
+        <p class="iva">/ mes · IVA no incluido</p>
+        <ul>
+          <li>16 vídeos cortos</li>
+          <li>24 imágenes de feed</li>
+          <li>24 stories</li>
+          <li>Textos + calendario</li>
+          <li>Las 4 redes · más frecuencia en zona</li>
+        </ul>
+        <p class="reach">
+          <strong>Estimación / mes</strong> (orgánico)<br />
+          20.000–45.000 visualizaciones · 400–900 visitas a perfiles
+        </p>
+      </div>
+
+      <div class="pack">
+        <p class="tag">El de siempre, ahora más lleno</p>
+        <h3>Plaza</h3>
+        <p class="amount">590 €</p>
+        <p class="iva">/ mes · IVA no incluido</p>
+        <ul>
+          <li>24 vídeos cortos</li>
+          <li>32 imágenes de feed</li>
+          <li>32 stories</li>
+          <li>Textos + calendario</li>
+          <li>Las 4 redes · el local casi a diario</li>
+        </ul>
+        <p class="reach">
+          <strong>Estimación / mes</strong> (orgánico)<br />
+          30.000–70.000 visualizaciones · 600–1.400 visitas a perfiles
+        </p>
+      </div>
+
+      <div class="pack top">
+        <p class="tag">El top</p>
+        <h3>Faro</h3>
+        <p class="amount">790 €</p>
+        <p class="iva">/ mes · IVA no incluido</p>
+        <ul>
+          <li>32 vídeos cortos</li>
+          <li>40 imágenes de feed</li>
+          <li>Stories casi a diario (40)</li>
+          <li>1 vídeo largo al mes para YouTube</li>
+          <li>Las 4 redes · máxima presencia local</li>
+        </ul>
+        <p class="reach">
+          <strong>Estimación / mes</strong> (orgánico)<br />
+          50.000–100.000 visualizaciones · 900–2.000 visitas a perfiles
+        </p>
+      </div>
+    </div>
+
+    <p class="note">
+      Estimación para negocios locales que publican con constancia y material
+      real del sitio. No es un compromiso de resultado: zona, temporada y
+      el local cuentan. Sin anuncios de pago (se cotizan aparte). Mes a mes, sin permanencia.
+    </p>
+    <footer>
+      NFCTap · contacto@nfctap.tech · España · Válido 30 días<br />
+      Barrio 150 € · Calle 450 € · Plaza 590 € · Faro 790 € / mes + IVA
+    </footer>
+  </div>
+</body>
+</html>

@@ -2,7 +2,7 @@ import type { ShippingSettings, ShippingZone } from "./types";
 
 /** Tarifas comerciales de partida (carta/sobre). Editables en el dashboard.
  *  Paq Estándar oficial Correos 2026 ~13,65 € (península ≤1 kg) se come el margen
- *  de una tarjeta a 15 €: envía en sobre / carta certificada. */
+ *  de una tarjeta a 20 €: envía en sobre / carta certificada. */
 export const DEFAULT_SHIPPING: ShippingSettings = {
   peninsula: 3.9,
   baleares: 5.9,

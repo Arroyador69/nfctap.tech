@@ -168,7 +168,7 @@ async function searchPlacesApi(query: string): Promise<PlaceHit[]> {
 async function searchOsm(query: string): Promise<PlaceHit[]> {
   const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=es&q=${encodeURIComponent(query)}`;
   const res = await fetch(url, {
-    headers: { "User-Agent": "NFCTap/1.0 (hola@nfctap.tech)", Accept: "application/json" },
+    headers: { "User-Agent": "NFCTap/1.0 (contacto@nfctap.tech)", Accept: "application/json" },
   });
   if (!res.ok) return [];
   const rows = (await res.json()) as { display_name?: string; name?: string }[];
