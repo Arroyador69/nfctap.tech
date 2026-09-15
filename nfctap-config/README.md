@@ -41,7 +41,7 @@ cd nfctap-config
 npx expo run:android
 ```
 
-3. Configurar → Reseña Google → nombre y pueblo → Buscar enlace, o pega `g.page`.
+3. Configurar → Reseña Google → pega el enlace de Maps o del perfil de empresa → Buscar enlace. Te da el de reseña.
 
 iPhone: Xcode (Archive para TestFlight). El fallo `impresora: No such file` es el espacio en la carpeta. El plugin `with-quoted-constants-script` y `scripts/bundle-rn-ios.sh` citan las rutas.
 

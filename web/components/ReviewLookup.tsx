@@ -1,5 +1,6 @@
 "use client";
 
+import { isDirectReviewUrl, isGooglePlaceInput } from "@/lib/google-url";
 import { useState } from "react";
 
 export type PlaceHit = {
@@ -17,6 +18,19 @@ type Props = {
   compact?: boolean;
 };
 
+export async function fetchReviewFromInput(q: string): Promise<PlaceHit | null> {
+  const query = q.trim();
+  if (query.length < 3) return null;
+  const res = await fetch("/api/places", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ q: query }),
+  });
+  const data = (await res.json()) as { places?: PlaceHit[] };
+  const places = data.places || [];
+  return places.find((p) => p.directReview) || null;
+}
+
 export function ReviewLookup({ onPick, compact }: Props) {
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
@@ -28,7 +42,7 @@ export function ReviewLookup({ onPick, compact }: Props) {
     e?.preventDefault();
     const query = q.trim();
     if (query.length < 3) {
-      setError("Nombre y pueblo, o pega el enlace de Google.");
+      setError("Pega el enlace de Google Maps o del perfil de empresa.");
       return;
     }
     setBusy(true);
@@ -47,8 +61,19 @@ export function ReviewLookup({ onPick, compact }: Props) {
         return;
       }
       const places = data.places || [];
-      setHits(places);
-      if (!places.length) setError("Nada. Prueba con el pueblo o pega el enlace de Maps.");
+      const reviews = places.filter((p) => p.directReview);
+      setHits(reviews.length ? reviews : places);
+      if (!places.length) {
+        setError(
+          "No saqué el enlace de reseña. Pega el de Google Maps (compartir ficha) o el perfil de empresa.",
+        );
+        return;
+      }
+      if (!reviews.length) {
+        setError("Ese enlace abre Maps, no el formulario de reseña. Prueba el de compartir la ficha o el perfil de empresa.");
+        return;
+      }
+      if (reviews.length === 1 && onPick) onPick(reviews[0].reviewUrl, reviews[0]);
     } catch {
       setError("Sin red. Reintenta.");
     } finally {
@@ -71,7 +96,8 @@ export function ReviewLookup({ onPick, compact }: Props) {
         <>
           <h2 className="font-[family-name:var(--font-display)] text-xl">Reseña Google</h2>
           <p className="mt-1 text-sm text-[#6f675c]">
-            Nombre y pueblo, o pega el enlace de Maps / búsqueda. Te da el enlace para el NFC.
+            Pega el enlace de Google Maps o del perfil de empresa. Te da el de escribir
+            reseña para el NFC. Ábrelo con Probar y comprueba que pide una opinión.
           </p>
         </>
       )}
@@ -79,7 +105,7 @@ export function ReviewLookup({ onPick, compact }: Props) {
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Casa Vacacional Alberto Fuengirola"
+          placeholder="https://maps.app.goo.gl/…"
           className="min-h-12 flex-1 rounded-2xl border border-[#e6ddd0] bg-[#fffcf7] px-4 text-sm"
         />
         <button
@@ -87,7 +113,7 @@ export function ReviewLookup({ onPick, compact }: Props) {
           disabled={busy}
           className="min-h-12 rounded-full bg-[#1c1915] px-5 text-sm font-semibold text-[#f6f1e7] disabled:opacity-50"
         >
-          {busy ? "…" : "Buscar"}
+          {busy ? "…" : "Sacar reseña"}
         </button>
       </form>
       {error ? <p className="mt-3 text-sm text-red-700">{error}</p> : null}
@@ -97,18 +123,22 @@ export function ReviewLookup({ onPick, compact }: Props) {
             <p className="font-medium">{h.name}</p>
             {h.address ? <p className="mt-0.5 text-xs text-[#7a7266]">{h.address}</p> : null}
             <p className="mt-1 text-xs text-[#9a7420]">
-              {h.directReview ? "Formulario de reseña" : "Abre la ficha en Maps (el cliente puede opinar)"}
+              {h.directReview
+                ? "Enlace de reseña. Comprueba que abre escribir una opinión."
+                : "Abre Maps, no el formulario de reseña."}
             </p>
             <p className="mt-2 break-all text-xs text-[#5c564c]">{h.reviewUrl}</p>
             <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => copy(h.reviewUrl)}
-                className="rounded-full bg-white px-3 py-1.5 text-xs ring-1 ring-[#e6ddd0]"
-              >
-                {copied === h.reviewUrl ? "Copiado" : "Copiar enlace"}
-              </button>
-              {onPick ? (
+              {h.directReview ? (
+                <button
+                  type="button"
+                  onClick={() => copy(h.reviewUrl)}
+                  className="rounded-full bg-white px-3 py-1.5 text-xs ring-1 ring-[#e6ddd0]"
+                >
+                  {copied === h.reviewUrl ? "Copiado" : "Copiar enlace"}
+                </button>
+              ) : null}
+              {h.directReview && onPick ? (
                 <button
                   type="button"
                   onClick={() => onPick(h.reviewUrl, h)}
@@ -116,14 +146,15 @@ export function ReviewLookup({ onPick, compact }: Props) {
                 >
                   Usar este
                 </button>
-              ) : (
+              ) : null}
+              {h.directReview && !onPick ? (
                 <a
                   href={`/dashboard/nuevo?googleUrl=${encodeURIComponent(h.reviewUrl)}`}
                   className="rounded-full bg-[#1c1915] px-3 py-1.5 text-xs text-[#f6f1e7]"
                 >
                   Usar en pedido
                 </a>
-              )}
+              ) : null}
               <a
                 href={h.reviewUrl}
                 target="_blank"
@@ -139,3 +170,5 @@ export function ReviewLookup({ onPick, compact }: Props) {
     </div>
   );
 }
+
+export { isDirectReviewUrl, isGooglePlaceInput };

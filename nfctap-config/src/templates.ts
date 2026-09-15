@@ -39,13 +39,13 @@ export const TEMPLATES: Template[] = [
   {
     id: "google",
     title: "Reseña Google",
-    blurb: "Busca el negocio o pega g.page. El cliente toca y opina.",
+    blurb: "Pega Maps o el perfil de empresa. El cliente toca y opina.",
     group: "negocio",
     fields: [
       {
         key: "query",
-        label: "Negocio (nombre y pueblo)",
-        placeholder: "Casa Vacacional Alberto Fuengirola",
+        label: "Google Maps o perfil de empresa",
+        placeholder: "https://maps.app.goo.gl/…",
         optional: true,
       },
       { key: "url", label: "Enlace de reseña", placeholder: "https://g.page/r/…/review", keyboard: "url" },

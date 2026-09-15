@@ -14,16 +14,17 @@ export default async function ResenasPage() {
       <DashboardNav />
       <h1 className="font-[family-name:var(--font-display)] text-3xl">Enlace de reseña Google</h1>
       <p className="mt-2 max-w-xl text-sm text-[#5c564c]">
-        Escribe el negocio y el pueblo, o pega el enlace largo de Maps. El que hay que grabar en el
-        NFC es el que sale aquí, no la búsqueda de Google.
+        Escribe el negocio y el pueblo, o pega el enlace de Google Maps o del perfil de
+        empresa. El que hay que grabar en el NFC es el de reseña que sale aquí: ábrelo y
+        comprueba que pide una opinión.
       </p>
       <div className="mt-8">
         <ReviewLookup />
       </div>
       <p className="mt-8 text-xs text-[#8a8173]">
-        Lo mejor es el enlace de Pedir reseñas (g.page o writereview con Place ID). Si pegas un
-        share de Maps, sirve para abrir la ficha. En Vercel puedes poner GOOGLE_PLACES_API_KEY para
-        buscar por nombre con el listado oficial.
+        Lo que sirve es el de escribir reseña (g.page/…/review o writereview con Place ID). Un
+        enlace de Maps o del perfil de empresa se convierte a ese. En Vercel pon
+        GOOGLE_PLACES_API_KEY para buscar también por nombre.
       </p>
     </div>
   );

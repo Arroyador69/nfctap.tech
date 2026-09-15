@@ -1,4 +1,14 @@
-/** Enlace NFC de reseña Google a partir de nombre, Place ID o URL pegada. */
+import {
+  extractCid,
+  extractMapsPlaceName,
+  extractPlaceId,
+  isGooglePlaceInput,
+  mapsSearchUrl,
+  mapsUrlFromPlaceId,
+  parseGoogleInput,
+  reviewUrlFromPlaceId,
+  type ParsedGoogle,
+} from "./google-url";
 
 export type PlaceHit = {
   name: string;
@@ -11,98 +21,23 @@ export type PlaceHit = {
   source: "google" | "url" | "osm";
 };
 
-export function reviewUrlFromPlaceId(placeId: string) {
-  return `https://search.google.com/local/writereview?placeid=${encodeURIComponent(placeId)}`;
-}
-
-export function mapsUrlFromPlaceId(placeId: string) {
-  return `https://www.google.com/maps/place/?q=place_id:${encodeURIComponent(placeId)}`;
-}
-
-export function mapsSearchUrl(query: string) {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-}
+export { mapsSearchUrl, mapsUrlFromPlaceId, parseGoogleInput, reviewUrlFromPlaceId };
 
 function hit(partial: Omit<PlaceHit, "mapsUrl"> & { mapsUrl?: string }): PlaceHit {
   const mapsUrl = partial.mapsUrl || (partial.placeId ? mapsUrlFromPlaceId(partial.placeId) : partial.reviewUrl);
   return { ...partial, mapsUrl };
 }
 
-/** Convierte un enlace de Maps / búsqueda / g.page en ficha usable para el NFC. */
-export function parseGoogleInput(raw: string): PlaceHit | null {
-  const t = raw.trim();
-  if (!/^https?:\/\//i.test(t) && !t.includes("google.") && !t.includes("g.page") && !t.includes("maps.app")) {
-    return null;
-  }
-  const urlText = /^https?:\/\//i.test(t) ? t : `https://${t}`;
-
-  const placeMatch = urlText.match(/place[_-]?id=([^&/#]+)/i);
-  if (placeMatch) {
-    const placeId = decodeURIComponent(placeMatch[1]);
-    return hit({
-      name: "Ficha Google",
-      address: placeId,
-      placeId,
-      reviewUrl: reviewUrlFromPlaceId(placeId),
-      directReview: true,
-      source: "url",
-    });
-  }
-
-  const gpage = urlText.match(/g\.page\/r\/([^/?#]+)/i);
-  if (gpage) {
-    const reviewUrl = `https://g.page/r/${gpage[1]}/review`;
-    return hit({
-      name: "Pedir reseñas",
-      address: "Enlace corto de Google Business",
-      reviewUrl,
-      mapsUrl: reviewUrl,
-      directReview: true,
-      source: "url",
-    });
-  }
-
-  const cid = urlText.match(/[?&]cid=(\d+)/i);
-  if (cid) {
-    const mapsUrl = `https://maps.google.com/?cid=${cid[1]}`;
-    return hit({
-      name: "Ficha Google",
-      address: `cid ${cid[1]}`,
-      reviewUrl: mapsUrl,
-      mapsUrl,
-      directReview: false,
-      source: "url",
-    });
-  }
-
-  try {
-    const u = new URL(urlText);
-    const si = u.searchParams.get("si");
-    const q = (u.searchParams.get("q") || "").replace(/\+/g, " ").trim();
-    if (si) {
-      const mapsUrl = `https://www.google.com/maps?si=${encodeURIComponent(si)}`;
-      return hit({
-        name: q || "Negocio de Google",
-        address: "Ficha compartida (el cliente abre Maps y puede opinar)",
-        reviewUrl: mapsUrl,
-        mapsUrl,
-        directReview: false,
-        source: "url",
-      });
-    }
-    if (/(^|\.)google\./i.test(u.hostname) && q) {
-      return hit({
-        name: q,
-        address: "Búsqueda Google Maps",
-        reviewUrl: mapsSearchUrl(q),
-        directReview: false,
-        source: "url",
-      });
-    }
-  } catch {
-    /* ignore */
-  }
-  return null;
+function fromParsed(parsed: ParsedGoogle, source: PlaceHit["source"] = "url"): PlaceHit {
+  return hit({
+    name: parsed.name,
+    address: parsed.address,
+    reviewUrl: parsed.reviewUrl,
+    mapsUrl: parsed.mapsUrl,
+    placeId: parsed.placeId,
+    directReview: parsed.directReview,
+    source,
+  });
 }
 
 async function searchPlacesApi(query: string): Promise<PlaceHit[]> {
@@ -165,62 +100,93 @@ async function searchPlacesApi(query: string): Promise<PlaceHit[]> {
     );
 }
 
-async function searchOsm(query: string): Promise<PlaceHit[]> {
-  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=es&q=${encodeURIComponent(query)}`;
+async function readFollowed(url: string): Promise<{ url: string; body: string }> {
+  const ctrl = AbortSignal.timeout(8000);
   const res = await fetch(url, {
-    headers: { "User-Agent": "NFCTap/1.0 (contacto@nfctap.tech)", Accept: "application/json" },
+    method: "GET",
+    redirect: "follow",
+    signal: ctrl,
+    headers: {
+      Accept: "text/html",
+      "User-Agent": "Mozilla/5.0 (compatible; NFCTap/1.0; +https://nfctap.tech)",
+    },
   });
-  if (!res.ok) return [];
-  const rows = (await res.json()) as { display_name?: string; name?: string }[];
-  return rows.slice(0, 5).map((r) => {
-    const name = r.name || query;
-    const address = r.display_name || "";
-    const q = [name, address].filter(Boolean).join(", ");
-    return hit({
-      name,
-      address,
-      reviewUrl: mapsSearchUrl(q),
-      directReview: false,
-      source: "osm",
-    });
-  });
+  const finalUrl = res.url || url;
+  let body = "";
+  if (!extractPlaceId(finalUrl)) {
+    const text = await res.text();
+    body = text.slice(0, 180_000);
+  }
+  return { url: finalUrl, body };
 }
 
-async function followShortMaps(url: string): Promise<string> {
+function placeIdFromPage(body: string): string | null {
+  const tagged = body.match(/["']place_id["']\s*:\s*["'](ChIJ[A-Za-z0-9_-]+)/);
+  if (tagged?.[1]) return tagged[1];
+  return extractPlaceId(body);
+}
+
+async function resolveMapsOrBusinessUrl(raw: string): Promise<PlaceHit | null> {
+  const start = raw.startsWith("http") ? raw : `https://${raw}`;
+  let parsed = parseGoogleInput(start);
+  if (parsed?.directReview) return fromParsed(parsed);
+
+  let followed = start;
+  let body = "";
   try {
-    const res = await fetch(url, { method: "HEAD", redirect: "follow" });
-    return res.url || url;
+    const got = await readFollowed(start);
+    followed = got.url;
+    body = got.body;
   } catch {
-    return url;
+    /* sigue con la URL original */
   }
+
+  parsed = parseGoogleInput(followed) || parsed;
+  if (parsed?.directReview) return fromParsed(parsed);
+
+  const fromBody = body ? placeIdFromPage(body) : null;
+  if (fromBody) {
+    const name = extractMapsPlaceName(followed) || parsed?.name || "Ficha Google";
+    return hit({
+      name,
+      address: fromBody,
+      placeId: fromBody,
+      reviewUrl: reviewUrlFromPlaceId(fromBody),
+      directReview: true,
+      source: "url",
+    });
+  }
+
+  const queries = [
+    extractMapsPlaceName(followed),
+    parsed?.name && parsed.name !== "Negocio de Google" && parsed.name !== "Ficha Google" ? parsed.name : "",
+    extractCid(followed) ? `https://maps.google.com/?cid=${extractCid(followed)}` : "",
+    followed,
+    start,
+  ].filter((q, i, all) => q && q.length >= 3 && all.indexOf(q) === i);
+
+  for (const q of queries) {
+    const found = await searchPlacesApi(q);
+    const exact = found.find((p) => p.directReview);
+    if (exact) return exact;
+    if (found[0]?.directReview) return found[0];
+  }
+  return parsed ? fromParsed(parsed) : null;
 }
 
 export async function lookupReviewPlaces(input: string): Promise<PlaceHit[]> {
   const q = input.trim();
   if (q.length < 3) return [];
 
-  if (/maps\.app\.goo\.gl|goo\.gl\/maps/i.test(q)) {
-    const finalUrl = await followShortMaps(q.startsWith("http") ? q : `https://${q}`);
-    const parsed = parseGoogleInput(finalUrl);
-    if (parsed) return [parsed];
+  if (isGooglePlaceInput(q) || /^https?:\/\//i.test(q)) {
+    const resolved = await resolveMapsOrBusinessUrl(q);
+    if (resolved?.directReview) return [resolved];
+    const viaApi = await searchPlacesApi(q);
+    if (viaApi.length) return viaApi;
+    return resolved ? [resolved] : [];
   }
 
-  const fromUrl = parseGoogleInput(q);
-  if (fromUrl) return [fromUrl];
-
   const google = await searchPlacesApi(q);
-  if (google.length) return google;
-
-  const osm = await searchOsm(q);
-  if (osm.length) return osm;
-
-  return [
-    hit({
-      name: q,
-      address: "Búsqueda en Google Maps (confirma que abre el negocio)",
-      reviewUrl: mapsSearchUrl(q),
-      directReview: false,
-      source: "url",
-    }),
-  ];
+  if (google.length) return google.filter((p) => p.directReview);
+  return [];
 }

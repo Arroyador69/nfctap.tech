@@ -23,7 +23,8 @@ import {
   productLabel,
   productPrice,
 } from "@/lib/catalog";
-import { ReviewLookup } from "@/components/ReviewLookup";
+import { fetchReviewFromInput, ReviewLookup } from "@/components/ReviewLookup";
+import { isDirectReviewUrl, isGooglePlaceInput, parseGoogleInput } from "@/lib/google-url";
 import {
   isEmail,
   isHttpUrl,
@@ -97,6 +98,7 @@ export function Designer({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [tried, setTried] = useState(false);
+  const [googleHint, setGoogleHint] = useState("");
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -132,6 +134,28 @@ export function Designer({
   const total = price + ship;
   const patch = (p: Partial<CardDesign>) => setDesign((d) => ({ ...d, ...p }));
   const atMax = liveQty >= MAX_QTY;
+
+  async function resolveGooglePaste(raw: string, into: "urls" | "design") {
+    const t = raw.trim();
+    if (!t) return;
+    const instant = parseGoogleInput(t);
+    if (instant?.directReview) {
+      if (into === "urls") setUrls((u) => ({ ...u, google: instant.reviewUrl }));
+      else patch({ googleUrl: instant.reviewUrl });
+      setGoogleHint("Enlace de reseña listo. Ábrelo y comprueba que pide una opinión.");
+      return;
+    }
+    if (!isGooglePlaceInput(t) || isDirectReviewUrl(t)) return;
+    setGoogleHint("Sacando el enlace de reseña…");
+    const hit = await fetchReviewFromInput(t);
+    if (hit?.directReview) {
+      if (into === "urls") setUrls((u) => ({ ...u, google: hit.reviewUrl }));
+      else patch({ googleUrl: hit.reviewUrl });
+      setGoogleHint("Enlace de reseña listo. Ábrelo y comprueba que pide una opinión.");
+    } else {
+      setGoogleHint("No saqué el de reseña. Pega el de Maps (compartir ficha) o el perfil de empresa.");
+    }
+  }
 
   async function onLogo(file: File | undefined) {
     if (!file) return patch({ logoDataUrl: undefined });
@@ -436,7 +460,18 @@ export function Designer({
                           setFocus(m.id);
                           setDesign((d) => ({ ...d, model: m.id }));
                         }}
-                        onChange={(e) => setUrls((u) => ({ ...u, [m.id]: e.target.value }))}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          const instant = m.id === "google" ? parseGoogleInput(v) : null;
+                          setUrls((u) => ({
+                            ...u,
+                            [m.id]: instant?.directReview ? instant.reviewUrl : v,
+                          }));
+                          if (m.id === "google") setGoogleHint("");
+                        }}
+                        onBlur={(e) => {
+                          if (m.id === "google") void resolveGooglePaste(e.target.value, "urls");
+                        }}
                       />
                     </Field>
                   ))}
@@ -444,7 +479,8 @@ export function Designer({
                   {counts.google > 0 ? (
                     <div className="rounded-2xl bg-[#faf6ee] p-3">
                       <p className="mb-2 text-xs text-[#6f675c]">
-                        Busca el negocio (nombre + pueblo) o pega el enlace de Maps.
+                        Pega el enlace de Google Maps o del perfil de empresa. Te da el de
+                        reseña. Ábrelo y comprueba que pide una opinión.
                       </p>
                       <ReviewLookup
                         compact
@@ -452,8 +488,10 @@ export function Designer({
                           setUrls((u) => ({ ...u, google: url }));
                           setDesign((d) => ({ ...d, model: "google" }));
                           setFocus("google");
+                          setGoogleHint("Enlace de reseña listo. Ábrelo y comprueba que pide una opinión.");
                         }}
                       />
+                      {googleHint ? <p className="mt-2 text-xs text-[#6f675c]">{googleHint}</p> : null}
                     </div>
                   ) : null}
 
@@ -568,14 +606,30 @@ export function Designer({
                       autoCorrect="off"
                       placeholder="https://g.page/r/…/review"
                       value={design.googleUrl}
-                      onChange={(e) => patch({ googleUrl: e.target.value })}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        const instant = parseGoogleInput(v);
+                        patch({ googleUrl: instant?.directReview ? instant.reviewUrl : v });
+                        setGoogleHint("");
+                      }}
+                      onBlur={(e) => {
+                        void resolveGooglePaste(e.target.value, "design");
+                      }}
                     />
                   </Field>
                   <div className="rounded-2xl bg-[#faf6ee] p-3">
                     <p className="mb-2 text-xs text-[#6f675c]">
-                      Si es reseña Google, búscalo (nombre + pueblo) o pega Maps.
+                      Si es reseña Google: pega el de Maps o el perfil de empresa. Te da el de
+                      reseña. Ábrelo y comprueba que pide una opinión.
                     </p>
-                    <ReviewLookup compact onPick={(url) => patch({ googleUrl: url })} />
+                    <ReviewLookup
+                      compact
+                      onPick={(url) => {
+                        patch({ googleUrl: url });
+                        setGoogleHint("Enlace de reseña listo. Ábrelo y comprueba que pide una opinión.");
+                      }}
+                    />
+                    {googleHint ? <p className="mt-2 text-xs text-[#6f675c]">{googleHint}</p> : null}
                   </div>
                 </>
               )}

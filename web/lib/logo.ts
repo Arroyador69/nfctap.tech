@@ -1,3 +1,5 @@
+import { isDirectReviewUrl, parseGoogleInput } from "./google-url";
+
 export const LOGO_MASK = 48;
 const LOGO_PREVIEW = 512;
 
@@ -151,7 +153,7 @@ export function isHttpUrl(value: string) {
 export function isReviewUrl(value: string) {
   const t = value.trim();
   if (!isHttpUrl(t)) return false;
-  return /g\.page|google\.|goo\.gl|maps\.app/i.test(t);
+  return isDirectReviewUrl(t) || /g\.page\/r\//i.test(t);
 }
 
 export function isWhatsAppTarget(value: string) {
@@ -195,6 +197,10 @@ export function normalizeNfcUrl(model: string, value: string) {
   const t = value.trim();
   if (model === "whatsapp") return normalizeWhatsAppUrl(t);
   if (model === "instagram") return normalizeInstagramUrl(t);
+  if (model === "google") {
+    const parsed = parseGoogleInput(t);
+    if (parsed?.directReview) return parsed.reviewUrl;
+  }
   return t;
 }
 

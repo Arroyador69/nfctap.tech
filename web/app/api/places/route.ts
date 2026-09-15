@@ -36,9 +36,18 @@ async function run(q: string, req: Request) {
   }
   const query = q.trim().slice(0, 200);
   if (query.length < 3) {
-    return cors(NextResponse.json({ error: "Escribe al menos 3 letras o pega el enlace de Google." }, { status: 400 }));
+    return cors(NextResponse.json({ error: "Pega el enlace de Google Maps o del perfil de empresa." }, { status: 400 }));
   }
   const places = await lookupReviewPlaces(query);
+  if (!places.length) {
+    return cors(
+      NextResponse.json({
+        places: [],
+        error:
+          "No saqué el enlace de reseña. Pega el de Google Maps (compartir ficha) o el perfil de empresa.",
+      }),
+    );
+  }
   return cors(NextResponse.json({ places, admin: await isAdmin() }));
 }
 

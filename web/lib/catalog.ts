@@ -78,7 +78,7 @@ export const FACE_MODELS: {
     label: "Google",
     blurb: "Se abre tu reseña.",
     placeholder: "https://g.page/r/…/review",
-    hint: "El enlace de Pedir reseñas, o búscalo abajo.",
+    hint: "Pega Maps o el perfil de empresa; abajo te da el de reseña.",
   },
   {
     id: "whatsapp",
