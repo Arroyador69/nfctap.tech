@@ -1,0 +1,319 @@
+from __future__ import annotations
+
+import random
+import re
+from dataclasses import dataclass
+
+from nfctap_media.config import Config, load_yaml
+from nfctap_media.paths import ROOT
+
+
+@dataclass(frozen=True)
+class Pain:
+    id: str
+    theme: str
+    money_angle: bool
+    hook: str
+    spoken_hook: str
+    carousel_title: str
+    carousel_line: str
+    carousel_caption: str
+    scene: str
+    image_extra: str
+    scripts: list[str]
+
+
+@dataclass(frozen=True)
+class Persona:
+    id: str
+    name: str
+    gender: str
+    age: int
+    city: str
+    role: str
+    voice: str
+    seed: int
+    image_prompt: str
+    poses: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class Script:
+    pain_id: str
+    persona_id: str
+    hook: str
+    spoken_hook: str
+    text: str
+    source: str
+
+
+def _clean(text: str) -> str:
+    return re.sub(r"\s+", " ", text).strip()
+
+
+CLOSE_SPOKEN = "Lo podrás encontrar en la web. Envíos a toda España."
+
+_CTA_MARKERS = (
+    "nfctap.tech",
+    "envíos a toda españa",
+    "envios a toda espana",
+    "encarga en",
+    "lo ves en 3d",
+    "lo encargas en",
+    "lo enviamos a toda",
+)
+
+
+def close_caption_lines(text: str) -> list[str]:
+    parts = [p.strip() for p in re.split(r"(?<=\.)\s+", _clean(text)) if p.strip()]
+    return parts or [_clean(text)]
+
+
+def _is_cta_sentence(text: str) -> bool:
+    low = re.sub(r"\s+", " ", text).strip().lower()
+    return any(marker in low for marker in _CTA_MARKERS)
+
+
+def split_body_and_close(text: str, close: str | None = None) -> tuple[str, str]:
+    """El cuerpo acaba en el producto. La web se locuta en el cierre."""
+    spoken_close = _clean(close or CLOSE_SPOKEN)
+    parts = [p.strip() for p in re.split(r"(?<=[.!?])\s+", _clean(text)) if p.strip()]
+    while len(parts) > 1 and _is_cta_sentence(parts[-1]):
+        parts.pop()
+    if parts:
+        last = parts[-1]
+        last = re.sub(
+            r"\s+y lo enviamos a toda España\.?$",
+            ".",
+            last,
+            flags=re.IGNORECASE,
+        )
+        last = re.sub(
+            r"\s+(?:Encarga en\s+)?nfctap\.tech\.?$",
+            ".",
+            last,
+            flags=re.IGNORECASE,
+        )
+        last = re.sub(r"\s+Envíos a toda España\.?$", ".", last, flags=re.IGNORECASE)
+        parts[-1] = _clean(last)
+    body = _clean(" ".join(parts))
+    if not body:
+        body = _clean(text)
+    return body, spoken_close
+
+
+def for_speech(text: str, cfg: Config) -> str:
+    """nfctap.tech se dice letra a letra, español de España. En pantalla sigue nfctap.tech."""
+    spoken_url = _clean(cfg.cta_spoken)
+    out = re.sub(r"nfctap\.tech", spoken_url, text, flags=re.IGNORECASE)
+    out = re.sub(r"\bNFCTap\b", "ene efe ce tap", out)
+    out = re.sub(r"\bnfctap\b", "ene efe ce tap", out)
+    return out
+
+
+def load_pains() -> list[Pain]:
+    raw = load_yaml("pains.yaml")["pains"]
+    return [
+        Pain(
+            id=item["id"],
+            theme=item["theme"],
+            money_angle=bool(item["money_angle"]),
+            hook=item["hook"],
+            spoken_hook=_clean(item.get("spoken_hook") or item["hook"]),
+            carousel_title=_clean(item.get("carousel_title") or ""),
+            carousel_line=_clean(item.get("carousel_line") or ""),
+            carousel_caption=_clean(item.get("carousel_caption") or ""),
+            scene=item["scene"],
+            image_extra=item["image_extra"],
+            scripts=[_clean(s) for s in item["scripts"]],
+        )
+        for item in raw
+    ]
+
+
+def load_personas() -> list[Persona]:
+    raw = load_yaml("personas.yaml")["personas"]
+    return [
+        Persona(
+            id=item["id"],
+            name=item["name"],
+            gender=item["gender"],
+            age=int(item["age"]),
+            city=item["city"],
+            role=item["role"],
+            voice=item["voice"],
+            seed=int(item["seed"]),
+            image_prompt=_clean(item["image_prompt"]),
+            poses=tuple(_clean(p) for p in item["poses"]),
+        )
+        for item in raw
+    ]
+
+
+def word_count(text: str) -> int:
+    return len(re.findall(r"\S+", text))
+
+
+def _fold(text: str) -> str:
+    return re.sub(r"\s+", " ", text).strip().lower()
+
+
+def validate_carousel_copy(pain: Pain) -> list[str]:
+    """El carrusel no puede reciclar el hook ni el locutado del Reel."""
+    errors: list[str] = []
+    title = _fold(pain.carousel_title)
+    line = _fold(pain.carousel_line)
+    caption = _fold(pain.carousel_caption)
+    hook = _fold(pain.spoken_hook)
+    written = _fold(pain.hook)
+    if not title:
+        errors.append("falta carousel_title")
+    if not line:
+        errors.append("falta carousel_line")
+    if not caption:
+        errors.append("falta carousel_caption")
+    if title and title in {hook, written}:
+        errors.append("el título del carrusel no puede ser el hook del Reel")
+    if line and line in {hook, written}:
+        errors.append("el texto del carrusel no puede ser el hook del Reel")
+    hook_head = " ".join(hook.split()[:7])
+    if hook_head and (hook_head in title or hook_head in line):
+        errors.append("el carrusel arranca como el hook del Reel")
+    if hook and hook in caption:
+        errors.append("el caption del carrusel copia el hook oral")
+    for script in pain.scripts:
+        body = _fold(script)
+        if line and (line in body or body in line):
+            errors.append("carousel_line copia el guion del Reel")
+        head = " ".join(body.split()[:12])
+        if head and (head in caption or head in line):
+            errors.append("el carrusel copia el arranque del locutado")
+    return errors
+
+
+def validate_script(text: str, cfg: Config, spoken_hook: str = "") -> list[str]:
+    errors: list[str] = []
+    full = _clean(f"{spoken_hook} {text}")
+    n = word_count(full)
+    if n < cfg.min_words:
+        errors.append(f"corto ({n} palabras)")
+    if n > cfg.max_words:
+        errors.append(f"largo ({n} palabras)")
+    low = full.lower()
+    if "nfctap.tech" not in low and "nfctap" not in low:
+        errors.append("no menciona NFCTap ni nfctap.tech")
+    product = load_yaml("product.yaml")
+    for banned in product["must_not_say"]:
+        if str(banned).lower() in low:
+            errors.append(f"frase prohibida: {banned}")
+    hook_n = word_count(spoken_hook) if spoken_hook else 0
+    if spoken_hook and (hook_n < 5 or hook_n > 16):
+        errors.append(f"hook de 3s ({hook_n} palabras, debe 5-16)")
+    return errors
+
+
+def pick_pain(pain_id: str | None = None, money_only: bool = False) -> Pain:
+    pains = load_pains()
+    if money_only:
+        pains = [p for p in pains if p.money_angle] or pains
+    if pain_id:
+        for pain in pains:
+            if pain.id == pain_id:
+                return pain
+        known = ", ".join(p.id for p in load_pains())
+        raise SystemExit(f"Pain desconocido: {pain_id}. Usa: {known}")
+    return random.choice(pains)
+
+
+def pick_persona(persona_id: str | None = None) -> Persona:
+    personas = load_personas()
+    if persona_id:
+        for persona in personas:
+            if persona.id == persona_id:
+                return persona
+        known = ", ".join(p.id for p in personas)
+        raise SystemExit(f"Persona desconocida: {persona_id}. Usa: {known}")
+    return random.choice(personas)
+
+
+def template_script(pain: Pain, persona: Persona, cfg: Config) -> Script:
+    copy_errors = validate_carousel_copy(pain)
+    if copy_errors:
+        raise RuntimeError(f"Carrusel inválido {pain.id}: {copy_errors}")
+    text = random.choice(pain.scripts)
+    errors = validate_script(text, cfg, spoken_hook=pain.spoken_hook)
+    if errors:
+        raise RuntimeError(f"Plantilla inválida {pain.id}: {errors}")
+    return Script(
+        pain_id=pain.id,
+        persona_id=persona.id,
+        hook=pain.hook,
+        spoken_hook=pain.spoken_hook,
+        text=text,
+        source="template",
+    )
+
+
+def llm_script(pain: Pain, persona: Persona, cfg: Config) -> Script | None:
+    """Opcional. En 8 GB de RAM se omite salvo --llm."""
+    prompt_path = ROOT / "prompts" / "script.md"
+    system = prompt_path.read_text(encoding="utf-8")
+    product = load_yaml("product.yaml")
+    user = (
+        f"Persona: {persona.name}, {persona.age} años, {persona.city}. {persona.role}\n"
+        f"Dolor: {pain.hook}\nEscena: {pain.scene}\n"
+        f"Hechos:\n{product}\n"
+        "Devuelve SOLO el locutado, sin comillas ni título."
+    )
+    try:
+        import json
+        import urllib.request
+
+        body = json.dumps(
+            {
+                "model": "mistral",
+                "stream": False,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+            }
+        ).encode()
+        req = urllib.request.Request(
+            "http://127.0.0.1:11434/api/chat",
+            data=body,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            payload = json.loads(resp.read().decode())
+        text = _clean(payload.get("message", {}).get("content", ""))
+        if not text:
+            return None
+        if validate_script(text, cfg, spoken_hook=pain.spoken_hook):
+            return None
+        return Script(
+            pain_id=pain.id,
+            persona_id=persona.id,
+            hook=pain.hook,
+            spoken_hook=pain.spoken_hook,
+            text=text,
+            source="ollama",
+        )
+    except Exception:
+        return None
+
+
+def build_script(
+    cfg: Config,
+    pain_id: str | None = None,
+    persona_id: str | None = None,
+    money_only: bool = False,
+    use_llm: bool = False,
+) -> tuple[Pain, Persona, Script]:
+    pain = pick_pain(pain_id, money_only=money_only)
+    persona = pick_persona(persona_id)
+    script = llm_script(pain, persona, cfg) if use_llm else None
+    if script is None:
+        script = template_script(pain, persona, cfg)
+    return pain, persona, script

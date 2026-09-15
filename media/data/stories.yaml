@@ -1,0 +1,53 @@
+# Stories: una frase + web. No explican el Reel.
+
+stories:
+  - id: se_van
+    kind: recuerda
+    kicker: Recuerda
+    phrase: Se van. Y no dejan reseña.
+    cta: Encarga · envíos a España
+  - id: barra
+    kind: recuerda
+    kicker: Recuerda
+    phrase: El toque es en la barra, no en la caja.
+    cta: Un atril NFC · TAP
+  - id: anuncio
+    kind: recuerda
+    kicker: Recuerda
+    phrase: El anuncio se acaba. El atril se queda.
+    cta: Una 20 € · pack 35 €
+  - id: maps
+    kind: recuerda
+    kicker: Recuerda
+    phrase: Sin reseñas, Maps te esconde.
+    cta: Encarga en nfctap.tech
+  - id: whatsapp
+    kind: recuerda
+    kicker: Recuerda
+    phrase: WhatsApp no entra. El atril sí.
+    cta: Un toque, se abre el chat
+  - id: instagram
+    kind: recuerda
+    kicker: Recuerda
+    phrase: En Instagram no te siguen. TAP sí.
+    cta: Se abre el perfil
+  - id: pack
+    kind: recuerda
+    kicker: Recuerda
+    phrase: Barra y terraza. Una de cada.
+    cta: Pack 35 €
+  - id: encarga
+    kind: registro
+    kicker: Encarga
+    phrase: Lo ves en 3D. Lo imprimimos aquí.
+    cta: nfctap.tech
+  - id: envios
+    kind: registro
+    kicker: Encarga
+    phrase: Envíos a toda España.
+    cta: nfctap.tech
+  - id: contacto
+    kind: registro
+    kicker: Encarga
+    phrase: Pieza única, 70 €. Escríbenos.
+    cta: contacto@nfctap.tech

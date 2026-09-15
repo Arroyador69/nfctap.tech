@@ -1,0 +1,35 @@
+brand: NFCTap
+cta_url: nfctap.tech
+cta_spoken: ene efe ce tap punto tech
+close_spoken: Lo podrás encontrar en la web. Envíos a toda España.
+web_start_seconds: 8
+width: 1080
+height: 1920
+fps: 30
+subtitle_fontsize: 68
+subtitle_margin_v: 380
+voice_engine: azure
+voice_language: spanish
+voice_pocket_female: lola
+voice_pocket_male: jean
+voice_azure_female: es-ES-Ximena:DragonHDLatestNeural
+voice_azure_male: es-ES-Tristan:DragonHDLatestNeural
+voice_female: es-ES-XimenaNeural
+voice_female_rate: "-3%"
+voice_female_pitch: "+0Hz"
+voice_male: es-ES-AlvaroNeural
+voice_male_rate: "-2%"
+voice_male_pitch: "+0Hz"
+voice_volume: "+0%"
+story_seconds: 5.5
+image_provider: pollinations
+pollinations_model: flux
+visual_mode: bank
+min_words: 32
+max_words: 78
+endcard_seconds: 6.5
+music_volume: 0.06
+output_dir: output
+cache_dir: assets/cache
+font_bold: /System/Library/Fonts/Supplemental/Arial Bold.ttf
+font_regular: /System/Library/Fonts/Supplemental/Arial.ttf

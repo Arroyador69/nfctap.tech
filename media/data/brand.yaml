@@ -1,0 +1,16 @@
+# Colores de nfctap.tech (web: cream, tinta, oro).
+navy: "#1c1915"
+ink: "#1c1915"
+cream: "#f6f1e8"
+gold: "#c4a056"
+gold_text: "#b0892c"
+teal: "#e2b43a"
+cyan: "#d4c4a0"
+yellow: "#FFD400"
+white: "#f6f1e7"
+muted: "#5c564c"
+border: "#e6ddd0"
+logo: assets/brand/logo-512.png
+font_display: assets/brand/fonts/Fraunces-Display.ttf
+font_sans: assets/brand/fonts/Outfit.ttf
+font_sans_regular: assets/brand/fonts/Outfit-Regular.ttf

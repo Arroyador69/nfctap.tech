@@ -1,0 +1,35 @@
+personas:
+  - id: maria
+    name: María
+    gender: female
+    age: 38
+    city: Fuengirola
+    role: Bar de barrio, ella detrás de la barra.
+    voice: female
+    seed: 1107
+    image_prompt: >
+      38-year-old Spanish woman from Fuengirola, Andalusia, Iberian Southern
+      European, olive-tan skin, brown eyes, dark brown hair in a low bun,
+      black t-shirt, small neighbourhood bar, espresso machine, iPhone photo.
+      Same woman in every frame.
+    poses:
+      - "MUST SHOW: both hands on top of her head, empty bar, stressed Tuesday"
+      - "MUST SHOW: looking at the phone worried, empty chat and no reviews"
+      - "MUST SHOW: looking straight at camera talking, one open hand raised"
+
+  - id: andres
+    name: Andrés
+    gender: male
+    age: 46
+    city: Málaga
+    role: Restaurante pequeño, quiere más mesas sin anuncios caros.
+    voice: male
+    seed: 4410
+    image_prompt: >
+      46-year-old Spanish man from Málaga, Iberian Southern European,
+      olive-tan skin, brown eyes, short dark hair, light stubble, chef jacket
+      or black polo, restaurant pass, iPhone photo. Same man in every frame.
+    poses:
+      - "MUST SHOW: both hands on top of his head, empty tables, stressed"
+      - "MUST SHOW: looking at the phone, ads that did not convert"
+      - "MUST SHOW: looking straight at camera explaining, open-hand gesture"

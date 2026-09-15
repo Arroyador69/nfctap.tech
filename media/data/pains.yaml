@@ -1,0 +1,185 @@
+# Dolores de dueños de local en España. Cuerpo del Reel = impresión real.
+# spoken_hook ~3 s. carousel_* distinto del locutado.
+
+pains:
+  - id: se_van_sin_opinar
+    theme: reseñas
+    money_angle: false
+    hook: Se van y no opinan
+    spoken_hook: Se van. Y no dejan reseña. ¿Otra vez?
+    carousel_title: El cliente se va y nadie se entera
+    carousel_line: El atril está en la barra. Un toque, se abre tu enlace.
+    carousel_caption: >
+      El QR de la caja se ignora. Un atril NFCTap en la barra abre Google,
+      WhatsApp o Instagram al acercar el móvil. 20 €. Envíos a toda España.
+      nfctap.tech
+    scene: Barra de barrio, cliente de espaldas, dueña mira el móvil sin reseñas.
+    image_extra: empty neighbourhood bar, phone on the counter, Tuesday afternoon
+    scripts:
+      - >
+        Pagan, se van y nadie opina. El atril NFCTap está en la barra:
+        acercas el móvil y se abre tu reseña, el chat o el perfil. Lo
+        imprimimos aquí. Encarga en nfctap.tech. Envíos a toda España.
+      - >
+        El cliente sale y no toca nada. Con NFCTap el toque es en la barra,
+        no un papel sucio. Google, WhatsApp o Instagram, a tu enlace. Lo
+        ves en 3D en nfctap.tech. Envíos a toda España.
+
+  - id: qr_sucio
+    theme: reseñas
+    money_angle: false
+    hook: El QR de la caja no lo pilla nadie
+    spoken_hook: ¿Otro QR sucio en la caja? Nadie lo pilla.
+    carousel_title: Un toque en la barra, no un papel en la caja
+    carousel_line: Pieza de pie, NFC dentro, enlace al instante.
+    carousel_caption: >
+      El código de la caja se ve mal y nadie lo abre. El atril NFCTap se
+      queda de pie en la barra. Un toque y WhatsApp, Instagram o Google.
+      20 €. nfctap.tech
+    scene: Caja con QR borroso, camarero señala, nadie saca el móvil.
+    image_extra: dirty QR sticker on till, Spanish bar
+    scripts:
+      - >
+        El QR de la caja está sucio y nadie lo abre. NFCTap es un atril de
+        pie: el cliente acerca el móvil y entra en tu enlace. Impreso en
+        España. Encarga en nfctap.tech. Envíos a toda España.
+      - >
+        Nadie escanea el papel de la caja. El atril NFCTap se ve, se toca y
+        abre WhatsApp, Instagram o Google. Lo fabricamos aquí, negro y
+        amarillo. nfctap.tech. Envíos a toda España.
+
+  - id: maps_abajo
+    theme: reseñas
+    money_angle: false
+    hook: En Maps sales el cuarto
+    spoken_hook: En Maps sales el cuarto. El de al lado te come.
+    carousel_title: Quien pide la reseña sale antes en Maps
+    carousel_line: El atril pide la opinión en el momento, en la barra.
+    carousel_caption: >
+      Si no pides la reseña en el local, Maps te entierra. NFCTap lo deja
+      en la barra todo el día. Google 20 €, dos 35 €. nfctap.tech
+    scene: Dueño compara su ficha de Maps con el restaurante de al lado.
+    image_extra: Google Maps list, restaurant buried, phone in kitchen
+    scripts:
+      - >
+        En Maps sales abajo y el de al lado, con reseñas, te come. NFCTap
+        pide la opinión en la barra, cuando el plato está caliente. Lo
+        imprimes y lo encargas en nfctap.tech. Envíos a toda España.
+      - >
+        Sin reseñas nuevas, Maps te esconde. Un atril NFCTap de Google en
+        la barra abre tu ficha al toque. 20 €. Envíos a toda España.
+        nfctap.tech
+
+  - id: veinte_vs_anuncio
+    theme: precio
+    money_angle: true
+    hook: El anuncio se acaba. El atril se queda
+    spoken_hook: El anuncio se acaba. El atril se queda en la barra.
+    carousel_title: Veinte euros, todo el mes en la barra
+    carousel_line: Una 20 €. Dos, 35 €. Sin campaña que caduca.
+    carousel_caption: >
+      Un anuncio dura el presupuesto. El atril NFCTap se queda. Google,
+      WhatsApp o Instagram, 20 €. Pack de dos 35 €. Con logo 30 €. Envíos
+      a toda España. nfctap.tech
+    scene: Restaurador mira factura de anuncios, mesas vacías, atril en barra.
+    image_extra: ads invoice, empty tables, NFC stand on bar
+    scripts:
+      - >
+        Gastas en anuncios y se acaban. Un atril NFCTap de 20 € se queda
+        en la barra todo el mes. WhatsApp, Instagram o Google. Lo
+        imprimimos aquí. Encarga en nfctap.tech. Envíos a toda España.
+      - >
+        El anuncio caduca. La pieza NFCTap cuesta 20 € y trabaja cada
+        servicio. Dos, 35 €. Lo ves en 3D en nfctap.tech. Envíos a
+        toda España.
+
+  - id: dos_en_barra
+    theme: precio
+    money_angle: true
+    hook: Barra y terraza, dos toques
+    spoken_hook: Una en barra. Otra en terraza. Dos toques.
+    carousel_title: Dos atriles, barra y terraza
+    carousel_line: Dos piezas 35 €. Dos con logo, 55 €.
+    carousel_caption: >
+      Un solo atril se queda en caja. Dos cubren barra y terraza. Google y
+      WhatsApp, o dos iguales. 35 € el pack. Con tu logo, 55 €. Envíos a
+      toda España. nfctap.tech
+    scene: Barra y terraza, dos piezas, clientes tocando.
+    image_extra: bar and terrace, two NFC stands
+    scripts:
+      - >
+        Una pieza se queda en caja. Pon otra en terraza. Dos NFCTap son
+        35 €. WhatsApp e Instagram, o Google. Impreso en España.
+        nfctap.tech. Envíos a toda España.
+      - >
+        Barra y terraza, dos toques. El pack de dos son 35 €. Lo
+        fabricamos aquí y lo enviamos a toda España. Encarga en
+        nfctap.tech.
+
+  - id: mi_logo
+    theme: marca
+    money_angle: true
+    hook: Tu logo en la barra, no el de catálogo
+    spoken_hook: ¿Tu logo en la barra, o el de todos?
+    carousel_title: La de barra lleva tu marca
+    carousel_line: Con logo 30 €. Dos, 55 €. Mismo TAP.
+    carousel_caption: >
+      La de stock es Google, WhatsApp o Instagram. La de logo lleva tu
+      marca, TAP y estrellas. 30 € una, 55 € el pack. Envíos a toda
+      España. nfctap.tech
+    scene: Atril con logo del local, camarero, barra llena.
+    image_extra: custom logo NFC stand on Spanish bar
+    scripts:
+      - >
+        La de stock vale 20 €. Si quieres tu logo en la barra, NFCTap
+        con marca son 30 €. Dos, 55 €. Lo ves en 3D y lo encargas en
+        nfctap.tech. Envíos a toda España.
+      - >
+        Tu marca, TAP y estrellas. No un icono de catálogo. Personalizada
+        NFCTap, 30 €. La imprimimos aquí y la ves en 3D. Envíos a toda
+        España. nfctap.tech
+
+  - id: whatsapp_no_entra
+    theme: reservas
+    money_angle: false
+    hook: Te escriben y el WhatsApp no aparece
+    spoken_hook: Te escriben. Y el WhatsApp no aparece.
+    carousel_title: El chat se abre en la barra
+    carousel_line: Un toque y WhatsApp. Sin buscar el número.
+    carousel_caption: >
+      El papel con el número se pierde. El atril NFCTap de WhatsApp abre
+      el chat al acercar el móvil. 20 €. Pack con Instagram o Google, 35 €.
+      nfctap.tech
+    scene: Barra, móvil del local sin chats nuevos, cliente ya en la calle.
+    image_extra: Spanish bar, phone with empty WhatsApp, customer leaving
+    scripts:
+      - >
+        Quieren reservar y no encuentran el número. NFCTap de WhatsApp
+        está en la barra: acercas el móvil y se abre el chat. Lo
+        imprimimos aquí. Encarga en nfctap.tech. Envíos a toda España.
+      - >
+        Nadie copia el nueve mil. Un toque y WhatsApp. Pieza NFCTap,
+        20 €. Dos con Instagram, 35 €. Lo ves en 3D en nfctap.tech.
+        Envíos a toda España.
+
+  - id: instagram_no_siguen
+    theme: marca
+    money_angle: false
+    hook: Comen rico y no te siguen
+    spoken_hook: Comen rico. Y no te siguen.
+    carousel_title: El perfil se abre en la mesa
+    carousel_line: Un toque y tu Instagram. Sin buscarte.
+    carousel_caption: >
+      El QR del bio no se ve. El atril NFCTap de Instagram abre el perfil
+      al toque. 20 €. Pack con WhatsApp o Google, 35 €. nfctap.tech
+    scene: Mesa servida, plato bonito, nadie abre Instagram.
+    image_extra: plated dish on Spanish restaurant table, phone face down
+    scripts:
+      - >
+        El plato queda bien y nadie te sigue. NFCTap de Instagram en la
+        mesa: acercas el móvil y se abre tu perfil. Lo fabricamos aquí.
+        Encarga en nfctap.tech. Envíos a toda España.
+      - >
+        No van a buscarte en la app. Un toque y Instagram. Pieza NFCTap,
+        20 €. Dos, 35 €. Lo ves en 3D en nfctap.tech. Envíos a toda
+        España.

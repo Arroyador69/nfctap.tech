@@ -1,0 +1,46 @@
+name: NFCTap
+url: https://nfctap.tech
+contact: contacto@nfctap.tech
+audience: Dueños de bares, cafeterías, restaurantes y locales en España.
+
+what_it_is: >
+  Atril NFC impreso en España. El cliente acerca el móvil y se abre
+  WhatsApp, Instagram o la reseña de Google. Tres modelos de stock, o
+  personalizada con el logo del local.
+
+plans:
+  generica_1:
+    price: 20 €
+    includes: Una pieza Google, WhatsApp o Instagram, programada a tu enlace
+  generica_2:
+    price: 35 €
+    includes: Dos piezas (también una de cada, barra y terraza)
+  personalizada_1:
+    price: 30 €
+    includes: Una con tu logo
+  personalizada_2:
+    price: 55 €
+    includes: Dos con tu logo
+  unica:
+    price: 70 €
+    includes: Pieza a medida, se encarga por email
+
+must_not_say:
+  - partners de Google
+  - partner de Google
+  - logo oficial de Google
+  - partner de Meta
+  - partner de WhatsApp
+  - te lleno el local
+  - te llenamos el local
+  - cero reseñas negativas
+  - 15 €
+  - 15 euros
+  - testimonios de clientes inventados
+  - 600.000
+  - nunca te van a multar
+
+cta:
+  - Encarga en nfctap.tech
+  - Envíos a toda España
+  - Lo ves en 3D y lo encargas en nfctap.tech

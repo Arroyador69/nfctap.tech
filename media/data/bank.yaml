@@ -1,0 +1,23 @@
+# Solo grabaciones de NFCTap. Nada de Pexels, Mixkit ni Delfín.
+
+resultado:
+  folder: resultado
+
+proceso:
+  folder: proceso
+  by_pain:
+    se_van_sin_opinar: tap
+    qr_sucio: tap
+    maps_abajo: generica
+    veinte_vs_anuncio: generica
+    dos_en_barra: dos
+    mi_logo: personalizada
+    whatsapp_no_entra: tap
+    instagram_no_siguen: tap
+
+web:
+  folder: web
+
+carrusel:
+  folder: imagenes
+
