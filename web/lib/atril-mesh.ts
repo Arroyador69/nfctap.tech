@@ -537,9 +537,36 @@ function moved(pts: number[][], dx: number, dy: number): V2[] {
   return pts.map(([x, y]) => [x + dx, y + dy]);
 }
 
+type GlyphPolys = { outer: number[][]; holes?: number[][][]; tris?: number[][][] };
+
+function trisMesh(tris: number[][][], z0: number, z1: number) {
+  const m = new Mesh();
+  for (const t of tris) {
+    if (t.length < 3) continue;
+    m.extend(extrude(t as V2[], z0, z1));
+  }
+  return m;
+}
+
+function wordMesh(glyphs: GlyphPolys[], z0: number, z1: number) {
+  const m = new Mesh();
+  for (const g of glyphs) {
+    if (g.tris?.length) m.extend(trisMesh(g.tris, z0, z1));
+    else m.extend(glyphMesh(g, z0, z1));
+  }
+  return m;
+}
+
+function glyphMesh(g: GlyphPolys, z0: number, z1: number) {
+  const outer = g.outer as V2[];
+  const hole = g.holes?.[0];
+  if (!hole?.length) return extrude(outer, z0, z1);
+  return extrudePlateHole(outer, hole as V2[], z0, z1);
+}
+
 function whatsappMark(cx: number, cy: number, z0: number, z1: number) {
   const m = new Mesh();
-  m.extend(extrudeRing(moved(polys.wa.outer, cx, cy), moved(polys.wa.inner, cx, cy), z0, z1));
+  m.extend(extrudePlateHole(moved(polys.wa.outer, cx, cy), moved(polys.wa.inner, cx, cy), z0, z1));
   m.extend(extrude(moved(polys.wa.phone, cx, cy), z0, z1));
   return m;
 }
@@ -605,10 +632,10 @@ export function atrilAccent(input: AtrilAccentInput = {}): Mesh {
     }
     m.extend(extrude(googleGPoly(0, ATRIL.MARK_Y, ATRIL.MARK_R * 2, true), z0, z1 + 0.08));
   } else if (model === "whatsapp") {
-    m.extend(sansWord("WHATSAPP", 0, ATRIL.STAR_Y, 6.2, 1.05, z0, z1));
+    m.extend(wordMesh(polys.wa_word, z0, z1));
     m.extend(whatsappMark(0, ATRIL.MARK_Y, z0, z1 + 0.08));
   } else if (model === "instagram") {
-    m.extend(sansWord("INSTAGRAM", 0, ATRIL.STAR_Y, 6.0, 0.85, z0, z1));
+    m.extend(wordMesh(polys.ig_word, z0, z1));
     m.extend(instagramMark(0, ATRIL.MARK_Y, z0, z1 + 0.08));
   } else {
     for (const [x, y, r] of starLayout()) {

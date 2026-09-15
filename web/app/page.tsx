@@ -1,5 +1,5 @@
 import { HomeHero } from "@/components/HomeHero";
-import { FACE_MODELS, PRICES, packSaving, packWas, BRAND } from "@/lib/catalog";
+import { FACE_MODELS, LOTE_MAILTO, PRICES, packSaving, packWas, BRAND } from "@/lib/catalog";
 import { euros } from "@/lib/shipping";
 import Link from "next/link";
 
@@ -77,13 +77,22 @@ export default function HomePage() {
         </div>
 
         <p className="mt-10 max-w-2xl text-sm leading-6 text-[#6f675c]">
+          <span className="font-semibold text-[#1c1915]">Varios locales o lote. </span>
+          La tienda cobra una o dos. Si tienes más bares, una tanda o un modelo nuevo, el
+          pedido entra por correo y lo dejamos en la cola igual.{" "}
+          <a className="underline decoration-[#d9cfc0] underline-offset-2" href={LOTE_MAILTO}>
+            Escríbenos
+          </a>
+          .
+        </p>
+        <p className="mt-4 max-w-2xl text-sm leading-6 text-[#6f675c]">
           <span className="font-semibold text-[#1c1915]">Pieza única · {euros(PRICES.unica[1])}. </span>
           Pieza a medida de tu negocio (forma, logo, dos NFC). Cada caso se diseña aparte: no
-          se encarga desde aquí. Escríbenos a{" "}
+          se encarga desde aquí.{" "}
           <a className="underline decoration-[#d9cfc0] underline-offset-2" href={`mailto:${BRAND.email}`}>
             {BRAND.email}
-          </a>{" "}
-          y lo vemos.
+          </a>
+          .
         </p>
       </section>
     </>

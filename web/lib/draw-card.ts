@@ -64,12 +64,12 @@ export function drawCardFace(
 
   if (model === "google") {
     drawGoogleG(ctx, px(0), py(ATRIL.MARK_Y), MARK_SIZE * SCALE, accent);
-  } else   if (model === "whatsapp") {
-    drawSansText(ctx, "WHATSAPP", px(0), py(ATRIL.STAR_Y), 6.2 * SCALE, 1.05 * SCALE, accent, 600);
+  } else if (model === "whatsapp") {
+    drawWord(ctx, polys.wa_word, accent);
     drawEvenOdd(ctx, polys.wa.outer, polys.wa.inner, accent, 0, ATRIL.MARK_Y);
     fillPoly(ctx, polys.wa.phone, accent, 0, ATRIL.MARK_Y);
   } else if (model === "instagram") {
-    drawSansText(ctx, "INSTAGRAM", px(0), py(ATRIL.STAR_Y), 6.0 * SCALE, 0.85 * SCALE, accent, 600);
+    drawWord(ctx, polys.ig_word, accent);
     drawEvenOdd(ctx, polys.ig.outer, polys.ig.inner, accent, 0, ATRIL.MARK_Y);
     drawEvenOdd(ctx, polys.ig.lens_out, polys.ig.lens_in, accent, 0, ATRIL.MARK_Y);
     fillPoly(ctx, polys.ig.dot, accent, 0, ATRIL.MARK_Y);
@@ -116,6 +116,20 @@ function fillPoly(
   traceMm(ctx, poly, dx, dy);
   ctx.fillStyle = color;
   ctx.fill();
+}
+
+function drawWord(
+  ctx: CanvasRenderingContext2D,
+  glyphs: { outer: number[][]; holes?: number[][][] }[],
+  color: string,
+) {
+  for (const g of glyphs) {
+    ctx.beginPath();
+    traceMm(ctx, g.outer);
+    for (const hole of g.holes || []) traceMm(ctx, hole);
+    ctx.fillStyle = color;
+    ctx.fill("evenodd");
+  }
 }
 
 function drawEvenOdd(

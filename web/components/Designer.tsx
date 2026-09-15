@@ -7,6 +7,7 @@ import {
   BODY_COLORS,
   FACE_MODELS,
   KIND_META,
+  LOTE_MAILTO,
   MODEL_LABEL,
   PRICES,
   defaultDesign,
@@ -428,6 +429,9 @@ export function Designer({
                   <button type="button" className="text-sm text-[#7a7266] underline" onClick={goPersonalizada}>
                     Prefiero la de mi logo ({euros(PRICES.personalizada[1])})
                   </button>
+                  <a href={LOTE_MAILTO} className="block text-sm text-[#7a7266] underline">
+                    ¿Más de dos o varios locales? Escríbenos
+                  </a>
                 </>
               ) : (
                 <>

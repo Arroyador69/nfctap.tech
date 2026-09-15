@@ -19,6 +19,9 @@ export const BRAND = {
   email: "contacto@nfctap.tech",
 };
 
+/** Pack web = 1 o 2. Lotes (varios locales, más piezas) por email, sin SKU Polar nuevo. */
+export const LOTE_MAILTO = `mailto:${BRAND.email}?subject=${encodeURIComponent("Lote NFCTap — varios locales")}&body=${encodeURIComponent("Hola Alberto,\n\nQuiero un lote (más de dos piezas o varios locales).\n\nCuántas piezas:\nModelos (Google / WhatsApp / Instagram / logo):\nPueblo:\n\n")}`;
+
 export const SOCIALS = [
   { id: "instagram", label: "Instagram", href: "https://www.instagram.com/nfctap/" },
   { id: "tiktok", label: "TikTok", href: "https://www.tiktok.com/@nfctap" },
