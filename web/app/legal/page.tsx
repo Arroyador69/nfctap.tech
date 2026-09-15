@@ -1,3 +1,4 @@
+import { SocialLinks } from "@/components/SocialLinks";
 import { BRAND, PRICE, packWas, productPrice } from "@/lib/catalog";
 import { DEFAULT_SHIPPING } from "@/lib/shipping";
 import { euros } from "@/lib/shipping";
@@ -72,6 +73,16 @@ export default function LegalPage() {
       </p>
 
       <p className="mt-8">Contacto: {BRAND.email}</p>
+
+      <h2 className="mt-10 font-[family-name:var(--font-display)] text-2xl text-[#1c1915]">
+        Redes
+      </h2>
+      <p className="mt-3">
+        NFCTap en Instagram, TikTok, YouTube y Facebook. El logo de cada red abre la cuenta.
+      </p>
+      <div className="mt-4">
+        <SocialLinks heading={false} />
+      </div>
     </div>
   );
 }
