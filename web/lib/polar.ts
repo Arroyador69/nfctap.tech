@@ -1,5 +1,5 @@
-import { PRICES } from "./catalog";
-import type { ProductKind, Qty, ShippingZone } from "./types";
+import { productPrice } from "./catalog";
+import type { ProductKind, ShippingZone } from "./types";
 
 const PRODUCT_ENV = [
   "POLAR_PRODUCT_GENERIC_1",
@@ -26,9 +26,14 @@ export function polarMissing() {
   return missing;
 }
 
-export function productEnvKey(kind: ProductKind, qty: Qty) {
+export function polarProductSlot(kind: ProductKind, qty: number) {
+  const slot = qty >= 2 ? 2 : 1;
   const k = kind === "generica" ? "GENERIC" : kind === "unica" ? "UNICA" : "CUSTOM";
-  return `POLAR_PRODUCT_${k}_${qty}`;
+  return `POLAR_PRODUCT_${k}_${slot}`;
+}
+
+export function productEnvKey(kind: ProductKind, qty: number) {
+  return polarProductSlot(kind, qty);
 }
 
 function polarBase() {
@@ -58,7 +63,7 @@ export function customerIp(req: Request): string | undefined {
 
 export async function createPolarCheckout(input: {
   kind: ProductKind;
-  qty: Qty;
+  qty: number;
   orderId: string;
   email: string;
   name: string;
@@ -114,7 +119,7 @@ export async function createPolarCheckout(input: {
       shipping: String(input.shippingEuros),
       total: String(input.totalEuros),
       zone: input.zone || "",
-      catalog: String(PRICES[input.kind][input.qty]),
+      catalog: String(productPrice(input.kind, input.qty)),
       models: input.models || input.kind,
     },
   };

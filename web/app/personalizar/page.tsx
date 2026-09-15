@@ -20,8 +20,9 @@ export default async function PersonalizarPage({
         Encarga tu NFCTap
       </h1>
       <p className="mt-2 max-w-xl text-sm text-[#5c564c] sm:text-base">
-        WhatsApp, Instagram o Google. Una o pack de dos (35 €, no el doble). Lo giras en 3D.
-        Pegas el enlace. Dirección en España y paga. Sale en 24 h.
+        WhatsApp, Instagram o Google. Las que quieras, las cantidades que quieras. La
+        primera 20 €, cada una más 15 €. Lo giras en 3D. Pegas el enlace. Dirección en
+        España y paga. Sale en 24 h.
       </p>
       <div className="mt-5">
         <Designer initialKind={initial} initialModels={models} shipping={await getShipping()} />

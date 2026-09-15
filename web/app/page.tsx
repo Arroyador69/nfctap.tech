@@ -1,5 +1,5 @@
 import { HomeHero } from "@/components/HomeHero";
-import { FACE_MODELS, LOTE_MAILTO, PRICES, packSaving, packWas, BRAND } from "@/lib/catalog";
+import { BRAND, FACE_MODELS, MAX_QTY, PRICE, PRICES, packSaving, packWas, productPrice } from "@/lib/catalog";
 import { euros } from "@/lib/shipping";
 import Link from "next/link";
 
@@ -11,7 +11,7 @@ export default function HomePage() {
       <section className="mx-auto max-w-6xl px-5 pb-16">
         <div className="grid gap-4 md:grid-cols-3">
           {[
-            ["1. Eliges", "WhatsApp, Instagram o Google. Una, o pack de dos (también una de cada)."],
+            ["1. Eliges", "WhatsApp, Instagram o Google. Las que quieras, las cantidades que quieras."],
             ["2. TAP", "Acerca el móvil. Se abre el enlace. Sin app, sin QR sucio."],
             ["3. En 24 h", "Lo imprimimos, programamos el NFC y Correos lo lleva. España."],
           ].map(([t, d]) => (
@@ -26,24 +26,25 @@ export default function HomePage() {
       <section id="precios" className="mx-auto max-w-6xl px-5 pb-20">
         <h2 className="font-[family-name:var(--font-display)] text-4xl">Encarga la tuya</h2>
         <p className="mt-3 max-w-xl text-[#5c564c]">
-          El mismo atril que ves en 3D es el que se imprime. Dos piezas van a pack, no al
-          doble. Envío a España en 24 h. Pago con Polar: tarjeta, Apple Pay o Bizum.
+          El mismo atril que ves en 3D es el que se imprime. La primera no es el doble de las
+          siguientes. Hasta {MAX_QTY} en un pedido. Envío a España en 24 h. Pago con Polar:
+          tarjeta, Apple Pay o Bizum.
         </p>
         <div className="mt-8 grid gap-5 md:grid-cols-2">
           <article className="flex flex-col rounded-[28px] border border-[#e6ddd0] bg-white p-6">
             <h3 className="text-xl font-semibold">Google, WhatsApp o Instagram</h3>
             <p className="mt-2 flex-1 text-sm text-[#6f675c]">
               {FACE_MODELS.map((m) => m.label).join(", ")}. Programada al enlace que pongas al
-              encargar. Puedes llevar una de cada.
+              encargar. Mezcla modelos y cantidades.
             </p>
-            <p className="mt-6 text-4xl font-semibold">{euros(PRICES.generica[1])}</p>
-            <p className="text-sm text-[#8a8173]">una pieza</p>
+            <p className="mt-6 text-4xl font-semibold">{euros(PRICE.generica.first)}</p>
+            <p className="text-sm text-[#8a8173]">la primera</p>
             <p className="mt-3 text-lg font-semibold text-[#1c1915]">
-              Pack de dos {euros(PRICES.generica[2])}
+              Cada una más {euros(PRICE.generica.extra)}
             </p>
             <p className="text-sm text-[#8a8173]">
-              <span className="line-through">{euros(packWas("generica"))}</span>
-              {` · ahorras ${euros(packSaving("generica", 2))}`}
+              2 = {euros(productPrice("generica", 2))} (no {euros(packWas("generica", 2))}, ahorras{" "}
+              {euros(packSaving("generica", 2))}) · 3 = {euros(productPrice("generica", 3))}
             </p>
             <Link
               href="/personalizar"
@@ -58,14 +59,13 @@ export default function HomePage() {
             <p className="mt-2 flex-1 text-sm text-[#d5cbb8]">
               El mismo atril. Tu marca, TAP y estrellas. El nombre es opcional.
             </p>
-            <p className="mt-6 text-4xl font-semibold">{euros(PRICES.personalizada[1])}</p>
-            <p className="text-sm text-[#b9ae99]">una pieza</p>
+            <p className="mt-6 text-4xl font-semibold">{euros(PRICE.personalizada.first)}</p>
+            <p className="text-sm text-[#b9ae99]">la primera</p>
             <p className="mt-3 text-lg font-semibold">
-              Pack de dos {euros(PRICES.personalizada[2])}
+              Cada una más {euros(PRICE.personalizada.extra)}
             </p>
             <p className="text-sm text-[#b9ae99]">
-              <span className="line-through">{euros(packWas("personalizada"))}</span>
-              {` · ahorras ${euros(packSaving("personalizada", 2))}`}
+              2 = {euros(productPrice("personalizada", 2))} (no {euros(packWas("personalizada", 2))})
             </p>
             <Link
               href="/personalizar?kind=personalizada"
@@ -77,11 +77,10 @@ export default function HomePage() {
         </div>
 
         <p className="mt-10 max-w-2xl text-sm leading-6 text-[#6f675c]">
-          <span className="font-semibold text-[#1c1915]">Varios locales o lote. </span>
-          La tienda cobra una o dos. Si tienes más bares, una tanda o un modelo nuevo, el
-          pedido entra por correo y lo dejamos en la cola igual.{" "}
-          <a className="underline decoration-[#d9cfc0] underline-offset-2" href={LOTE_MAILTO}>
-            Escríbenos
+          <span className="font-semibold text-[#1c1915]">Hasta {MAX_QTY} por pedido. </span>
+          Las cantidades se eligen en la página de encargo. Si necesitas más,{" "}
+          <a className="underline decoration-[#d9cfc0] underline-offset-2" href={`mailto:${BRAND.email}`}>
+            {BRAND.email}
           </a>
           .
         </p>

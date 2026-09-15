@@ -7,7 +7,6 @@ import type {
   Order,
   OrderPiece,
   ProductKind,
-  Qty,
 } from "./types";
 
 export const BRAND = {
@@ -19,21 +18,53 @@ export const BRAND = {
   email: "contacto@nfctap.tech",
 };
 
-/** Pack web = 1 o 2. Lotes (varios locales, más piezas) por email, sin SKU Polar nuevo. */
-export const LOTE_MAILTO = `mailto:${BRAND.email}?subject=${encodeURIComponent("Lote NFCTap — varios locales")}&body=${encodeURIComponent("Hola Alberto,\n\nQuiero un lote (más de dos piezas o varios locales).\n\nCuántas piezas:\nModelos (Google / WhatsApp / Instagram / logo):\nPueblo:\n\n")}`;
-
 export const SOCIALS = [
-  { id: "instagram", label: "Instagram", href: "https://www.instagram.com/nfctap/" },
-  { id: "tiktok", label: "TikTok", href: "https://www.tiktok.com/@nfctap" },
+  { id: "instagram", label: "Instagram", href: "https://www.instagram.com/nfctap.tech/" },
+  { id: "tiktok", label: "TikTok", href: "https://www.tiktok.com/@nfctap.tech" },
   { id: "youtube", label: "YouTube", href: "https://www.youtube.com/@nfctap" },
-  { id: "facebook", label: "Facebook", href: "https://www.facebook.com/nfctap" },
+  { id: "facebook", label: "Facebook", href: "https://www.facebook.com/profile.php?id=61594394069652" },
 ] as const;
 
-export const PRICES: Record<ProductKind, Record<Qty, number>> = {
-  generica: { 1: 20, 2: 35 },
-  personalizada: { 1: 30, 2: 55 },
-  unica: { 1: 70, 2: 70 },
+/** Tope de un pedido web. Polar cobra el total (mismo SKU 1 / pack 2). */
+export const MAX_QTY = 30;
+
+export const PRICE = {
+  generica: { first: 20, extra: 15 },
+  personalizada: { first: 30, extra: 25 },
+  unica: { first: 70, extra: 0 },
+} as const;
+
+/** Compat: una y pack de dos. El resto usa productPrice(). */
+export const PRICES: Record<ProductKind, { 1: number; 2: number }> = {
+  generica: { 1: PRICE.generica.first, 2: PRICE.generica.first + PRICE.generica.extra },
+  personalizada: { 1: PRICE.personalizada.first, 2: PRICE.personalizada.first + PRICE.personalizada.extra },
+  unica: { 1: PRICE.unica.first, 2: PRICE.unica.first },
 };
+
+export function productPrice(kind: ProductKind, qty: number) {
+  const n = Math.max(0, Math.floor(qty));
+  if (n < 1) return 0;
+  if (kind === "unica") return PRICE.unica.first;
+  const { first, extra } = PRICE[kind];
+  return first + extra * (n - 1);
+}
+
+export type ModelCounts = Record<CatalogModel, number>;
+
+export function emptyCounts(): ModelCounts {
+  return { google: 0, whatsapp: 0, instagram: 0 };
+}
+
+export function countsFromModels(models: CatalogModel[]): ModelCounts {
+  const c = emptyCounts();
+  const list = models.length ? models.slice(0, MAX_QTY) : (["google"] as CatalogModel[]);
+  for (const id of list) c[id] += 1;
+  return c;
+}
+
+export function countTotal(counts: ModelCounts) {
+  return counts.google + counts.whatsapp + counts.instagram;
+}
 
 export const FACE_MODELS: {
   id: CatalogModel;
@@ -72,15 +103,36 @@ export const MODEL_LABEL: Record<FaceModel, string> = {
   personalizada: "Con logo",
 };
 
-/** Lo que costarían dos unidades sueltas, sin pack. */
-export function packWas(kind: ProductKind) {
-  return PRICES[kind][1] * 2;
+export function clampQty(value: unknown, min = 1) {
+  const n = Math.floor(Number(value));
+  if (!Number.isFinite(n)) return min;
+  return Math.min(MAX_QTY, Math.max(min, n));
 }
 
-/** 5 € en genérica y personalizada al llevar dos. */
-export function packSaving(kind: ProductKind, qty: Qty) {
-  if (qty !== 2 || kind === "unica") return 0;
-  return packWas(kind) - PRICES[kind][2];
+export function piecesFromCounts(
+  counts: ModelCounts,
+  urls: Record<CatalogModel, string>,
+): OrderPiece[] {
+  const out: OrderPiece[] = [];
+  for (const m of FACE_MODELS) {
+    const n = Math.max(0, Math.floor(counts[m.id] || 0));
+    for (let i = 0; i < n && out.length < MAX_QTY; i++) {
+      out.push({ model: m.id, nfcUrl: urls[m.id] || "" });
+    }
+  }
+  return out;
+}
+
+/** Lo que costarían sueltas, sin el descuento de unidades extra. */
+export function packWas(kind: ProductKind, qty = 2) {
+  if (kind === "unica") return PRICE.unica.first;
+  return PRICE[kind].first * Math.max(1, Math.floor(qty));
+}
+
+/** 5 € por cada pieza a partir de la segunda. */
+export function packSaving(kind: ProductKind, qty: number) {
+  if (kind === "unica" || qty < 2) return 0;
+  return PRICE[kind].first * qty - productPrice(kind, qty);
 }
 
 export const BODY_COLORS: { id: BodyColor; label: string; hex: string }[] = [
@@ -140,7 +192,7 @@ export function needsLogo(kind: ProductKind) {
   return kind !== "generica";
 }
 
-export function qtysFor(kind: ProductKind): Qty[] {
+export function qtysFor(kind: ProductKind): number[] {
   return kind === "unica" ? [1] : [1, 2];
 }
 
@@ -156,35 +208,38 @@ export function parseModels(value: unknown): CatalogModel[] {
     .split(",")
     .map((s) => s.trim().toLowerCase())
     .filter(isCatalogModel);
-  const unique: CatalogModel[] = [];
-  for (const id of ids) {
-    if (!unique.includes(id)) unique.push(id);
-  }
-  return unique.slice(0, 2);
+  return ids.slice(0, MAX_QTY);
 }
 
 export function kindsFor(admin: boolean): ProductKind[] {
   return admin ? ["generica", "personalizada", "unica"] : ["generica", "personalizada"];
 }
 
-export function productLabel(kind: ProductKind, qty: Qty, pieces?: OrderPiece[]) {
+export function productLabel(kind: ProductKind, qty: number, pieces?: OrderPiece[]) {
   const fromPieces = piecesLabel(pieces);
   if (fromPieces) return fromPieces;
   const base = KIND_META[kind].label;
   if (kind === "unica") return base;
-  return qty === 2 ? `${base} × 2` : `${base} × 1`;
+  return `${base} × ${Math.max(1, qty)}`;
 }
 
 export function piecesLabel(pieces?: OrderPiece[] | null) {
   if (!pieces?.length) return "";
-  return pieces.map((p) => MODEL_LABEL[p.model] || p.model).join(" + ");
+  const order: string[] = [];
+  const n = new Map<string, number>();
+  for (const p of pieces) {
+    const k = MODEL_LABEL[p.model] || p.model;
+    if (!n.has(k)) order.push(k);
+    n.set(k, (n.get(k) || 0) + 1);
+  }
+  return order.map((k) => (n.get(k)! > 1 ? `${k} × ${n.get(k)}` : k)).join(" + ");
 }
 
 export function orderPieces(order: Pick<Order, "kind" | "qty" | "design">): OrderPiece[] {
   const listed = (order.design.pieces || []).filter(
     (p) => isFaceModel(p.model) && typeof p.nfcUrl === "string" && p.nfcUrl.trim(),
   );
-  if (listed.length) return listed.slice(0, 2);
+  if (listed.length) return listed.slice(0, MAX_QTY);
   const first: OrderPiece = {
     model:
       order.design.model && isFaceModel(order.design.model)
@@ -194,7 +249,11 @@ export function orderPieces(order: Pick<Order, "kind" | "qty" | "design">): Orde
           : "personalizada",
     nfcUrl: (order.design.googleUrl || "").trim(),
   };
-  if (order.qty === 2 && order.design.extraUrl?.trim() && order.kind !== "unica") {
+  if (order.kind === "unica") {
+    const extra = order.design.extraUrl?.trim();
+    return extra ? [first, { model: "personalizada", nfcUrl: extra }] : [first];
+  }
+  if (order.qty === 2 && order.design.extraUrl?.trim()) {
     return [
       first,
       {
@@ -203,7 +262,8 @@ export function orderPieces(order: Pick<Order, "kind" | "qty" | "design">): Orde
       },
     ];
   }
-  return [first];
+  const n = clampQty(order.qty);
+  return Array.from({ length: n }, () => ({ ...first }));
 }
 
 export function defaultDesign(kind: ProductKind, model: FaceModel = kind === "generica" ? "google" : "personalizada"): CardDesign {

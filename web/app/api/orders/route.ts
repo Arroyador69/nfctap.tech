@@ -1,11 +1,12 @@
 import { isAdmin } from "@/lib/auth";
 import {
-  PRICES,
+  clampQty,
   isCatalogModel,
   isFaceModel,
+  MAX_QTY,
   needsLogo,
   parseKind,
-  qtysFor,
+  productPrice as catalogPrice,
 } from "@/lib/catalog";
 import { newId } from "@/lib/ids";
 import {
@@ -19,7 +20,7 @@ import {
 import { createPolarCheckout, customerIp, polarReady } from "@/lib/polar";
 import { shippingCost, zoneFromPostalCode } from "@/lib/shipping";
 import { addOrder, getShipping, listOrders } from "@/lib/store";
-import type { Address, CardDesign, FaceModel, Handover, OrderPiece, Qty } from "@/lib/types";
+import type { Address, CardDesign, FaceModel, Handover, OrderPiece } from "@/lib/types";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -29,7 +30,7 @@ export async function GET() {
   return NextResponse.json({ orders: await listOrders() });
 }
 
-function parsePieces(kind: CardDesign["kind"], design: CardDesign, qty: Qty): OrderPiece[] | { error: string } {
+function parsePieces(kind: CardDesign["kind"], design: CardDesign, qty: number): OrderPiece[] | { error: string } {
   const raw = Array.isArray(design?.pieces) ? design.pieces : [];
   if (kind === "unica") {
     if (!nfcUrlOk("google", design?.googleUrl || "") && !isHttpUrl(design?.googleUrl || "")) {
@@ -46,26 +47,24 @@ function parsePieces(kind: CardDesign["kind"], design: CardDesign, qty: Qty): Or
     const url = (design?.googleUrl || raw[0]?.nfcUrl || "").trim();
     if (!isHttpUrl(url)) return { error: "Falta el enlace que abrirá el móvil" };
     const piece: OrderPiece = { model: "personalizada", nfcUrl: url };
-    return qty === 2 ? [piece, { ...piece }] : [piece];
+    return Array.from({ length: clampQty(qty) }, () => ({ ...piece }));
   }
   const listed = raw
     .map((p) => ({
       model: p.model as FaceModel,
       nfcUrl: typeof p.nfcUrl === "string" ? p.nfcUrl.trim() : "",
     }))
-    .filter((p) => isCatalogModel(p.model));
-  const unique: OrderPiece[] = [];
-  for (const p of listed) {
-    if (!unique.some((u) => u.model === p.model)) unique.push(p);
-  }
-  const pieces = unique.slice(0, 2);
-  if (!pieces.length) {
-    const model = isFaceModel(design?.model) && design.model !== "personalizada" ? design.model : "google";
-    pieces.push({ model, nfcUrl: (design?.googleUrl || "").trim() });
-    if (qty === 2 && design?.extraUrl) {
-      pieces.push({ model, nfcUrl: design.extraUrl.trim() });
-    }
-  }
+    .filter((p) => isCatalogModel(p.model))
+    .slice(0, MAX_QTY);
+  const pieces: OrderPiece[] = listed.length
+    ? listed
+    : [
+        {
+          model:
+            isFaceModel(design?.model) && design.model !== "personalizada" ? design.model : "google",
+          nfcUrl: (design?.googleUrl || "").trim(),
+        },
+      ];
   if (!pieces.length) return { error: "Elige Google, WhatsApp o Instagram" };
   for (const p of pieces) {
     if (!nfcUrlOk(p.model, p.nfcUrl)) {
@@ -96,12 +95,15 @@ export async function POST(req: Request) {
   }
   const kind = parseKind(body.kind, fromAdmin);
   const design = body.design as CardDesign;
-  const parsed = parsePieces(kind, design, (Number(body.qty) === 2 ? 2 : 1) as Qty);
+  const parsed = parsePieces(kind, design, clampQty(body.qty));
   if ("error" in parsed) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
   const pieces = parsed;
-  const qty = (kind === "generica" ? (pieces.length === 2 ? 2 : 1) : qtysFor(kind).includes(2) && Number(body.qty) === 2 ? 2 : 1) as Qty;
+  const qty = kind === "unica" ? 1 : pieces.length;
+  if (kind !== "unica" && qty < 1) {
+    return NextResponse.json({ error: "Elige al menos una pieza" }, { status: 400 });
+  }
   const address = (body.address || {}) as Address;
 
   if (
@@ -175,8 +177,8 @@ export async function POST(req: Request) {
       : undefined;
 
   const settings = await getShipping();
-  const productPrice = PRICES[kind][qty];
-  const shippingPrice = handover === "mano" ? 0 : shippingCost(normalized.zone, settings, productPrice);
+  const productEuros = catalogPrice(kind, qty);
+  const shippingPrice = handover === "mano" ? 0 : shippingCost(normalized.zone, settings, productEuros);
   const id = newId();
 
   const order = await addOrder({
@@ -199,9 +201,9 @@ export async function POST(req: Request) {
       pieces,
     },
     address: normalized,
-    productPrice,
+    productPrice: productEuros,
     shippingPrice,
-    total: productPrice + shippingPrice,
+    total: productEuros + shippingPrice,
     status: fromAdmin || !polarReady() ? "pagado" : "pendiente_pago",
     source: fromAdmin ? "admin" : "web",
     handover,
@@ -229,7 +231,7 @@ export async function POST(req: Request) {
       name: normalized.name,
       successUrl: `${origin}/pedido/ok?id=${id}&checkout_id={CHECKOUT_ID}`,
       returnUrl: `${origin}/personalizar?models=${pieces.map((p) => p.model).join(",")}`,
-      productEuros: productPrice,
+      productEuros,
       shippingEuros: shippingPrice,
       totalEuros: order.total,
       customerIp: customerIp(req),

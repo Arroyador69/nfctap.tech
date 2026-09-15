@@ -1,7 +1,7 @@
 export type ProductKind = "generica" | "personalizada" | "unica";
 export type CatalogModel = "google" | "whatsapp" | "instagram";
 export type FaceModel = CatalogModel | "personalizada";
-export type Qty = 1 | 2;
+export type Qty = number;
 export type BodyColor = "negro" | "blanco" | "rojo";
 export type AccentColor = "oro" | "amarillo" | "blanco" | "rojo" | "negro";
 export type TemplateId = "clasica" | "minimal" | "barra";

@@ -1,4 +1,4 @@
-import { BRAND, PRICES, packWas } from "@/lib/catalog";
+import { BRAND, PRICE, packWas, productPrice } from "@/lib/catalog";
 import { DEFAULT_SHIPPING } from "@/lib/shipping";
 import { euros } from "@/lib/shipping";
 
@@ -25,23 +25,23 @@ export default function LegalPage() {
       </h2>
       <ul className="mt-3 list-disc space-y-1 pl-5">
         <li>
-          Google, WhatsApp o Instagram: {euros(PRICES.generica[1])} una · pack de dos{" "}
-          {euros(PRICES.generica[2])} (no {euros(packWas("generica"))}). Puedes mezclar
-          modelos.
+          Google, WhatsApp o Instagram: primera {euros(PRICE.generica.first)} · cada una más{" "}
+          {euros(PRICE.generica.extra)} (2 = {euros(productPrice("generica", 2))}, no{" "}
+          {euros(packWas("generica", 2))}). Mezcla modelos y cantidades en el mismo pedido.
         </li>
         <li>
-          Con logo: {euros(PRICES.personalizada[1])} una · pack de dos{" "}
-          {euros(PRICES.personalizada[2])} (no {euros(packWas("personalizada"))}).
+          Con logo: primera {euros(PRICE.personalizada.first)} · cada una más{" "}
+          {euros(PRICE.personalizada.extra)} (2 = {euros(productPrice("personalizada", 2))}, no{" "}
+          {euros(packWas("personalizada", 2))}).
         </li>
         <li>
-          Pieza única: {euros(PRICES.unica[1])}. Se encarga por email a {BRAND.email}, no
+          Pieza única: {euros(PRICE.unica.first)}. Se encarga por email a {BRAND.email}, no
           desde el checkout.
         </li>
       </ul>
       <p className="mt-3">
-        El pack de dos es un producto distinto, no un cupón sobre dos unidades sueltas.
-        Eliges una o dos en la web; Polar cobra exactamente ese importe más el envío. Los
-        precios incluyen IVA.
+        Eliges las cantidades en la web. Polar cobra exactamente ese importe más el envío.
+        Los precios incluyen IVA.
       </p>
 
       <h2 className="mt-10 font-[family-name:var(--font-display)] text-2xl text-[#1c1915]">

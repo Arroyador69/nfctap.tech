@@ -7,16 +7,21 @@ import {
   BODY_COLORS,
   FACE_MODELS,
   KIND_META,
-  LOTE_MAILTO,
+  MAX_QTY,
   MODEL_LABEL,
-  PRICES,
+  PRICE,
+  clampQty,
+  countTotal,
+  countsFromModels,
   defaultDesign,
+  emptyCounts,
   kindsFor,
   needsLogo,
   packSaving,
   packWas,
+  piecesFromCounts,
   productLabel,
-  qtysFor,
+  productPrice,
 } from "@/lib/catalog";
 import { ReviewLookup } from "@/components/ReviewLookup";
 import {
@@ -37,7 +42,6 @@ import type {
   Handover,
   OrderPiece,
   ProductKind,
-  Qty,
   ShippingSettings,
   ShippingZone,
 } from "@/lib/types";
@@ -72,14 +76,16 @@ export function Designer({
   const [step, setStep] = useState<Step>("diseno");
   const [handover, setHandover] = useState<Handover>("envio");
   const [kind, setKind] = useState<ProductKind>(startKind);
-  const [picked, setPicked] = useState<CatalogModel[]>(startModels);
-  const [focus, setFocus] = useState(0);
+  const [counts, setCounts] = useState(() =>
+    startKind === "generica" ? countsFromModels(startModels) : emptyCounts(),
+  );
+  const [focus, setFocus] = useState<CatalogModel>(startModels[0] || "google");
   const [urls, setUrls] = useState<Record<CatalogModel, string>>({
     google: initialGoogleUrl || "",
     whatsapp: "",
     instagram: "",
   });
-  const [qty, setQty] = useState<Qty>(startKind === "generica" ? (startModels.length === 2 ? 2 : 1) : 1);
+  const [qty, setQty] = useState(1);
   const [design, setDesign] = useState<CardDesign>(() => {
     const model: FaceModel =
       startKind === "generica" ? startModels[0] || "google" : "personalizada";
@@ -103,26 +109,29 @@ export function Designer({
   });
 
   const generic = kind === "generica";
+  const liveQty = generic ? countTotal(counts) : kind === "unica" ? 1 : qty;
+  const picked = FACE_MODELS.filter((m) => counts[m.id] > 0);
   const pieces: OrderPiece[] = generic
-    ? picked.map((model) => ({ model, nfcUrl: normalizeNfcUrl(model, urls[model]) }))
-    : [
-        {
-          model: "personalizada",
-          nfcUrl: design.googleUrl.trim(),
-        },
-        ...(kind !== "unica" && qty === 2
-          ? [{ model: "personalizada" as const, nfcUrl: design.googleUrl.trim() }]
-          : []),
-      ];
-  const liveQty: Qty = generic ? ((picked.length === 2 ? 2 : 1) as Qty) : qty;
+    ? piecesFromCounts(counts, {
+        google: normalizeNfcUrl("google", urls.google),
+        whatsapp: normalizeNfcUrl("whatsapp", urls.whatsapp),
+        instagram: normalizeNfcUrl("instagram", urls.instagram),
+      })
+    : Array.from({ length: liveQty }, () => ({
+        model: "personalizada" as const,
+        nfcUrl: design.googleUrl.trim(),
+      }));
   const previewModel: FaceModel = generic
-    ? picked[Math.min(focus, Math.max(0, picked.length - 1))] || "google"
+    ? counts[focus] > 0
+      ? focus
+      : picked[0]?.id || "google"
     : "personalizada";
   const zone: ShippingZone = zoneFromPostalCode(form.postalCode);
-  const productPrice = PRICES[kind][liveQty];
-  const ship = handover === "mano" ? 0 : shippingCost(zone, shipping, productPrice);
-  const total = productPrice + ship;
+  const price = productPrice(kind, liveQty);
+  const ship = handover === "mano" ? 0 : shippingCost(zone, shipping, price);
+  const total = price + ship;
   const patch = (p: Partial<CardDesign>) => setDesign((d) => ({ ...d, ...p }));
+  const atMax = liveQty >= MAX_QTY;
 
   async function onLogo(file: File | undefined) {
     if (!file) return patch({ logoDataUrl: undefined });
@@ -139,7 +148,7 @@ export function Designer({
     if (needsLogo(kind) && !design.logoDataUrl) return false;
     if (generic) {
       if (!picked.length) return false;
-      return picked.every((m) => nfcUrlOk(m, urls[m]));
+      return picked.every((m) => nfcUrlOk(m.id, urls[m.id]));
     }
     return nfcUrlOk("personalizada", design.googleUrl);
   }, [kind, generic, picked, urls, design.googleUrl, design.logoDataUrl, design.extraUrl]);
@@ -157,34 +166,36 @@ export function Designer({
     );
   }, [admin, form, handover]);
 
-  function toggleModel(id: CatalogModel) {
+  function bump(id: CatalogModel, delta: number) {
     setKind("generica");
     setTried(false);
-    setPicked((prev) => {
-      if (prev.includes(id)) {
-        const next = prev.filter((m) => m !== id);
-        setFocus(0);
-        setDesign((d) => ({ ...d, kind: "generica", model: next[0] || "google" }));
-        return next;
+    setFocus(id);
+    setCounts((prev) => {
+      const total = countTotal(prev);
+      const n = prev[id];
+      if (delta > 0) {
+        if (total >= MAX_QTY) return prev;
+        return { ...prev, [id]: n + 1 };
       }
-      if (prev.length >= 2) {
-        const next = [...prev];
-        next[Math.min(focus, 1)] = id;
-        setDesign((d) => ({ ...d, kind: "generica", model: next[Math.min(focus, 1)] }));
-        return next;
-      }
-      const next = [...prev, id];
-      setFocus(next.length - 1);
-      setDesign((d) => ({ ...d, kind: "generica", model: id }));
-      return next;
+      if (n <= 0) return prev;
+      return { ...prev, [id]: n - 1 };
     });
+    setDesign((d) => ({ ...d, kind: "generica", model: id }));
   }
 
   function goPersonalizada() {
     setKind("personalizada");
     setQty(1);
-    setPicked([]);
+    setCounts(emptyCounts());
     setDesign(defaultDesign("personalizada"));
+    setTried(false);
+  }
+
+  function goGenerica() {
+    setKind("generica");
+    setCounts(countsFromModels(["google"]));
+    setFocus("google");
+    setDesign(defaultDesign("generica", "google"));
     setTried(false);
   }
 
@@ -193,15 +204,15 @@ export function Designer({
     setError("");
     if (!designOk) {
       if (generic && !picked.length) {
-        setError("Elige Google, WhatsApp o Instagram. Puedes llevar dos.");
+        setError("Elige al menos una. Sube o baja la cantidad con + y −.");
         return;
       }
       if (generic) {
-        const miss = picked.find((m) => !nfcUrlOk(m, urls[m]));
+        const miss = picked.find((m) => !nfcUrlOk(m.id, urls[m.id]));
         setError(
-          miss === "whatsapp"
+          miss?.id === "whatsapp"
             ? "Pon el número o el enlace de WhatsApp."
-            : miss === "instagram"
+            : miss?.id === "instagram"
               ? "Pon @cuenta o el enlace de Instagram."
               : "Falta el enlace de reseña de Google.",
         );
@@ -250,10 +261,7 @@ export function Designer({
             kind,
             model: previewModel,
             logoDataUrl: needsLogo(kind) ? design.logoDataUrl : undefined,
-            extraUrl:
-              kind === "unica"
-                ? design.extraUrl
-                : normalizedPieces[1]?.nfcUrl,
+            extraUrl: kind === "unica" ? design.extraUrl : normalizedPieces[1]?.nfcUrl,
             googleUrl: normalizedPieces[0]?.nfcUrl || design.googleUrl,
             pieces: kind === "unica" ? undefined : normalizedPieces,
           },
@@ -270,7 +278,10 @@ export function Designer({
     }
   }
 
-  const activeUrlModel = generic ? picked[Math.min(focus, picked.length - 1)] : null;
+  const priceHint =
+    kind === "unica"
+      ? euros(PRICE.unica.first)
+      : `La primera ${euros(PRICE[kind].first)}, cada una más ${euros(PRICE[kind].extra)}`;
 
   return (
     <div className="pb-28 lg:pb-0">
@@ -281,21 +292,22 @@ export function Designer({
             compact
             onReady={(url) => setPreview((prev) => (prev === url ? prev : url))}
           />
-          {generic && picked.length === 2 ? (
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              {picked.map((m, i) => (
+          {generic && picked.length > 1 ? (
+            <div className={`mt-2 grid gap-2 ${picked.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+              {picked.map((m) => (
                 <button
-                  key={`${m}-${i}`}
+                  key={m.id}
                   type="button"
                   onClick={() => {
-                    setFocus(i);
-                    setDesign((d) => ({ ...d, model: m }));
+                    setFocus(m.id);
+                    setDesign((d) => ({ ...d, model: m.id }));
                   }}
                   className={`rounded-full px-3 py-2 text-sm ${
-                    focus === i ? "bg-[#1c1915] text-[#f6f1e7]" : "bg-[#f3eee4] text-[#5c564c]"
+                    focus === m.id ? "bg-[#1c1915] text-[#f6f1e7]" : "bg-[#f3eee4] text-[#5c564c]"
                   }`}
                 >
-                  Pieza {i + 1} · {MODEL_LABEL[m]}
+                  {m.label}
+                  {counts[m.id] > 1 ? ` × ${counts[m.id]}` : ""}
                 </button>
               ))}
             </div>
@@ -318,9 +330,10 @@ export function Designer({
                   Elige y encarga
                 </h2>
                 <p className="mt-1 text-sm text-[#6f675c]">
-                  Una {euros(PRICES.generica[1])} · dos {euros(PRICES.generica[2])} (no el doble).
-                  WhatsApp, Instagram o Google, o una de cada. Lo ves en 3D. Luego la dirección en
-                  España.
+                  {generic
+                    ? `${priceHint}. Mezcla Google, WhatsApp e Instagram. Hasta ${MAX_QTY} en el mismo pedido.`
+                    : `${priceHint}. Hasta ${MAX_QTY} en el mismo pedido.`}{" "}
+                  Lo ves en 3D. Luego la dirección en España.
                 </p>
               </div>
 
@@ -332,12 +345,13 @@ export function Designer({
                       type="button"
                       onClick={() => {
                         setKind(k);
-                        setQty(qtysFor(k)[0]);
+                        setQty(1);
                         if (k === "generica") {
-                          setPicked(["google"]);
+                          setCounts(countsFromModels(["google"]));
+                          setFocus("google");
                           setDesign(defaultDesign("generica", "google"));
                         } else {
-                          setPicked([]);
+                          setCounts(emptyCounts());
                           setDesign(defaultDesign(k));
                         }
                         setTried(false);
@@ -355,61 +369,79 @@ export function Designer({
               {generic ? (
                 <>
                   <div>
-                    <p className="mb-2 text-sm text-[#3f3a34]">Hasta dos piezas</p>
-                    <div className="grid grid-cols-3 gap-2">
+                    <p className="mb-2 text-sm text-[#3f3a34]">Cuántas de cada una</p>
+                    <div className="grid gap-2">
                       {FACE_MODELS.map((m) => {
-                        const on = picked.includes(m.id);
+                        const n = counts[m.id];
+                        const on = n > 0;
                         return (
-                          <button
+                          <div
                             key={m.id}
-                            type="button"
-                            onClick={() => toggleModel(m.id)}
-                            className={`min-h-[4.5rem] rounded-2xl px-2 py-3 text-center ${
+                            className={`flex items-center gap-3 rounded-2xl px-3 py-3 ${
                               on ? "bg-[#1c1915] text-[#f6f1e7]" : "bg-[#f3eee4] text-[#5c564c]"
                             }`}
                           >
-                            <div className="text-sm font-semibold">{m.label}</div>
-                            <div className={`mt-1 text-[11px] ${on ? "text-[#d5cbb8]" : "text-[#8a8173]"}`}>
-                              {m.blurb}
-                            </div>
-                          </button>
+                            <button
+                              type="button"
+                              className="min-w-0 flex-1 text-left"
+                              onClick={() => {
+                                if (n === 0) bump(m.id, 1);
+                                else {
+                                  setFocus(m.id);
+                                  setDesign((d) => ({ ...d, model: m.id }));
+                                }
+                              }}
+                            >
+                              <div className="text-sm font-semibold">{m.label}</div>
+                              <div className={`mt-0.5 text-[11px] ${on ? "text-[#d5cbb8]" : "text-[#8a8173]"}`}>
+                                {m.blurb}
+                              </div>
+                            </button>
+                            <QtyStepper
+                              value={n}
+                              dark={on}
+                              onDec={() => bump(m.id, -1)}
+                              onInc={() => bump(m.id, 1)}
+                              disableDec={n <= 0}
+                              disableInc={atMax}
+                            />
+                          </div>
                         );
                       })}
                     </div>
                     <p className="mt-2 text-xs text-[#8a8173]">
-                      {picked.length === 0
-                        ? "Toca uno. Si quieres pack, toca otro."
-                        : picked.length === 1
-                          ? `Una ${MODEL_LABEL[picked[0]]} · ${euros(PRICES.generica[1])}. Toca otro para sumar.`
-                          : `${MODEL_LABEL[picked[0]]} + ${MODEL_LABEL[picked[1]]} · ${euros(PRICES.generica[2])}.`}
+                      {liveQty === 0
+                        ? "Toca + en Google, WhatsApp o Instagram."
+                        : `${productLabel(kind, liveQty, pieces)} · ${euros(price)}${
+                            packSaving(kind, liveQty) > 0
+                              ? ` · ahorras ${euros(packSaving(kind, liveQty))}`
+                              : ""
+                          }${atMax ? ` · tope ${MAX_QTY}` : ""}`}
                     </p>
                   </div>
 
-                  {picked.map((m, i) => {
-                    const meta = FACE_MODELS.find((x) => x.id === m)!;
-                    return (
-                      <Field
-                        key={`${m}-${i}`}
-                        label={`Enlace ${meta.label}${picked.length === 2 ? ` · pieza ${i + 1}` : ""}`}
-                        hint={tried && !nfcUrlOk(m, urls[m]) ? meta.hint : ""}
-                      >
-                        <input
-                          inputMode={m === "whatsapp" ? "tel" : "url"}
-                          autoCapitalize="none"
-                          autoCorrect="off"
-                          placeholder={meta.placeholder}
-                          value={urls[m]}
-                          onFocus={() => {
-                            setFocus(i);
-                            setDesign((d) => ({ ...d, model: m }));
-                          }}
-                          onChange={(e) => setUrls((u) => ({ ...u, [m]: e.target.value }))}
-                        />
-                      </Field>
-                    );
-                  })}
+                  {picked.map((m) => (
+                    <Field
+                      key={m.id}
+                      label={`Enlace ${m.label}${counts[m.id] > 1 ? ` · las ${counts[m.id]}` : ""}`}
+                      hint={tried && !nfcUrlOk(m.id, urls[m.id]) ? m.hint : ""}
+                    >
+                      <input
+                        inputMode={m.id === "whatsapp" ? "tel" : "url"}
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        placeholder={m.placeholder}
+                        value={urls[m.id]}
+                        onFocus={() => {
+                          setFocus(m.id);
+                          setDesign((d) => ({ ...d, model: m.id }));
+                        }}
+                        onChange={(e) => setUrls((u) => ({ ...u, [m.id]: e.target.value }))}
+                      />
+                    </Field>
+                  ))}
 
-                  {activeUrlModel === "google" || picked.includes("google") ? (
+                  {counts.google > 0 ? (
                     <div className="rounded-2xl bg-[#faf6ee] p-3">
                       <p className="mb-2 text-xs text-[#6f675c]">
                         Busca el negocio (nombre + pueblo) o pega el enlace de Maps.
@@ -419,60 +451,55 @@ export function Designer({
                         onPick={(url) => {
                           setUrls((u) => ({ ...u, google: url }));
                           setDesign((d) => ({ ...d, model: "google" }));
-                          const i = picked.indexOf("google");
-                          if (i >= 0) setFocus(i);
+                          setFocus("google");
                         }}
                       />
                     </div>
                   ) : null}
 
                   <button type="button" className="text-sm text-[#7a7266] underline" onClick={goPersonalizada}>
-                    Prefiero la de mi logo ({euros(PRICES.personalizada[1])})
+                    Prefiero la de mi logo ({euros(PRICE.personalizada.first)})
                   </button>
-                  <a href={LOTE_MAILTO} className="block text-sm text-[#7a7266] underline">
-                    ¿Más de dos o varios locales? Escríbenos
-                  </a>
                 </>
               ) : (
                 <>
                   {!admin ? (
-                    <button
-                      type="button"
-                      className="text-sm text-[#7a7266]"
-                      onClick={() => {
-                        setKind("generica");
-                        setPicked(["google"]);
-                        setDesign(defaultDesign("generica", "google"));
-                        setTried(false);
-                      }}
-                    >
+                    <button type="button" className="text-sm text-[#7a7266]" onClick={goGenerica}>
                       ← Volver a Google, WhatsApp o Instagram
                     </button>
                   ) : null}
 
-                  <div className={`grid gap-2 ${qtysFor(kind).length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
-                    {qtysFor(kind).map((q) => (
-                      <button
-                        key={q}
-                        type="button"
-                        onClick={() => setQty(q)}
-                        className={`min-h-14 rounded-2xl border px-3 py-3 text-left ${
-                          qty === q ? "border-[#1c1915] bg-[#faf6ee]" : "border-[#e6ddd0]"
-                        }`}
-                      >
-                        <div className="text-sm">{productLabel(kind, q)}</div>
-                        <div className="text-lg font-semibold">{euros(PRICES[kind][q])}</div>
-                        {packSaving(kind, q) > 0 ? (
-                          <p className="mt-1 text-xs text-[#6f675c]">
-                            <span className="line-through">{euros(packWas(kind))}</span>
-                            {` · ahorras ${euros(packSaving(kind, q))}`}
-                          </p>
-                        ) : q === 1 && kind !== "unica" ? (
-                          <p className="mt-1 text-xs text-[#8a8173]">Una pieza</p>
-                        ) : null}
-                      </button>
-                    ))}
-                  </div>
+                  {kind !== "unica" ? (
+                    <div>
+                      <p className="mb-2 text-sm text-[#3f3a34]">Cuántas</p>
+                      <div className="flex items-center justify-between rounded-2xl bg-[#f3eee4] px-3 py-3">
+                        <div>
+                          <div className="text-sm font-semibold">{productLabel(kind, qty)}</div>
+                          <div className="text-lg font-semibold">{euros(productPrice(kind, qty))}</div>
+                          {packSaving(kind, qty) > 0 ? (
+                            <p className="mt-1 text-xs text-[#6f675c]">
+                              <span className="line-through">{euros(packWas(kind, qty))}</span>
+                              {` · ahorras ${euros(packSaving(kind, qty))}`}
+                            </p>
+                          ) : (
+                            <p className="mt-1 text-xs text-[#8a8173]">{priceHint}</p>
+                          )}
+                        </div>
+                        <QtyStepper
+                          value={qty}
+                          onDec={() => setQty((q) => clampQty(q - 1))}
+                          onInc={() => setQty((q) => clampQty(q + 1))}
+                          disableDec={qty <= 1}
+                          disableInc={qty >= MAX_QTY}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-[#e6ddd0] px-3 py-3">
+                      <div className="text-sm">{productLabel(kind, 1)}</div>
+                      <div className="text-lg font-semibold">{euros(PRICE.unica.first)}</div>
+                    </div>
+                  )}
 
                   {needsLogo(kind) ? (
                     <>
@@ -730,7 +757,7 @@ export function Designer({
                   <Rates
                     shipping={shipping}
                     zone={form.postalCode.length === 5 ? zone : null}
-                    productPrice={productPrice}
+                    productPrice={price}
                   />
                 </>
               )}
@@ -738,18 +765,22 @@ export function Designer({
               <div className="rounded-2xl bg-[#faf6ee] p-4 text-sm">
                 <Row
                   k="Producto"
-                  v={`${productLabel(kind, liveQty, pieces)} · ${euros(productPrice)}`}
+                  v={`${productLabel(kind, liveQty, pieces)} · ${euros(price)}`}
                 />
                 {packSaving(kind, liveQty) > 0 ? (
-                  <Row k="Pack" v={`Ahorras ${euros(packSaving(kind, liveQty))} (no ${euros(packWas(kind))})`} />
+                  <Row k="Pack" v={`Ahorras ${euros(packSaving(kind, liveQty))} (no ${euros(packWas(kind, liveQty))})`} />
                 ) : null}
-                {pieces.map((p, i) => (
-                  <Row
-                    key={`${p.model}-${i}`}
-                    k={pieces.length === 2 ? `${MODEL_LABEL[p.model]} ${i + 1}` : "NFC"}
-                    v={p.nfcUrl || "—"}
-                  />
-                ))}
+                {generic
+                  ? picked.map((m) => (
+                      <Row
+                        key={m.id}
+                        k={counts[m.id] > 1 ? `${m.label} × ${counts[m.id]}` : m.label}
+                        v={urls[m.id] || "—"}
+                      />
+                    ))
+                  : (
+                      <Row k="NFC" v={design.googleUrl || "—"} />
+                    )}
                 <Row k="Zona" v={form.postalCode.length === 5 ? ZONE_LABEL[zone] : "Pon el CP"} />
                 <Row k="Envío Correos" v={form.postalCode.length === 5 ? (ship === 0 ? "Gratis" : euros(ship)) : "—"} />
                 <div className="mt-3 flex justify-between text-lg font-semibold">
@@ -802,6 +833,49 @@ export function Designer({
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function QtyStepper({
+  value,
+  onDec,
+  onInc,
+  disableDec,
+  disableInc,
+  dark = false,
+}: {
+  value: number;
+  onDec: () => void;
+  onInc: () => void;
+  disableDec?: boolean;
+  disableInc?: boolean;
+  dark?: boolean;
+}) {
+  const btn = dark
+    ? "bg-[#2c2822] text-[#f6f1e7] disabled:opacity-30"
+    : "bg-white text-[#1c1915] disabled:opacity-30";
+  return (
+    <div className="flex shrink-0 items-center gap-1">
+      <button
+        type="button"
+        aria-label="Quitar una"
+        onClick={onDec}
+        disabled={disableDec}
+        className={`grid h-11 w-11 place-items-center rounded-full text-xl leading-none ${btn}`}
+      >
+        −
+      </button>
+      <span className="w-7 text-center text-base font-semibold tabular-nums">{value}</span>
+      <button
+        type="button"
+        aria-label="Añadir una"
+        onClick={onInc}
+        disabled={disableInc}
+        className={`grid h-11 w-11 place-items-center rounded-full text-xl leading-none ${btn}`}
+      >
+        +
+      </button>
     </div>
   );
 }

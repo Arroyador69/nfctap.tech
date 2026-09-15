@@ -1,17 +1,42 @@
 import JSZip from "jszip";
-import { MODEL_LABEL } from "./catalog";
+import { MODEL_LABEL, piecesLabel } from "./catalog";
 import { ATRIL } from "./atril-geom";
 import { orderToSpec, pauseLayer, type PrintSpec } from "./print-spec";
 import { buildCardStls, pauseNote } from "./stl-card";
-import type { FaceModel, Order } from "./types";
+import type { FaceModel, Order, OrderPiece } from "./types";
+
+function pieceGroups(pieces: OrderPiece[]) {
+  const order: FaceModel[] = [];
+  const map = new Map<FaceModel, { model: FaceModel; nfcUrl: string; copies: number }>();
+  for (const p of pieces) {
+    const g = map.get(p.model);
+    if (g) g.copies += 1;
+    else {
+      map.set(p.model, { model: p.model, nfcUrl: p.nfcUrl, copies: 1 });
+      order.push(p.model);
+    }
+  }
+  return order.map((m) => map.get(m)!);
+}
+
+function copiesNote(label: string, copies: number, nfcUrl: string) {
+  return `${copies} copias de ${label}
+
+Mismo STL. Imprime ${copies} veces (o duplica en el laminador).
+
+NFC:
+${nfcUrl}
+`;
+}
 
 function nfcText(spec: PrintSpec) {
   if (spec.kind === "unica") {
     return `Pieza única — dos NFC\n\n1. Primer enlace:\n${spec.googleUrl}\n\n2. Segundo enlace:\n${spec.extraUrl || "(pendiente)"}\n\nCliente: ${spec.cliente}\nPedido: ${spec.orderId}\n`;
   }
-  const lines = spec.pieces.map((p, i) => {
-    const n = spec.pieces.length > 1 ? `Pieza ${i + 1} — ${MODEL_LABEL[p.model]}\n` : `${MODEL_LABEL[p.model]}\n`;
-    return `${n}${p.nfcUrl}`;
+  const groups = pieceGroups(spec.pieces);
+  const lines = groups.map((g) => {
+    const n = g.copies > 1 ? `${MODEL_LABEL[g.model]} × ${g.copies}` : MODEL_LABEL[g.model];
+    return `${n}\n${g.nfcUrl}`;
   });
   return `URL a grabar en el chip (NFC Tap Config → URL):\n\n${lines.join("\n\n")}\n\nCliente: ${spec.cliente}\nPedido: ${spec.orderId}\n`;
 }
@@ -21,8 +46,7 @@ export async function buildPrintPack(order: Order) {
   const pause = pauseLayer();
   const zip = new JSZip();
   const folder = zip.folder(spec.nombre)!;
-  const models = spec.pieces.map((p) => p.model);
-  const distinct = [...new Set(models)];
+  const groups = pieceGroups(spec.pieces);
 
   const writePair = (dest: JSZip, pieceSpec: PrintSpec) => {
     const files = buildCardStls(pieceSpec);
@@ -31,13 +55,18 @@ export async function buildPrintPack(order: Order) {
     }
   };
 
-  if (distinct.length > 1) {
-    spec.pieces.forEach((piece, i) => {
-      const sub = folder.folder(`${i + 1}-${piece.model}`)!;
-      writePair(sub, { ...spec, model: piece.model as FaceModel, qty: 1 });
+  if (groups.length > 1) {
+    groups.forEach((g) => {
+      const sub = folder.folder(g.model)!;
+      writePair(sub, { ...spec, model: g.model, qty: g.copies });
+      if (g.copies > 1) sub.file("COPIAS.txt", copiesNote(MODEL_LABEL[g.model], g.copies, g.nfcUrl));
     });
   } else {
     writePair(folder, spec);
+    const g = groups[0];
+    if (g && g.copies > 1) {
+      folder.file("COPIAS.txt", copiesNote(MODEL_LABEL[g.model], g.copies, g.nfcUrl));
+    }
   }
 
   folder.file("pedido.json", JSON.stringify(spec, null, 2));
@@ -51,7 +80,7 @@ export async function buildPrintPack(order: Order) {
 
 Agrupar 01 + 02. NO Reparar el modelo.
 Capa 0,20 mm, 3 perímetros, gyroid 15 %, Arachne.
-Piezas: ${spec.pieces.map((p) => MODEL_LABEL[p.model]).join(" + ")}
+Piezas: ${piecesLabel(spec.pieces) || spec.pieces.map((p) => MODEL_LABEL[p.model]).join(" + ")}
 Pausa NFC: capa ${pause.layer} (${pause.z.toFixed(2)} mm).
 Antes de pausar: disco de acento Ø${ATRIL.PAD_D} bajo el icono (mira).
 Pegatina Ø${ATRIL.STICKER_D} ENCIMA de ese círculo, adhesivo a la cama.
@@ -68,7 +97,7 @@ Pegatina Ø${ATRIL.STICKER_D} ENCIMA de ese círculo, adhesivo a la cama.
 
 1. Proyecto NUEVO en Flash Studio, impresora AD5X.
 2. Importa 01_cuerpo.stl + 02_acento.stl (no el 3mf viejo).
-${distinct.length > 1 ? "   Hay una carpeta por pieza (WhatsApp / Instagram / Google).\n" : ""}3. Selecciónalos → Agrupar. NO pulses Reparar.
+${groups.length > 1 ? "   Hay una carpeta por modelo (WhatsApp / Instagram / Google).\n" : ""}${groups.some((g) => g.copies > 1) ? "   Si hay COPIAS.txt, imprime esa cantidad del mismo par STL.\n" : ""}3. Selecciónalos → Agrupar. NO pulses Reparar.
 4. Color: cuerpo = ${spec.colores.cuerpo}, acento = ${spec.colores.acento}.
 5. Rebana 0,20 mm. Previsualización → slider derecho → capa ${pause.layer} (~${pause.z.toFixed(2)} mm).
 6. Mitad-arriba de la placa: hueco redondo (sitio del icono) con círculo de acento. Clic derecho → Añadir pausa.

@@ -55,8 +55,8 @@ export function ShippingForm({ shipping }: { shipping: ShippingSettings }) {
       {msg && <span className="ml-3 text-sm text-[#6f675c]">{msg}</span>}
       <p className="mt-4 text-xs text-[#8a8173]">
         Ahora mismo: península {euros(form.peninsula)} · Baleares {euros(form.baleares)} ·
-        Canarias {euros(form.canarias)}. Pack de dos personalizadas (
-        {euros(PRICES.personalizada[2])}) entra en envío gratis a península si el umbral es {euros(form.freePeninsulaFrom)}.
+        Canarias {euros(form.canarias)}. Dos personalizadas (
+        {euros(PRICES.personalizada[2])}) entran en envío gratis a península si el umbral es {euros(form.freePeninsulaFrom)}.
       </p>
     </section>
   );
