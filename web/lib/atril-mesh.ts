@@ -1,6 +1,8 @@
 import { ATRIL } from "./atril-geom";
 import { googleGPoly } from "./google-g";
+import polys from "./logo-polys.json";
 import { printText } from "./print-spec";
+import type { FaceModel } from "./types";
 
 export type V2 = [number, number];
 export type V3 = [number, number, number];
@@ -166,13 +168,17 @@ const SANS_W: Record<string, number> = {
   C: 0.86,
   E: 0.76,
   F: 0.72,
+  G: 0.9,
   H: 0.88,
+  I: 0.42,
+  M: 1.05,
   N: 0.88,
   Ñ: 0.88,
   P: 0.78,
   R: 0.84,
   S: 0.78,
   T: 0.86,
+  W: 1.12,
   ".": 0.36,
   " ": 0.4,
 };
@@ -203,6 +209,31 @@ function sansGlyph(ch: string, h: number, sw: number, w: number): V2[][] {
         ...strokeBar(r, r, r, h - r, sw),
         ...strokeBar(r, h - r, w - r, h - r, sw),
         ...strokeBar(r, h * 0.52, w * 0.7, h * 0.52, sw),
+      ];
+    case "G":
+      return [
+        ...strokeArcCaps(w / 2, h / 2, h / 2 - r, 42, 318, sw, 22),
+        ...strokeBar(w * 0.48, h * 0.42, w - r, h * 0.42, sw),
+      ];
+    case "I":
+      return [
+        ...strokeBar(r, h - r, w - r, h - r, sw),
+        ...strokeBar(w / 2, r, w / 2, h - r, sw),
+        ...strokeBar(r, r, w - r, r, sw),
+      ];
+    case "M":
+      return [
+        ...strokeBar(r, r, r, h - r, sw),
+        ...strokeBar(w - r, r, w - r, h - r, sw),
+        ...strokeBar(r, h - r, w / 2, h * 0.32, sw),
+        ...strokeBar(w - r, h - r, w / 2, h * 0.32, sw),
+      ];
+    case "W":
+      return [
+        ...strokeBar(r, h - r, w * 0.3, r, sw),
+        ...strokeBar(w * 0.3, r, w / 2, h * 0.52, sw),
+        ...strokeBar(w / 2, h * 0.52, w * 0.7, r, sw),
+        ...strokeBar(w * 0.7, r, w - r, h - r, sw),
       ];
     case "H":
       return [
@@ -495,11 +526,37 @@ export function atrilBody(opts?: { shopView?: boolean }) {
 
 export type AtrilAccentInput = {
   kind?: "generica" | "personalizada" | "unica";
+  model?: FaceModel;
   logoMask?: string;
   line1?: string;
   /** Cara lisa en la tienda: el hueco NFC no se enseña al cliente. */
   shopView?: boolean;
 };
+
+function moved(pts: number[][], dx: number, dy: number): V2[] {
+  return pts.map(([x, y]) => [x + dx, y + dy]);
+}
+
+function whatsappMark(cx: number, cy: number, z0: number, z1: number) {
+  const m = new Mesh();
+  m.extend(extrudeRing(moved(polys.wa.outer, cx, cy), moved(polys.wa.inner, cx, cy), z0, z1));
+  m.extend(extrude(moved(polys.wa.phone, cx, cy), z0, z1));
+  return m;
+}
+
+function instagramMark(cx: number, cy: number, z0: number, z1: number) {
+  const m = new Mesh();
+  m.extend(extrudeRing(moved(polys.ig.outer, cx, cy), moved(polys.ig.inner, cx, cy), z0, z1));
+  m.extend(extrudeRing(moved(polys.ig.lens_out, cx, cy), moved(polys.ig.lens_in, cx, cy), z0, z1));
+  m.extend(extrude(moved(polys.ig.dot, cx, cy), z0, z1));
+  return m;
+}
+
+function faceModelOf(input: AtrilAccentInput): FaceModel {
+  if (input.model) return input.model;
+  if (input.kind === "personalizada" || input.kind === "unica") return "personalizada";
+  return "google";
+}
 
 function logoMesh(mask: string, z0: number, z1: number) {
   const bits = mask.replace(/[^01]/g, "");
@@ -541,17 +598,26 @@ export function atrilAccent(input: AtrilAccentInput = {}): Mesh {
   }
   const z0 = ATRIL.FACE_T;
   const z1 = ATRIL.FACE_T + ATRIL.RELIEF;
-  for (const [x, y, r] of starLayout()) {
-    m.extend(extrude(starPoly(x, y, r), z0, z1 + 0.12));
-  }
-  const generic = input.kind !== "personalizada";
-  if (generic) {
+  const model = faceModelOf(input);
+  if (model === "google") {
+    for (const [x, y, r] of starLayout()) {
+      m.extend(extrude(starPoly(x, y, r), z0, z1 + 0.12));
+    }
     m.extend(extrude(googleGPoly(0, ATRIL.MARK_Y, ATRIL.MARK_R * 2, true), z0, z1 + 0.08));
-  } else if (input.logoMask) {
-    m.extend(logoMesh(input.logoMask, z0, z1));
+  } else if (model === "whatsapp") {
+    m.extend(sansWord("WHATSAPP", 0, ATRIL.STAR_Y, 6.2, 1.05, z0, z1));
+    m.extend(whatsappMark(0, ATRIL.MARK_Y, z0, z1 + 0.08));
+  } else if (model === "instagram") {
+    m.extend(sansWord("INSTAGRAM", 0, ATRIL.STAR_Y, 6.0, 0.85, z0, z1));
+    m.extend(instagramMark(0, ATRIL.MARK_Y, z0, z1 + 0.08));
+  } else {
+    for (const [x, y, r] of starLayout()) {
+      m.extend(extrude(starPoly(x, y, r), z0, z1 + 0.12));
+    }
+    if (input.logoMask) m.extend(logoMesh(input.logoMask, z0, z1));
   }
   m.extend(sansWord("TAP", 0, ATRIL.TAP_Y, ATRIL.TAP_H, ATRIL.TAP_TRACK, z0, z1));
-  const name = !generic ? printText(input.line1 || "").slice(0, 16) : "";
+  const name = model === "personalizada" ? printText(input.line1 || "").slice(0, 16) : "";
   if (name) {
     m.extend(sansWord(name, 0, ATRIL.NAME_Y, ATRIL.NAME_H, ATRIL.NAME_TRACK, z0, z1));
   }

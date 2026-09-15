@@ -2,8 +2,9 @@ import { ACCENT_HEX, BODY_COLORS } from "./catalog";
 import { ATRIL } from "./atril-geom";
 import { drawGoogleG } from "./google-g";
 import { paintAccentLogo } from "./logo";
+import polys from "./logo-polys.json";
 import { printText } from "./print-spec";
-import type { CardDesign } from "./types";
+import type { CardDesign, FaceModel } from "./types";
 
 export const CARD_W = 750;
 export const CARD_H = 1200;
@@ -20,12 +21,18 @@ function py(y: number) {
   return PAD_TOP + (ATRIL.FOOT_Y + ATRIL.FACE_H - y) * SCALE;
 }
 
+function faceModelOf(design: CardDesign): FaceModel {
+  if (design.model) return design.model;
+  if (design.kind === "personalizada" || design.kind === "unica") return "personalizada";
+  return "google";
+}
+
 export function drawCardFace(
   ctx: CanvasRenderingContext2D,
   design: CardDesign,
   logo?: HTMLImageElement | null,
 ) {
-  const generic = design.kind === "generica";
+  const model = faceModelOf(design);
   const body = BODY_COLORS.find((c) => c.id === design.bodyColor)?.hex ?? "#171513";
   const accent = ACCENT_HEX[design.accentColor] ?? ACCENT_HEX.amarillo;
 
@@ -47,14 +54,25 @@ export function drawCardFace(
   ctx.fillStyle = body;
   ctx.fill();
 
-  const sizes = [3.1, 3.9, 5.2, 3.9, 3.1];
-  const lift = [0, 2.2, 4.4, 2.2, 0];
-  for (let i = 0; i < 5; i++) {
-    star(ctx, px((i - 2) * 12), py(ATRIL.STAR_Y + lift[i]), sizes[i] * SCALE, accent);
+  if (model === "google" || model === "personalizada") {
+    const sizes = [3.1, 3.9, 5.2, 3.9, 3.1];
+    const lift = [0, 2.2, 4.4, 2.2, 0];
+    for (let i = 0; i < 5; i++) {
+      star(ctx, px((i - 2) * 12), py(ATRIL.STAR_Y + lift[i]), sizes[i] * SCALE, accent);
+    }
   }
 
-  if (generic) {
+  if (model === "google") {
     drawGoogleG(ctx, px(0), py(ATRIL.MARK_Y), MARK_SIZE * SCALE, accent);
+  } else   if (model === "whatsapp") {
+    drawSansText(ctx, "WHATSAPP", px(0), py(ATRIL.STAR_Y), 6.2 * SCALE, 1.05 * SCALE, accent, 600);
+    drawEvenOdd(ctx, polys.wa.outer, polys.wa.inner, accent, 0, ATRIL.MARK_Y);
+    fillPoly(ctx, polys.wa.phone, accent, 0, ATRIL.MARK_Y);
+  } else if (model === "instagram") {
+    drawSansText(ctx, "INSTAGRAM", px(0), py(ATRIL.STAR_Y), 6.0 * SCALE, 0.85 * SCALE, accent, 600);
+    drawEvenOdd(ctx, polys.ig.outer, polys.ig.inner, accent, 0, ATRIL.MARK_Y);
+    drawEvenOdd(ctx, polys.ig.lens_out, polys.ig.lens_in, accent, 0, ATRIL.MARK_Y);
+    fillPoly(ctx, polys.ig.dot, accent, 0, ATRIL.MARK_Y);
   } else if (logo) {
     drawAccentLogo(ctx, logo, px(0), py(ATRIL.MARK_Y), MARK_SIZE * SCALE, accent);
   } else {
@@ -70,11 +88,49 @@ export function drawCardFace(
   }
 
   drawSansText(ctx, "TAP", px(0), py(ATRIL.TAP_Y), ATRIL.TAP_H * SCALE, ATRIL.TAP_TRACK * SCALE, accent, 600);
-  const name = !generic ? printText(design.line1 || "").slice(0, 16) : "";
+  const name = model === "personalizada" ? printText(design.line1 || "").slice(0, 16) : "";
   if (name) {
     drawSansText(ctx, name, px(0), py(ATRIL.NAME_Y), ATRIL.NAME_H * SCALE, ATRIL.NAME_TRACK * SCALE, accent, 600);
   }
   drawSansText(ctx, "NFCTAP.TECH", px(0), (footTop + footBot) / 2, 3.4 * SCALE, 1.15 * SCALE, accent, 500);
+}
+
+function traceMm(ctx: CanvasRenderingContext2D, poly: number[][], dx = 0, dy = 0) {
+  poly.forEach(([x, y], i) => {
+    const X = px(x + dx);
+    const Y = py(y + dy);
+    if (i === 0) ctx.moveTo(X, Y);
+    else ctx.lineTo(X, Y);
+  });
+  ctx.closePath();
+}
+
+function fillPoly(
+  ctx: CanvasRenderingContext2D,
+  poly: number[][],
+  color: string,
+  dx = 0,
+  dy = 0,
+) {
+  ctx.beginPath();
+  traceMm(ctx, poly, dx, dy);
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
+function drawEvenOdd(
+  ctx: CanvasRenderingContext2D,
+  outer: number[][],
+  inner: number[][],
+  color: string,
+  dx: number,
+  dy: number,
+) {
+  ctx.beginPath();
+  traceMm(ctx, outer, dx, dy);
+  traceMm(ctx, inner, dx, dy);
+  ctx.fillStyle = color;
+  ctx.fill("evenodd");
 }
 
 function drawAccentLogo(
@@ -121,7 +177,7 @@ function roundRect(
   ctx.moveTo(x + r, y);
   ctx.arcTo(x + w, y, x + w, y + h, r);
   ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x + w, y + h, x, y, r);
   ctx.arcTo(x, y, x + w, y, r);
   ctx.closePath();
 }

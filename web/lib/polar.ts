@@ -1,8 +1,29 @@
 import { PRICES } from "./catalog";
-import type { ProductKind, Qty } from "./types";
+import type { ProductKind, Qty, ShippingZone } from "./types";
+
+const PRODUCT_ENV = [
+  "POLAR_PRODUCT_GENERIC_1",
+  "POLAR_PRODUCT_GENERIC_2",
+  "POLAR_PRODUCT_CUSTOM_1",
+  "POLAR_PRODUCT_CUSTOM_2",
+] as const;
+
+export function polarHasToken() {
+  return Boolean(process.env.POLAR_ACCESS_TOKEN);
+}
 
 export function polarReady() {
-  return Boolean(process.env.POLAR_ACCESS_TOKEN);
+  return Boolean(polarHasToken() && PRODUCT_ENV.every((k) => process.env[k]));
+}
+
+export function polarMissing() {
+  const missing: string[] = [];
+  if (!process.env.POLAR_ACCESS_TOKEN) missing.push("POLAR_ACCESS_TOKEN");
+  for (const k of PRODUCT_ENV) {
+    if (!process.env[k]) missing.push(k);
+  }
+  if (!process.env.POLAR_WEBHOOK_SECRET) missing.push("POLAR_WEBHOOK_SECRET");
+  return missing;
 }
 
 export function productEnvKey(kind: ProductKind, qty: Qty) {
@@ -14,6 +35,14 @@ function polarBase() {
   return process.env.POLAR_SERVER === "sandbox"
     ? "https://sandbox-api.polar.sh/v1"
     : "https://api.polar.sh/v1";
+}
+
+function polarHeaders() {
+  return {
+    Authorization: `Bearer ${process.env.POLAR_ACCESS_TOKEN}`,
+    "Content-Type": "application/json",
+    "Polar-Version": "2026-10",
+  };
 }
 
 /** IP real del comprador (Vercel / proxy). Polar la usa para mostrar Bizum en España. */
@@ -34,16 +63,24 @@ export async function createPolarCheckout(input: {
   email: string;
   name: string;
   successUrl: string;
+  returnUrl?: string;
+  productEuros: number;
+  shippingEuros: number;
   totalEuros: number;
   customerIp?: string;
   city?: string;
   postalCode?: string;
   line1?: string;
+  zone?: ShippingZone;
+  models?: string;
 }) {
   if (!polarReady()) return null;
 
   const productId = process.env[productEnvKey(input.kind, input.qty)];
-  if (!productId) return null;
+  if (!productId) {
+    console.error(`Polar: falta ${productEnvKey(input.kind, input.qty)}`);
+    return null;
+  }
 
   const amount = Math.round(input.totalEuros * 100);
   const body: Record<string, unknown> = {
@@ -54,6 +91,7 @@ export async function createPolarCheckout(input: {
           amount_type: "fixed",
           price_amount: amount,
           price_currency: "eur",
+          tax_behavior: "inclusive",
         },
       ],
     },
@@ -72,43 +110,27 @@ export async function createPolarCheckout(input: {
       orderId: input.orderId,
       kind: input.kind,
       qty: String(input.qty),
-      amount: String(PRICES[input.kind][input.qty]),
+      product: String(input.productEuros),
+      shipping: String(input.shippingEuros),
       total: String(input.totalEuros),
+      zone: input.zone || "",
+      catalog: String(PRICES[input.kind][input.qty]),
+      models: input.models || input.kind,
     },
   };
+  if (input.returnUrl) body.return_url = input.returnUrl;
   if (input.customerIp) body.customer_ip_address = input.customerIp;
 
   const res = await fetch(`${polarBase()}/checkouts/`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.POLAR_ACCESS_TOKEN}`,
-      "Content-Type": "application/json",
-    },
+    headers: polarHeaders(),
     body: JSON.stringify(body),
   });
 
   if (!res.ok) {
-    const catalog = await fetch(`${polarBase()}/checkouts/`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.POLAR_ACCESS_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        products: [productId],
-        success_url: input.successUrl,
-        customer_email: input.email,
-        customer_name: input.name,
-        locale: "es",
-        allow_discount_codes: false,
-        customer_billing_address: { country: "ES" },
-        customer_ip_address: input.customerIp,
-        metadata: body.metadata,
-      }),
-    });
-    if (!catalog.ok) return null;
-    const checkout = (await catalog.json()) as { url?: string };
-    return checkout.url ? withCheckoutQuery(checkout.url) : null;
+    const err = await res.text();
+    console.error("Polar checkout", res.status, err.slice(0, 800));
+    return null;
   }
 
   const checkout = (await res.json()) as { url?: string };

@@ -5,23 +5,46 @@ import {
   ACCENT_COLORS,
   ACCENT_HEX,
   BODY_COLORS,
+  FACE_MODELS,
   KIND_META,
+  MODEL_LABEL,
   PRICES,
   defaultDesign,
   kindsFor,
   needsLogo,
+  packSaving,
+  packWas,
   productLabel,
   qtysFor,
 } from "@/lib/catalog";
 import { ReviewLookup } from "@/components/ReviewLookup";
-import { isEmail, isHttpUrl, isPhone, isPostalCode, isReviewUrl, prepareLogo } from "@/lib/logo";
+import {
+  isEmail,
+  isHttpUrl,
+  isPhone,
+  isPostalCode,
+  nfcUrlOk,
+  normalizeNfcUrl,
+  prepareLogo,
+} from "@/lib/logo";
 import { PROVINCIAS } from "@/lib/provinces";
 import { euros, shippingCost, zoneFromPostalCode, ZONE_LABEL } from "@/lib/shipping";
-import type { CardDesign, Handover, ProductKind, Qty, ShippingSettings, ShippingZone } from "@/lib/types";
+import type {
+  CardDesign,
+  CatalogModel,
+  FaceModel,
+  Handover,
+  OrderPiece,
+  ProductKind,
+  Qty,
+  ShippingSettings,
+  ShippingZone,
+} from "@/lib/types";
 import { useMemo, useState, type ReactNode } from "react";
 
 type Props = {
   initialKind?: ProductKind;
+  initialModels?: CatalogModel[];
   initialGoogleUrl?: string;
   shipping: ShippingSettings;
   mode?: "public" | "admin";
@@ -30,20 +53,36 @@ type Props = {
 type Step = "diseno" | "envio";
 
 export function Designer({
-  initialKind = "personalizada",
+  initialKind = "generica",
+  initialModels,
   initialGoogleUrl,
   shipping,
   mode = "public",
 }: Props) {
   const admin = mode === "admin";
   const startKind =
-    !admin && initialKind === "unica" ? "personalizada" : initialKind;
+    !admin && initialKind === "unica" ? "generica" : initialKind;
+  const startModels: CatalogModel[] =
+    startKind === "personalizada" || startKind === "unica"
+      ? []
+      : initialModels?.length
+        ? initialModels
+        : ["google"];
   const [step, setStep] = useState<Step>("diseno");
   const [handover, setHandover] = useState<Handover>("envio");
   const [kind, setKind] = useState<ProductKind>(startKind);
-  const [qty, setQty] = useState<Qty>(1);
+  const [picked, setPicked] = useState<CatalogModel[]>(startModels);
+  const [focus, setFocus] = useState(0);
+  const [urls, setUrls] = useState<Record<CatalogModel, string>>({
+    google: initialGoogleUrl || "",
+    whatsapp: "",
+    instagram: "",
+  });
+  const [qty, setQty] = useState<Qty>(startKind === "generica" ? (startModels.length === 2 ? 2 : 1) : 1);
   const [design, setDesign] = useState<CardDesign>(() => {
-    const d = defaultDesign(startKind);
+    const model: FaceModel =
+      startKind === "generica" ? startModels[0] || "google" : "personalizada";
+    const d = defaultDesign(startKind, model);
     if (initialGoogleUrl) d.googleUrl = initialGoogleUrl;
     return d;
   });
@@ -62,9 +101,25 @@ export function Designer({
     province: "",
   });
 
+  const generic = kind === "generica";
+  const pieces: OrderPiece[] = generic
+    ? picked.map((model) => ({ model, nfcUrl: normalizeNfcUrl(model, urls[model]) }))
+    : [
+        {
+          model: "personalizada",
+          nfcUrl: design.googleUrl.trim(),
+        },
+        ...(kind !== "unica" && qty === 2
+          ? [{ model: "personalizada" as const, nfcUrl: design.googleUrl.trim() }]
+          : []),
+      ];
+  const liveQty: Qty = generic ? ((picked.length === 2 ? 2 : 1) as Qty) : qty;
+  const previewModel: FaceModel = generic
+    ? picked[Math.min(focus, Math.max(0, picked.length - 1))] || "google"
+    : "personalizada";
   const zone: ShippingZone = zoneFromPostalCode(form.postalCode);
-  const productPrice = PRICES[kind][qty];
-  const ship = handover === "mano" ? 0 : shippingCost(zone, shipping);
+  const productPrice = PRICES[kind][liveQty];
+  const ship = handover === "mano" ? 0 : shippingCost(zone, shipping, productPrice);
   const total = productPrice + ship;
   const patch = (p: Partial<CardDesign>) => setDesign((d) => ({ ...d, ...p }));
 
@@ -79,11 +134,14 @@ export function Designer({
   }
 
   const designOk = useMemo(() => {
-    if (!isReviewUrl(design.googleUrl)) return false;
-    if (needsLogo(kind) && !design.logoDataUrl) return false;
     if (kind === "unica" && !isHttpUrl(design.extraUrl || "")) return false;
-    return true;
-  }, [design.googleUrl, design.logoDataUrl, design.extraUrl, kind]);
+    if (needsLogo(kind) && !design.logoDataUrl) return false;
+    if (generic) {
+      if (!picked.length) return false;
+      return picked.every((m) => nfcUrlOk(m, urls[m]));
+    }
+    return nfcUrlOk("personalizada", design.googleUrl);
+  }, [kind, generic, picked, urls, design.googleUrl, design.logoDataUrl, design.extraUrl]);
 
   const shipOk = useMemo(() => {
     if (admin && handover === "mano") return Boolean(form.name.trim());
@@ -98,16 +156,62 @@ export function Designer({
     );
   }, [admin, form, handover]);
 
+  function toggleModel(id: CatalogModel) {
+    setKind("generica");
+    setTried(false);
+    setPicked((prev) => {
+      if (prev.includes(id)) {
+        const next = prev.filter((m) => m !== id);
+        setFocus(0);
+        setDesign((d) => ({ ...d, kind: "generica", model: next[0] || "google" }));
+        return next;
+      }
+      if (prev.length >= 2) {
+        const next = [...prev];
+        next[Math.min(focus, 1)] = id;
+        setDesign((d) => ({ ...d, kind: "generica", model: next[Math.min(focus, 1)] }));
+        return next;
+      }
+      const next = [...prev, id];
+      setFocus(next.length - 1);
+      setDesign((d) => ({ ...d, kind: "generica", model: id }));
+      return next;
+    });
+  }
+
+  function goPersonalizada() {
+    setKind("personalizada");
+    setQty(1);
+    setPicked([]);
+    setDesign(defaultDesign("personalizada"));
+    setTried(false);
+  }
+
   function goShip() {
     setTried(true);
     setError("");
     if (!designOk) {
+      if (generic && !picked.length) {
+        setError("Elige Google, WhatsApp o Instagram. Puedes llevar dos.");
+        return;
+      }
+      if (generic) {
+        const miss = picked.find((m) => !nfcUrlOk(m, urls[m]));
+        setError(
+          miss === "whatsapp"
+            ? "Pon el número o el enlace de WhatsApp."
+            : miss === "instagram"
+              ? "Pon @cuenta o el enlace de Instagram."
+              : "Falta el enlace de reseña de Google.",
+        );
+        return;
+      }
       setError(
         needsLogo(kind)
           ? kind === "unica"
             ? "Sube el logo, el enlace de Google y el segundo NFC (carta, Instagram o menú)."
-            : "Sube el logo y pega el enlace de reseña de Google."
-          : "Falta el enlace de reseña de Google (el de Pedir reseñas).",
+            : "Sube el logo y pega el enlace que abrirá el móvil."
+          : "Falta el enlace.",
       );
       return;
     }
@@ -122,25 +226,35 @@ export function Designer({
       setError(
         admin && handover === "mano"
           ? "Pon al menos el nombre del cliente."
-          : "Completa la dirección: nombre, email, teléfono, calle, CP, ciudad y provincia.",
+          : "Dirección en España: nombre, email, teléfono, calle, CP, ciudad y provincia.",
       );
       return;
     }
     setBusy(true);
     try {
+      const normalizedPieces = pieces.map((p) => ({
+        model: p.model,
+        nfcUrl: normalizeNfcUrl(p.model, p.nfcUrl),
+      }));
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           kind,
-          qty,
+          qty: liveQty,
           source: admin ? "admin" : "web",
           handover: admin ? handover : "envio",
           design: {
             ...design,
             kind,
+            model: previewModel,
             logoDataUrl: needsLogo(kind) ? design.logoDataUrl : undefined,
-            extraUrl: kind === "unica" ? design.extraUrl : undefined,
+            extraUrl:
+              kind === "unica"
+                ? design.extraUrl
+                : normalizedPieces[1]?.nfcUrl,
+            googleUrl: normalizedPieces[0]?.nfcUrl || design.googleUrl,
+            pieces: kind === "unica" ? undefined : normalizedPieces,
           },
           previewDataUrl: preview,
           address: { ...form, zone },
@@ -155,20 +269,41 @@ export function Designer({
     }
   }
 
+  const activeUrlModel = generic ? picked[Math.min(focus, picked.length - 1)] : null;
+
   return (
     <div className="pb-28 lg:pb-0">
       <div className="grid items-start gap-5 lg:grid-cols-[1.05fr_0.95fr] lg:gap-8">
         <div className="sticky top-14 z-20 -mx-5 bg-[#f6f1e8]/92 px-5 py-2 backdrop-blur-md lg:static lg:top-auto lg:mx-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
           <CardPreview
-            design={{ ...design, kind }}
+            design={{ ...design, kind, model: previewModel }}
             compact
             onReady={(url) => setPreview((prev) => (prev === url ? prev : url))}
           />
+          {generic && picked.length === 2 ? (
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {picked.map((m, i) => (
+                <button
+                  key={`${m}-${i}`}
+                  type="button"
+                  onClick={() => {
+                    setFocus(i);
+                    setDesign((d) => ({ ...d, model: m }));
+                  }}
+                  className={`rounded-full px-3 py-2 text-sm ${
+                    focus === i ? "bg-[#1c1915] text-[#f6f1e7]" : "bg-[#f3eee4] text-[#5c564c]"
+                  }`}
+                >
+                  Pieza {i + 1} · {MODEL_LABEL[m]}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div className="space-y-5 rounded-[24px] border border-[#e6ddd0] bg-white p-4 shadow-[0_16px_40px_rgba(40,28,10,0.05)] sm:p-6">
           <div className="flex gap-2 text-xs">
-            <span className={step === "diseno" ? "font-semibold text-[#1c1915]" : "text-[#8a8173]"}>1. Diseño</span>
+            <span className={step === "diseno" ? "font-semibold text-[#1c1915]" : "text-[#8a8173]"}>1. Elige</span>
             <span className="text-[#cfc4b2]">→</span>
             <span className={step === "envio" ? "font-semibold text-[#1c1915]" : "text-[#8a8173]"}>
               2. {admin ? "Cliente" : "Envío"}
@@ -182,134 +317,237 @@ export function Designer({
                   Elige y encarga
                 </h2>
                 <p className="mt-1 text-sm text-[#6f675c]">
-                  Lo que ves en 3D es lo que se imprime. Luego el envío, en 24 h.
+                  Una {euros(PRICES.generica[1])} · dos {euros(PRICES.generica[2])} (no el doble).
+                  WhatsApp, Instagram o Google, o una de cada. Lo ves en 3D. Luego la dirección en
+                  España.
                 </p>
               </div>
 
-              <div className={`grid gap-2 ${admin ? "grid-cols-3" : "grid-cols-2"}`}>
-                {kindsFor(admin).map((k) => (
-                  <button
-                    key={k}
-                    type="button"
-                    onClick={() => {
-                      setKind(k);
-                      setQty(qtysFor(k)[0]);
-                      setDesign(defaultDesign(k));
-                      setTried(false);
-                    }}
-                    className={`min-h-12 rounded-2xl px-2 py-3 text-xs font-medium sm:text-sm ${
-                      kind === k ? "bg-[#1c1915] text-[#f6f1e7]" : "bg-[#f3eee4] text-[#5c564c]"
-                    }`}
-                  >
-                    {KIND_META[k].label}
-                  </button>
-                ))}
-              </div>
-
-              <div className={`grid gap-2 ${qtysFor(kind).length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
-                {qtysFor(kind).map((q) => (
-                  <button
-                    key={q}
-                    type="button"
-                    onClick={() => setQty(q)}
-                    className={`min-h-14 rounded-2xl border px-3 py-3 text-left ${
-                      qty === q ? "border-[#1c1915] bg-[#faf6ee]" : "border-[#e6ddd0]"
-                    }`}
-                  >
-                    <div className="text-sm">{productLabel(kind, q)}</div>
-                    <div className="text-lg font-semibold">{euros(PRICES[kind][q])}</div>
-                  </button>
-                ))}
-              </div>
-
-              {needsLogo(kind) ? (
-                <>
-                  <div>
-                    <p className="mb-2 text-sm text-[#3f3a34]">
-                      Logo {tried && !design.logoDataUrl ? <span className="text-red-700">· obligatorio</span> : null}
-                    </p>
-                    <label className="flex min-h-14 cursor-pointer items-center justify-center rounded-2xl border border-dashed border-[#cfc4b2] bg-[#fffcf7] px-3 text-sm">
-                      {design.logoDataUrl ? "Cambiar logo" : "Subir logo"}
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                        className="sr-only"
-                        onChange={(e) => onLogo(e.target.files?.[0])}
-                      />
-                    </label>
-                    <p className="mt-2 text-xs text-[#8a8173]">
-                      PNG con fondo transparente si puedes. Cuadrado o redondo, unos 800×800 px. Se
-                      imprime en el color de acento, en el mismo sitio y tamaño que la G (~33 mm).
-                    </p>
-                    {design.logoDataUrl && (
-                      <button
-                        type="button"
-                        className="mt-2 text-xs text-[#7a7266] underline"
-                        onClick={() => patch({ logoDataUrl: undefined, logoMask: undefined })}
-                      >
-                        Quitar logo
-                      </button>
-                    )}
-                  </div>
-                  <Field label="Nombre del negocio (opcional)">
-                    <input
-                      value={design.line1}
-                      maxLength={22}
-                      autoComplete="organization"
-                      placeholder="Debajo de TAP, opcional"
-                      onChange={(e) => patch({ line1: e.target.value })}
-                    />
-                  </Field>
-                </>
-              ) : (
-                <p className="rounded-2xl bg-[#faf6ee] px-4 py-3 text-sm text-[#5c564c]">
-                  Genérica: estrellas flotantes, G y TAP debajo. Elige cuerpo, acento y
-                  el enlace.
-                </p>
-              )}
-
-              {kind === "unica" ? (
-                <Field
-                  label="Segundo NFC (carta, Instagram, menú…)"
-                  hint={
-                    tried && !isHttpUrl(design.extraUrl || "")
-                      ? "Pon el segundo enlace https"
-                      : ""
-                  }
-                >
-                  <input
-                    inputMode="url"
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    placeholder="https://…"
-                    value={design.extraUrl || ""}
-                    onChange={(e) => patch({ extraUrl: e.target.value })}
-                  />
-                </Field>
+              {admin ? (
+                <div className="grid grid-cols-3 gap-2">
+                  {kindsFor(true).map((k) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => {
+                        setKind(k);
+                        setQty(qtysFor(k)[0]);
+                        if (k === "generica") {
+                          setPicked(["google"]);
+                          setDesign(defaultDesign("generica", "google"));
+                        } else {
+                          setPicked([]);
+                          setDesign(defaultDesign(k));
+                        }
+                        setTried(false);
+                      }}
+                      className={`min-h-12 rounded-2xl px-2 py-3 text-xs font-medium sm:text-sm ${
+                        kind === k ? "bg-[#1c1915] text-[#f6f1e7]" : "bg-[#f3eee4] text-[#5c564c]"
+                      }`}
+                    >
+                      {KIND_META[k].label}
+                    </button>
+                  ))}
+                </div>
               ) : null}
 
-              <Field
-                label="Enlace de reseña Google"
-                hint={tried && !isReviewUrl(design.googleUrl) ? "Pega el enlace o búscalo abajo" : ""}
-              >
-                <input
-                  inputMode="url"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  placeholder="https://g.page/r/…/review"
-                  value={design.googleUrl}
-                  onChange={(e) => patch({ googleUrl: e.target.value })}
-                />
-              </Field>
-              <div className="rounded-2xl bg-[#faf6ee] p-3">
-                <p className="mb-2 text-xs text-[#6f675c]">
-                  Busca el negocio (nombre + pueblo) o pega el enlace de Maps.
-                </p>
-                <ReviewLookup
-                  compact
-                  onPick={(url) => patch({ googleUrl: url })}
-                />
-              </div>
+              {generic ? (
+                <>
+                  <div>
+                    <p className="mb-2 text-sm text-[#3f3a34]">Hasta dos piezas</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {FACE_MODELS.map((m) => {
+                        const on = picked.includes(m.id);
+                        return (
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => toggleModel(m.id)}
+                            className={`min-h-[4.5rem] rounded-2xl px-2 py-3 text-center ${
+                              on ? "bg-[#1c1915] text-[#f6f1e7]" : "bg-[#f3eee4] text-[#5c564c]"
+                            }`}
+                          >
+                            <div className="text-sm font-semibold">{m.label}</div>
+                            <div className={`mt-1 text-[11px] ${on ? "text-[#d5cbb8]" : "text-[#8a8173]"}`}>
+                              {m.blurb}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="mt-2 text-xs text-[#8a8173]">
+                      {picked.length === 0
+                        ? "Toca uno. Si quieres pack, toca otro."
+                        : picked.length === 1
+                          ? `Una ${MODEL_LABEL[picked[0]]} · ${euros(PRICES.generica[1])}. Toca otro para sumar.`
+                          : `${MODEL_LABEL[picked[0]]} + ${MODEL_LABEL[picked[1]]} · ${euros(PRICES.generica[2])}.`}
+                    </p>
+                  </div>
+
+                  {picked.map((m, i) => {
+                    const meta = FACE_MODELS.find((x) => x.id === m)!;
+                    return (
+                      <Field
+                        key={`${m}-${i}`}
+                        label={`Enlace ${meta.label}${picked.length === 2 ? ` · pieza ${i + 1}` : ""}`}
+                        hint={tried && !nfcUrlOk(m, urls[m]) ? meta.hint : ""}
+                      >
+                        <input
+                          inputMode={m === "whatsapp" ? "tel" : "url"}
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          placeholder={meta.placeholder}
+                          value={urls[m]}
+                          onFocus={() => {
+                            setFocus(i);
+                            setDesign((d) => ({ ...d, model: m }));
+                          }}
+                          onChange={(e) => setUrls((u) => ({ ...u, [m]: e.target.value }))}
+                        />
+                      </Field>
+                    );
+                  })}
+
+                  {activeUrlModel === "google" || picked.includes("google") ? (
+                    <div className="rounded-2xl bg-[#faf6ee] p-3">
+                      <p className="mb-2 text-xs text-[#6f675c]">
+                        Busca el negocio (nombre + pueblo) o pega el enlace de Maps.
+                      </p>
+                      <ReviewLookup
+                        compact
+                        onPick={(url) => {
+                          setUrls((u) => ({ ...u, google: url }));
+                          setDesign((d) => ({ ...d, model: "google" }));
+                          const i = picked.indexOf("google");
+                          if (i >= 0) setFocus(i);
+                        }}
+                      />
+                    </div>
+                  ) : null}
+
+                  <button type="button" className="text-sm text-[#7a7266] underline" onClick={goPersonalizada}>
+                    Prefiero la de mi logo ({euros(PRICES.personalizada[1])})
+                  </button>
+                </>
+              ) : (
+                <>
+                  {!admin ? (
+                    <button
+                      type="button"
+                      className="text-sm text-[#7a7266]"
+                      onClick={() => {
+                        setKind("generica");
+                        setPicked(["google"]);
+                        setDesign(defaultDesign("generica", "google"));
+                        setTried(false);
+                      }}
+                    >
+                      ← Volver a Google, WhatsApp o Instagram
+                    </button>
+                  ) : null}
+
+                  <div className={`grid gap-2 ${qtysFor(kind).length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+                    {qtysFor(kind).map((q) => (
+                      <button
+                        key={q}
+                        type="button"
+                        onClick={() => setQty(q)}
+                        className={`min-h-14 rounded-2xl border px-3 py-3 text-left ${
+                          qty === q ? "border-[#1c1915] bg-[#faf6ee]" : "border-[#e6ddd0]"
+                        }`}
+                      >
+                        <div className="text-sm">{productLabel(kind, q)}</div>
+                        <div className="text-lg font-semibold">{euros(PRICES[kind][q])}</div>
+                        {packSaving(kind, q) > 0 ? (
+                          <p className="mt-1 text-xs text-[#6f675c]">
+                            <span className="line-through">{euros(packWas(kind))}</span>
+                            {` · ahorras ${euros(packSaving(kind, q))}`}
+                          </p>
+                        ) : q === 1 && kind !== "unica" ? (
+                          <p className="mt-1 text-xs text-[#8a8173]">Una pieza</p>
+                        ) : null}
+                      </button>
+                    ))}
+                  </div>
+
+                  {needsLogo(kind) ? (
+                    <>
+                      <div>
+                        <p className="mb-2 text-sm text-[#3f3a34]">
+                          Logo {tried && !design.logoDataUrl ? <span className="text-red-700">· obligatorio</span> : null}
+                        </p>
+                        <label className="flex min-h-14 cursor-pointer items-center justify-center rounded-2xl border border-dashed border-[#cfc4b2] bg-[#fffcf7] px-3 text-sm">
+                          {design.logoDataUrl ? "Cambiar logo" : "Subir logo"}
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                            className="sr-only"
+                            onChange={(e) => onLogo(e.target.files?.[0])}
+                          />
+                        </label>
+                        <p className="mt-2 text-xs text-[#8a8173]">
+                          PNG con fondo transparente si puedes. Se imprime en el color de acento, en
+                          el mismo sitio que la G.
+                        </p>
+                        {design.logoDataUrl && (
+                          <button
+                            type="button"
+                            className="mt-2 text-xs text-[#7a7266] underline"
+                            onClick={() => patch({ logoDataUrl: undefined, logoMask: undefined })}
+                          >
+                            Quitar logo
+                          </button>
+                        )}
+                      </div>
+                      <Field label="Nombre del negocio (opcional)">
+                        <input
+                          value={design.line1}
+                          maxLength={22}
+                          autoComplete="organization"
+                          placeholder="Debajo de TAP, opcional"
+                          onChange={(e) => patch({ line1: e.target.value })}
+                        />
+                      </Field>
+                    </>
+                  ) : null}
+
+                  {kind === "unica" ? (
+                    <Field
+                      label="Segundo NFC (carta, Instagram, menú…)"
+                      hint={tried && !isHttpUrl(design.extraUrl || "") ? "Pon el segundo enlace https" : ""}
+                    >
+                      <input
+                        inputMode="url"
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        placeholder="https://…"
+                        value={design.extraUrl || ""}
+                        onChange={(e) => patch({ extraUrl: e.target.value })}
+                      />
+                    </Field>
+                  ) : null}
+
+                  <Field
+                    label="Enlace que abre el móvil"
+                    hint={tried && !nfcUrlOk("personalizada", design.googleUrl) ? "Pega un enlace https" : ""}
+                  >
+                    <input
+                      inputMode="url"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      placeholder="https://g.page/r/…/review"
+                      value={design.googleUrl}
+                      onChange={(e) => patch({ googleUrl: e.target.value })}
+                    />
+                  </Field>
+                  <div className="rounded-2xl bg-[#faf6ee] p-3">
+                    <p className="mb-2 text-xs text-[#6f675c]">
+                      Si es reseña Google, búscalo (nombre + pueblo) o pega Maps.
+                    </p>
+                    <ReviewLookup compact onPick={(url) => patch({ googleUrl: url })} />
+                  </div>
+                </>
+              )}
 
               <div>
                 <p className="mb-2 text-sm text-[#3f3a34]">Color de la pieza</p>
@@ -330,9 +568,7 @@ export function Designer({
               </div>
 
               <div>
-                <p className="mb-2 text-sm text-[#3f3a34]">
-                  {kind === "generica" ? "G, TAP y estrellas" : "Logo, TAP y estrellas"}
-                </p>
+                <p className="mb-2 text-sm text-[#3f3a34]">Relieve (logo, TAP, texto)</p>
                 <div className="flex gap-3">
                   {ACCENT_COLORS.map((c) => (
                     <button
@@ -370,15 +606,15 @@ export function Designer({
                 }}
                 className="text-sm text-[#7a7266]"
               >
-                ← Volver al diseño
+                ← Volver a elegir
               </button>
               <h2 className="font-[family-name:var(--font-display)] text-2xl">
-                {admin ? "Datos del cliente" : "Dónde lo enviamos"}
+                {admin ? "Datos del cliente" : "Dirección en España"}
               </h2>
               <p className="text-sm text-[#6f675c]">
                 {admin
-                  ? "En mano o a Correos. El ZIP (01_cuerpo + 02_acento) es el mismo atril que ves aquí."
-                  : "España. El código postal elige la tarifa de Correos. Sale en 24 h. En Polar pagas con tarjeta, Apple Pay o Bizum: confirmas en tu banco y Polar (y esta web) te dan el pedido por pagado."}
+                  ? "En mano o a Correos. El ZIP es el mismo atril que ves aquí."
+                  : "Solo España. El código postal elige la tarifa de Correos. Sale en 24 h. En Polar pagas producto + envío (tarjeta, Apple Pay o Bizum)."}
               </p>
 
               {admin && (
@@ -431,70 +667,87 @@ export function Designer({
                   />
                 </Field>
                 {handover === "envio" && (
-                <>
-                <Field label="Dirección" className="sm:col-span-2" hint={tried && !form.line1.trim() ? "Obligatorio" : ""}>
-                  <input
-                    autoComplete="address-line1"
-                    placeholder="Calle y número"
-                    value={form.line1}
-                    onChange={(e) => setForm((f) => ({ ...f, line1: e.target.value }))}
-                  />
-                </Field>
-                <Field label="Piso, puerta, local" className="sm:col-span-2">
-                  <input
-                    autoComplete="address-line2"
-                    value={form.line2}
-                    onChange={(e) => setForm((f) => ({ ...f, line2: e.target.value }))}
-                  />
-                </Field>
-                <Field label="Código postal" hint={tried && !isPostalCode(form.postalCode) ? "5 dígitos" : ""}>
-                  <input
-                    inputMode="numeric"
-                    autoComplete="postal-code"
-                    maxLength={5}
-                    value={form.postalCode}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, postalCode: e.target.value.replace(/\D/g, "").slice(0, 5) }))
-                    }
-                  />
-                </Field>
-                <Field label="Ciudad" hint={tried && !form.city.trim() ? "Obligatorio" : ""}>
-                  <input
-                    autoComplete="address-level2"
-                    value={form.city}
-                    onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-                  />
-                </Field>
-                <Field label="Provincia" className="sm:col-span-2" hint={tried && !form.province ? "Elige provincia" : ""}>
-                  <select
-                    autoComplete="address-level1"
-                    className="w-full rounded-xl border border-[#e6ddd0] bg-[#fffcf7] px-3 py-3 text-base"
-                    value={form.province}
-                    onChange={(e) => setForm((f) => ({ ...f, province: e.target.value }))}
-                  >
-                    <option value="">Selecciona</option>
-                    {PROVINCIAS.map((p) => (
-                      <option key={p} value={p}>
-                        {p}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                </>
+                  <>
+                    <Field label="Calle y número" className="sm:col-span-2" hint={tried && !form.line1.trim() ? "Obligatorio" : ""}>
+                      <input
+                        autoComplete="address-line1"
+                        placeholder="Calle y número"
+                        value={form.line1}
+                        onChange={(e) => setForm((f) => ({ ...f, line1: e.target.value }))}
+                      />
+                    </Field>
+                    <Field label="Piso, puerta, local" className="sm:col-span-2">
+                      <input
+                        autoComplete="address-line2"
+                        value={form.line2}
+                        onChange={(e) => setForm((f) => ({ ...f, line2: e.target.value }))}
+                      />
+                    </Field>
+                    <Field label="Código postal" hint={tried && !isPostalCode(form.postalCode) ? "5 dígitos de España" : ""}>
+                      <input
+                        inputMode="numeric"
+                        autoComplete="postal-code"
+                        maxLength={5}
+                        value={form.postalCode}
+                        onChange={(e) =>
+                          setForm((f) => ({ ...f, postalCode: e.target.value.replace(/\D/g, "").slice(0, 5) }))
+                        }
+                      />
+                    </Field>
+                    <Field label="Ciudad" hint={tried && !form.city.trim() ? "Obligatorio" : ""}>
+                      <input
+                        autoComplete="address-level2"
+                        value={form.city}
+                        onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
+                      />
+                    </Field>
+                    <Field label="Provincia" className="sm:col-span-2" hint={tried && !form.province ? "Elige provincia" : ""}>
+                      <select
+                        autoComplete="address-level1"
+                        className="w-full rounded-xl border border-[#e6ddd0] bg-[#fffcf7] px-3 py-3 text-base"
+                        value={form.province}
+                        onChange={(e) => setForm((f) => ({ ...f, province: e.target.value }))}
+                      >
+                        <option value="">Selecciona</option>
+                        {PROVINCIAS.map((p) => (
+                          <option key={p} value={p}>
+                            {p}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  </>
                 )}
               </div>
 
               {handover === "envio" && (
                 <>
-                  <p className="text-xs text-[#8a8173]">Envío a España · Correos · sale en 24 h</p>
-                  <Rates shipping={shipping} zone={form.postalCode.length === 5 ? zone : null} />
+                  <p className="text-xs text-[#8a8173]">Correos · España · sale en 24 h. El CP marca la tarifa.</p>
+                  <Rates
+                    shipping={shipping}
+                    zone={form.postalCode.length === 5 ? zone : null}
+                    productPrice={productPrice}
+                  />
                 </>
               )}
 
               <div className="rounded-2xl bg-[#faf6ee] p-4 text-sm">
-                <Row k="Producto" v={`${productLabel(kind, qty)} · ${euros(productPrice)}`} />
+                <Row
+                  k="Producto"
+                  v={`${productLabel(kind, liveQty, pieces)} · ${euros(productPrice)}`}
+                />
+                {packSaving(kind, liveQty) > 0 ? (
+                  <Row k="Pack" v={`Ahorras ${euros(packSaving(kind, liveQty))} (no ${euros(packWas(kind))})`} />
+                ) : null}
+                {pieces.map((p, i) => (
+                  <Row
+                    key={`${p.model}-${i}`}
+                    k={pieces.length === 2 ? `${MODEL_LABEL[p.model]} ${i + 1}` : "NFC"}
+                    v={p.nfcUrl || "—"}
+                  />
+                ))}
                 <Row k="Zona" v={form.postalCode.length === 5 ? ZONE_LABEL[zone] : "Pon el CP"} />
-                <Row k="Envío" v={form.postalCode.length === 5 ? (ship === 0 ? "Gratis" : euros(ship)) : "—"} />
+                <Row k="Envío Correos" v={form.postalCode.length === 5 ? (ship === 0 ? "Gratis" : euros(ship)) : "—"} />
                 <div className="mt-3 flex justify-between text-lg font-semibold">
                   <span>Total</span>
                   <span>{euros(total)}</span>
@@ -509,17 +762,20 @@ export function Designer({
                 onClick={submit}
                 className="hidden min-h-12 w-full rounded-full bg-[#1c1915] py-3.5 font-semibold text-[#f6f1e7] disabled:opacity-40 lg:block"
               >
-                {busy ? "Guardando…" : admin ? `Guardar pedido · ${euros(total)}` : `Encargar · ${euros(total)}`}
+                {busy ? "Guardando…" : admin ? `Guardar pedido · ${euros(total)}` : `Pagar · ${euros(total)}`}
               </button>
             </>
           )}
         </div>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[#e6ddd0] bg-[#f6f1e8]/95 px-4 py-3 backdrop-blur-md lg:hidden" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
+      <div
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-[#e6ddd0] bg-[#f6f1e8]/95 px-4 py-3 backdrop-blur-md lg:hidden"
+        style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
+      >
         <div className="mx-auto flex max-w-6xl items-center gap-3">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm text-[#6f675c]">{productLabel(kind, qty)}</p>
+            <p className="truncate text-sm text-[#6f675c]">{productLabel(kind, liveQty, pieces)}</p>
             <p className="font-semibold">{euros(total)}</p>
           </div>
           {step === "diseno" ? (
@@ -537,7 +793,7 @@ export function Designer({
               onClick={submit}
               className="min-h-12 shrink-0 rounded-full bg-[#1c1915] px-5 font-semibold text-[#f6f1e7] disabled:opacity-40"
             >
-              {busy ? "…" : admin ? "Guardar" : "Encargar"}
+              {busy ? "…" : admin ? "Guardar" : "Pagar"}
             </button>
           )}
         </div>
@@ -549,15 +805,17 @@ export function Designer({
 function Rates({
   shipping,
   zone,
+  productPrice,
 }: {
   shipping: ShippingSettings;
   zone: ShippingZone | null;
+  productPrice: number;
 }) {
   const rows: { id: ShippingZone; label: string; price: number }[] = [
-    { id: "peninsula", label: ZONE_LABEL.peninsula, price: shipping.peninsula },
-    { id: "baleares", label: ZONE_LABEL.baleares, price: shipping.baleares },
-    { id: "canarias", label: ZONE_LABEL.canarias, price: shipping.canarias },
-    { id: "ceuta_melilla", label: ZONE_LABEL.ceuta_melilla, price: shipping.ceuta_melilla },
+    { id: "peninsula", label: ZONE_LABEL.peninsula, price: shippingCost("peninsula", shipping, productPrice) },
+    { id: "baleares", label: ZONE_LABEL.baleares, price: shippingCost("baleares", shipping, productPrice) },
+    { id: "canarias", label: ZONE_LABEL.canarias, price: shippingCost("canarias", shipping, productPrice) },
+    { id: "ceuta_melilla", label: ZONE_LABEL.ceuta_melilla, price: shippingCost("ceuta_melilla", shipping, productPrice) },
   ];
   return (
     <ul className="grid gap-2 text-sm">
@@ -569,10 +827,15 @@ function Rates({
           }`}
         >
           <span>{r.label}</span>
-          <span>{euros(r.price)}</span>
+          <span>{r.price === 0 ? "Gratis" : euros(r.price)}</span>
         </li>
       ))}
-      <li className="px-1 text-xs text-[#8a8173]">Salimos como muy tarde en 24 h.</li>
+      <li className="px-1 text-xs text-[#8a8173]">
+        Salimos como muy tarde en 24 h.
+        {shipping.freePeninsulaFrom > 0
+          ? ` Península gratis desde ${euros(shipping.freePeninsulaFrom)} de producto.`
+          : ""}
+      </li>
     </ul>
   );
 }
@@ -602,8 +865,8 @@ function Field({
 function Row({ k, v }: { k: string; v: string }) {
   return (
     <div className="flex justify-between gap-3 text-[#6f675c]">
-      <span>{k}</span>
-      <span className="text-right">{v}</span>
+      <span className="shrink-0">{k}</span>
+      <span className="truncate text-right">{v}</span>
     </div>
   );
 }

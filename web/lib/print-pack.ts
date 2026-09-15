@@ -1,18 +1,45 @@
 import JSZip from "jszip";
+import { MODEL_LABEL } from "./catalog";
 import { ATRIL } from "./atril-geom";
-import { orderToSpec, pauseLayer } from "./print-spec";
+import { orderToSpec, pauseLayer, type PrintSpec } from "./print-spec";
 import { buildCardStls, pauseNote } from "./stl-card";
-import type { Order } from "./types";
+import type { FaceModel, Order } from "./types";
+
+function nfcText(spec: PrintSpec) {
+  if (spec.kind === "unica") {
+    return `Pieza única — dos NFC\n\n1. Primer enlace:\n${spec.googleUrl}\n\n2. Segundo enlace:\n${spec.extraUrl || "(pendiente)"}\n\nCliente: ${spec.cliente}\nPedido: ${spec.orderId}\n`;
+  }
+  const lines = spec.pieces.map((p, i) => {
+    const n = spec.pieces.length > 1 ? `Pieza ${i + 1} — ${MODEL_LABEL[p.model]}\n` : `${MODEL_LABEL[p.model]}\n`;
+    return `${n}${p.nfcUrl}`;
+  });
+  return `URL a grabar en el chip (NFC Tap Config → URL):\n\n${lines.join("\n\n")}\n\nCliente: ${spec.cliente}\nPedido: ${spec.orderId}\n`;
+}
 
 export async function buildPrintPack(order: Order) {
   const spec = orderToSpec(order);
   const pause = pauseLayer();
-  const files = buildCardStls(spec);
   const zip = new JSZip();
   const folder = zip.folder(spec.nombre)!;
-  for (const [name, buf] of Object.entries(files)) {
-    folder.file(name, buf);
+  const models = spec.pieces.map((p) => p.model);
+  const distinct = [...new Set(models)];
+
+  const writePair = (dest: JSZip, pieceSpec: PrintSpec) => {
+    const files = buildCardStls(pieceSpec);
+    for (const [name, buf] of Object.entries(files)) {
+      dest.file(name, buf);
+    }
+  };
+
+  if (distinct.length > 1) {
+    spec.pieces.forEach((piece, i) => {
+      const sub = folder.folder(`${i + 1}-${piece.model}`)!;
+      writePair(sub, { ...spec, model: piece.model as FaceModel, qty: 1 });
+    });
+  } else {
+    writePair(folder, spec);
   }
+
   folder.file("pedido.json", JSON.stringify(spec, null, 2));
   folder.file("PAUSA_NFC.txt", pauseNote(spec));
   folder.file(
@@ -24,18 +51,13 @@ export async function buildPrintPack(order: Order) {
 
 Agrupar 01 + 02. NO Reparar el modelo.
 Capa 0,20 mm, 3 perímetros, gyroid 15 %, Arachne.
-Cantidad: ${spec.qty}
+Piezas: ${spec.pieces.map((p) => MODEL_LABEL[p.model]).join(" + ")}
 Pausa NFC: capa ${pause.layer} (${pause.z.toFixed(2)} mm).
-Antes de pausar: disco de acento Ø${ATRIL.PAD_D} bajo la G / el logo (mira).
+Antes de pausar: disco de acento Ø${ATRIL.PAD_D} bajo el icono (mira).
 Pegatina Ø${ATRIL.STICKER_D} ENCIMA de ese círculo, adhesivo a la cama.
 `,
   );
-  folder.file(
-    "NFC.txt",
-    spec.kind === "unica"
-      ? `Pieza única — dos NFC\n\n1. Reseña Google:\n${spec.googleUrl}\n\n2. Segundo enlace:\n${spec.extraUrl || "(pendiente)"}\n\nCliente: ${spec.cliente}\nPedido: ${spec.orderId}\n`
-      : `URL a grabar en el chip (NFC Tap Config → URL):\n${spec.googleUrl}\n\nCliente: ${spec.cliente}\nPedido: ${spec.orderId}\n`,
-  );
+  folder.file("NFC.txt", nfcText(spec));
   if (order.previewDataUrl?.startsWith("data:image/")) {
     const b64 = order.previewDataUrl.split(",")[1] || "";
     folder.file("cara.jpg", Buffer.from(b64, "base64"));
@@ -46,15 +68,14 @@ Pegatina Ø${ATRIL.STICKER_D} ENCIMA de ese círculo, adhesivo a la cama.
 
 1. Proyecto NUEVO en Flash Studio, impresora AD5X.
 2. Importa 01_cuerpo.stl + 02_acento.stl (no el 3mf viejo).
-3. Selecciónalos → Agrupar. NO pulses Reparar.
+${distinct.length > 1 ? "   Hay una carpeta por pieza (WhatsApp / Instagram / Google).\n" : ""}3. Selecciónalos → Agrupar. NO pulses Reparar.
 4. Color: cuerpo = ${spec.colores.cuerpo}, acento = ${spec.colores.acento}.
 5. Rebana 0,20 mm. Previsualización → slider derecho → capa ${pause.layer} (~${pause.z.toFixed(2)} mm).
-6. Mitad-arriba de la placa: hueco redondo (sitio de la G / logo) con círculo de acento. Clic derecho → Añadir pausa.
+6. Mitad-arriba de la placa: hueco redondo (sitio del icono) con círculo de acento. Clic derecho → Añadir pausa.
 7. Al pausar: Timeskey Ø25 ENCIMA de ese círculo, adhesivo ABAJO. Continuar.
-8. Graba el enlace de NFC.txt.
+8. Graba el enlace de NFC.txt (uno por pieza).
 
-Genérica = G de Google. Personalizada = logo en acento.
-Pieza única = logo + dos NFC (reseña + segundo enlace de NFC.txt).
+Google = G y estrellas. WhatsApp / Instagram = wordmark + icono. Personalizada = logo en acento.
 `,
   );
   return zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });

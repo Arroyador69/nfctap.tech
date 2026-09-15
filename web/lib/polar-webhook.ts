@@ -41,8 +41,15 @@ export function verifyPolarWebhook(raw: string, headers: Headers, secret: string
   return false;
 }
 
+export function polarOrderId(data: {
+  metadata?: { orderId?: string };
+  checkout?: { metadata?: { orderId?: string } };
+} | undefined) {
+  const id = data?.metadata?.orderId || data?.checkout?.metadata?.orderId;
+  return typeof id === "string" && id ? id : undefined;
+}
+
 export function polarMarksPaid(type: string, status?: string) {
-  if (type === "order.created" || type === "order.paid" || type === "order.updated") return true;
-  if (type === "checkout.confirmed") return true;
-  return type === "checkout.updated" && (status === "succeeded" || status === "confirmed");
+  if (type === "order.created" || type === "order.paid") return true;
+  return type === "checkout.updated" && status === "succeeded";
 }

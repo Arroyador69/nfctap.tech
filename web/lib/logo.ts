@@ -154,6 +154,50 @@ export function isReviewUrl(value: string) {
   return /g\.page|google\.|goo\.gl|maps\.app/i.test(t);
 }
 
+export function isWhatsAppTarget(value: string) {
+  const t = value.trim();
+  if (!t) return false;
+  if (isHttpUrl(t)) return /wa\.me|whatsapp\.com/i.test(t);
+  const digits = t.replace(/\D/g, "");
+  return digits.length >= 9 && digits.length <= 15;
+}
+
+export function isInstagramTarget(value: string) {
+  const t = value.trim();
+  if (!t) return false;
+  if (isHttpUrl(t)) return /instagram\.com|instagr\.am/i.test(t);
+  return /^@?[a-z0-9._]{1,30}$/i.test(t);
+}
+
+export function normalizeWhatsAppUrl(value: string) {
+  const t = value.trim();
+  if (isHttpUrl(t)) return t;
+  let digits = t.replace(/\D/g, "");
+  if (digits.length === 9) digits = `34${digits}`;
+  return `https://wa.me/${digits}`;
+}
+
+export function normalizeInstagramUrl(value: string) {
+  const t = value.trim();
+  if (isHttpUrl(t)) return t;
+  const handle = t.replace(/^@/, "");
+  return `https://instagram.com/${handle}`;
+}
+
+export function nfcUrlOk(model: string, value: string) {
+  if (model === "google" || model === "personalizada") return isReviewUrl(value) || (model === "personalizada" && isHttpUrl(value));
+  if (model === "whatsapp") return isWhatsAppTarget(value);
+  if (model === "instagram") return isInstagramTarget(value);
+  return isHttpUrl(value);
+}
+
+export function normalizeNfcUrl(model: string, value: string) {
+  const t = value.trim();
+  if (model === "whatsapp") return normalizeWhatsAppUrl(t);
+  if (model === "instagram") return normalizeInstagramUrl(t);
+  return t;
+}
+
 export function isEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }

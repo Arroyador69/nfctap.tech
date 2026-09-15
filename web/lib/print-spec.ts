@@ -1,6 +1,6 @@
-import { ACCENT_HEX, BODY_COLORS } from "./catalog";
+import { ACCENT_HEX, BODY_COLORS, orderPieces } from "./catalog";
 import { ATRIL } from "./atril-geom";
-import type { Order } from "./types";
+import type { FaceModel, Order, OrderPiece } from "./types";
 
 /** Timeskey Amazon B08LD99GZT: pegatina PET NTAG215 Ø25 × ~0,2 mm. */
 export const NFC_STOCK = {
@@ -41,6 +41,8 @@ export type PrintSpec = {
   logoMask?: string;
   googleUrl: string;
   extraUrl?: string;
+  model: FaceModel;
+  pieces: OrderPiece[];
   colores: {
     cuerpo: string;
     acento: string;
@@ -71,6 +73,7 @@ export function slugName(order: Order) {
 }
 
 export function orderToSpec(order: Order): PrintSpec {
+  const pieces = orderPieces(order);
   const generic = order.kind === "generica";
   const body = BODY_COLORS.find((c) => c.id === order.design.bodyColor)?.label ?? "negro";
   const accent = order.design.accentColor;
@@ -85,8 +88,10 @@ export function orderToSpec(order: Order): PrintSpec {
     linea2: "",
     nombreNegocio: generic ? undefined : order.design.line1,
     logoMask: generic ? undefined : order.design.logoMask,
-    googleUrl: order.design.googleUrl,
-    extraUrl: order.kind === "unica" ? order.design.extraUrl : undefined,
+    googleUrl: pieces[0]?.nfcUrl || order.design.googleUrl,
+    extraUrl: pieces[1]?.nfcUrl || (order.kind === "unica" ? order.design.extraUrl : undefined),
+    model: pieces[0]?.model || (generic ? "google" : "personalizada"),
+    pieces,
     colores: {
       cuerpo: `${order.design.bodyColor} (${body})`,
       acento: `${accent} (${ACCENT_HEX[accent] ?? accent})`,

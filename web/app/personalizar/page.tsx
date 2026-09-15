@@ -1,6 +1,6 @@
 import { Designer } from "@/components/Designer";
 import { getShipping } from "@/lib/store";
-import { parseKind } from "@/lib/catalog";
+import { parseKind, parseModels } from "@/lib/catalog";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Encarga tu NFCTap" };
@@ -8,10 +8,11 @@ export const metadata = { title: "Encarga tu NFCTap" };
 export default async function PersonalizarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ kind?: string }>;
+  searchParams: Promise<{ kind?: string; model?: string; models?: string }>;
 }) {
-  const { kind } = await searchParams;
-  const initial = parseKind(kind);
+  const q = await searchParams;
+  const initial = parseKind(q.kind);
+  const models = parseModels(q.models || q.model);
 
   return (
     <div className="mx-auto max-w-6xl px-5 pb-6 pt-3 sm:py-10">
@@ -19,10 +20,11 @@ export default async function PersonalizarPage({
         Encarga tu NFCTap
       </h1>
       <p className="mt-2 max-w-xl text-sm text-[#5c564c] sm:text-base">
-        Gíralo en 3D. Es lo que se imprime. Luego pones a dónde lo enviamos. Sale en 24 h.
+        WhatsApp, Instagram o Google. Una o pack de dos (35 €, no el doble). Lo giras en 3D.
+        Pegas el enlace. Dirección en España y paga. Sale en 24 h.
       </p>
       <div className="mt-5">
-        <Designer initialKind={initial} shipping={await getShipping()} />
+        <Designer initialKind={initial} initialModels={models} shipping={await getShipping()} />
       </div>
     </div>
   );

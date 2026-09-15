@@ -24,7 +24,7 @@ export function CardFace({ design, className, onReady }: Props) {
       onReady?.(canvas.toDataURL("image/jpeg", 0.72));
     };
 
-    if (design.logoDataUrl && design.kind !== "generica") {
+    if (design.logoDataUrl && design.kind !== "generica" && design.model !== "google" && design.model !== "whatsapp" && design.model !== "instagram") {
       const img = new Image();
       img.onload = () => paint(img);
       img.src = design.logoDataUrl;

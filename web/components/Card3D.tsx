@@ -78,17 +78,19 @@ export function Card3D({ design, compact = false }: { design: CardDesign; compac
 function Atril({ design }: { design: CardDesign }) {
   const bodyHex = BODY_COLORS.find((c) => c.id === design.bodyColor)?.hex ?? "#141416";
   const accentHex = ACCENT_HEX[design.accentColor] ?? ACCENT_HEX.amarillo;
-  const personalized = design.kind !== "generica";
+  const model = design.model ?? (design.kind === "generica" ? "google" : "personalizada");
+  const personalized = model === "personalizada";
 
   const meshes = useMemo(
     () =>
       buildAtrilMeshes({
         kind: personalized ? "personalizada" : "generica",
+        model,
         logoMask: undefined,
         line1: design.line1,
         shopView: true,
       }),
-    [personalized, design.line1],
+    [personalized, model, design.line1],
   );
 
   const bodyGeo = useMemo(() => toGeometry(meshes.cuerpo), [meshes]);

@@ -1,4 +1,6 @@
 export type ProductKind = "generica" | "personalizada" | "unica";
+export type CatalogModel = "google" | "whatsapp" | "instagram";
+export type FaceModel = CatalogModel | "personalizada";
 export type Qty = 1 | 2;
 export type BodyColor = "negro" | "blanco" | "rojo";
 export type AccentColor = "oro" | "amarillo" | "blanco" | "rojo" | "negro";
@@ -15,8 +17,15 @@ export type OrderStatus =
 export type OrderSource = "web" | "admin";
 export type Handover = "envio" | "mano";
 
+export type OrderPiece = {
+  model: FaceModel;
+  nfcUrl: string;
+};
+
 export type CardDesign = {
   kind?: ProductKind;
+  /** Cara que se ve en 3D / se imprime (genéricas). */
+  model?: FaceModel;
   template: TemplateId;
   bodyColor: BodyColor;
   accentColor: AccentColor;
@@ -24,9 +33,11 @@ export type CardDesign = {
   line2: string;
   logoDataUrl?: string;
   logoMask?: string;
+  /** Primer enlace NFC (compat: pedidos viejos). */
   googleUrl: string;
-  /** Segundo NFC (pieza única): carta, Instagram, menú… */
+  /** Segundo NFC (pieza única o segunda genérica). */
   extraUrl?: string;
+  pieces?: OrderPiece[];
 };
 
 export type Address = {

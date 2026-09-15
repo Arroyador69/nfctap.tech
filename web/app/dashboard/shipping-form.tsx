@@ -1,5 +1,6 @@
 "use client";
 
+import { PRICES } from "@/lib/catalog";
 import { euros, ZONE_LABEL } from "@/lib/shipping";
 import type { ShippingSettings } from "@/lib/types";
 import { useState } from "react";
@@ -30,6 +31,7 @@ export function ShippingForm({ shipping }: { shipping: ShippingSettings }) {
             ["baleares", ZONE_LABEL.baleares],
             ["canarias", ZONE_LABEL.canarias],
             ["ceuta_melilla", ZONE_LABEL.ceuta_melilla],
+            ["freePeninsulaFrom", "Península gratis desde (€ de producto)"],
           ] as const
         ).map(([key, label]) => (
           <label key={key} className="text-sm">
@@ -53,7 +55,8 @@ export function ShippingForm({ shipping }: { shipping: ShippingSettings }) {
       {msg && <span className="ml-3 text-sm text-[#6f675c]">{msg}</span>}
       <p className="mt-4 text-xs text-[#8a8173]">
         Ahora mismo: península {euros(form.peninsula)} · Baleares {euros(form.baleares)} ·
-        Canarias {euros(form.canarias)}.
+        Canarias {euros(form.canarias)}. Pack de dos personalizadas (
+        {euros(PRICES.personalizada[2])}) entra en envío gratis a península si el umbral es {euros(form.freePeninsulaFrom)}.
       </p>
     </section>
   );

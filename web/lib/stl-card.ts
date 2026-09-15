@@ -42,6 +42,7 @@ function toStl(mesh: Mesh, name: string) {
 export function buildCardStls(spec: PrintSpec) {
   const { cuerpo, acento } = buildAtrilMeshes({
     kind: spec.kind,
+    model: spec.model,
     logoMask: spec.logoMask,
     line1: spec.nombreNegocio,
   });

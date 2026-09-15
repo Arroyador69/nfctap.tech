@@ -1,11 +1,25 @@
 import { isAdmin } from "@/lib/auth";
-import { PRICES, needsLogo, parseKind, qtysFor } from "@/lib/catalog";
+import {
+  PRICES,
+  isCatalogModel,
+  isFaceModel,
+  needsLogo,
+  parseKind,
+  qtysFor,
+} from "@/lib/catalog";
 import { newId } from "@/lib/ids";
-import { isEmail, isHttpUrl, isPhone, isPostalCode, isReviewUrl } from "@/lib/logo";
+import {
+  isEmail,
+  isHttpUrl,
+  isPhone,
+  isPostalCode,
+  nfcUrlOk,
+  normalizeNfcUrl,
+} from "@/lib/logo";
 import { createPolarCheckout, customerIp, polarReady } from "@/lib/polar";
 import { shippingCost, zoneFromPostalCode } from "@/lib/shipping";
 import { addOrder, getShipping, listOrders } from "@/lib/store";
-import type { Address, CardDesign, Handover, Qty } from "@/lib/types";
+import type { Address, CardDesign, FaceModel, Handover, OrderPiece, Qty } from "@/lib/types";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -13,6 +27,60 @@ export async function GET() {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
   return NextResponse.json({ orders: await listOrders() });
+}
+
+function parsePieces(kind: CardDesign["kind"], design: CardDesign, qty: Qty): OrderPiece[] | { error: string } {
+  const raw = Array.isArray(design?.pieces) ? design.pieces : [];
+  if (kind === "unica") {
+    if (!nfcUrlOk("google", design?.googleUrl || "") && !isHttpUrl(design?.googleUrl || "")) {
+      return { error: "Falta el enlace del primer NFC" };
+    }
+    const extra = typeof design?.extraUrl === "string" ? design.extraUrl.trim() : "";
+    if (!isHttpUrl(extra)) return { error: "Falta el segundo NFC (carta, Instagram o menú)" };
+    return [
+      { model: "personalizada", nfcUrl: design.googleUrl.trim() },
+      { model: "personalizada", nfcUrl: extra },
+    ];
+  }
+  if (kind === "personalizada") {
+    const url = (design?.googleUrl || raw[0]?.nfcUrl || "").trim();
+    if (!isHttpUrl(url)) return { error: "Falta el enlace que abrirá el móvil" };
+    const piece: OrderPiece = { model: "personalizada", nfcUrl: url };
+    return qty === 2 ? [piece, { ...piece }] : [piece];
+  }
+  const listed = raw
+    .map((p) => ({
+      model: p.model as FaceModel,
+      nfcUrl: typeof p.nfcUrl === "string" ? p.nfcUrl.trim() : "",
+    }))
+    .filter((p) => isCatalogModel(p.model));
+  const unique: OrderPiece[] = [];
+  for (const p of listed) {
+    if (!unique.some((u) => u.model === p.model)) unique.push(p);
+  }
+  const pieces = unique.slice(0, 2);
+  if (!pieces.length) {
+    const model = isFaceModel(design?.model) && design.model !== "personalizada" ? design.model : "google";
+    pieces.push({ model, nfcUrl: (design?.googleUrl || "").trim() });
+    if (qty === 2 && design?.extraUrl) {
+      pieces.push({ model, nfcUrl: design.extraUrl.trim() });
+    }
+  }
+  if (!pieces.length) return { error: "Elige Google, WhatsApp o Instagram" };
+  for (const p of pieces) {
+    if (!nfcUrlOk(p.model, p.nfcUrl)) {
+      return {
+        error:
+          p.model === "whatsapp"
+            ? "Falta el número o el enlace de WhatsApp"
+            : p.model === "instagram"
+              ? "Falta el enlace o @cuenta de Instagram"
+              : "Falta el enlace de reseña de Google",
+      };
+    }
+    p.nfcUrl = normalizeNfcUrl(p.model, p.nfcUrl);
+  }
+  return pieces;
 }
 
 export async function POST(req: Request) {
@@ -27,27 +95,21 @@ export async function POST(req: Request) {
     );
   }
   const kind = parseKind(body.kind, fromAdmin);
-  const qty = (qtysFor(kind).includes(2) && Number(body.qty) === 2 ? 2 : 1) as Qty;
   const design = body.design as CardDesign;
+  const parsed = parsePieces(kind, design, (Number(body.qty) === 2 ? 2 : 1) as Qty);
+  if ("error" in parsed) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 });
+  }
+  const pieces = parsed;
+  const qty = (kind === "generica" ? (pieces.length === 2 ? 2 : 1) : qtysFor(kind).includes(2) && Number(body.qty) === 2 ? 2 : 1) as Qty;
   const address = (body.address || {}) as Address;
 
-  if (!isReviewUrl(design?.googleUrl || "")) {
-    return NextResponse.json({ error: "Falta el enlace de reseña de Google" }, { status: 400 });
-  }
   if (
     needsLogo(kind) &&
     !(typeof design?.logoDataUrl === "string" && design.logoDataUrl.startsWith("data:image/"))
   ) {
     return NextResponse.json({ error: "Falta el logo" }, { status: 400 });
   }
-  const extraRaw = typeof design?.extraUrl === "string" ? design.extraUrl.trim() : "";
-  if (kind === "unica" && !isHttpUrl(extraRaw)) {
-    return NextResponse.json(
-      { error: "Falta el segundo NFC (carta, Instagram o menú)" },
-      { status: 400 },
-    );
-  }
-  const extraUrl = kind === "unica" ? extraRaw : undefined;
 
   let normalized: Address;
   if (handover === "mano") {
@@ -114,7 +176,7 @@ export async function POST(req: Request) {
 
   const settings = await getShipping();
   const productPrice = PRICES[kind][qty];
-  const shippingPrice = handover === "mano" ? 0 : shippingCost(normalized.zone, settings);
+  const shippingPrice = handover === "mano" ? 0 : shippingCost(normalized.zone, settings, productPrice);
   const id = newId();
 
   const order = await addOrder({
@@ -124,6 +186,7 @@ export async function POST(req: Request) {
     qty,
     design: {
       kind,
+      model: pieces[0].model,
       template: "clasica",
       bodyColor: design?.bodyColor ?? "negro",
       accentColor: design?.accentColor ?? "amarillo",
@@ -131,8 +194,9 @@ export async function POST(req: Request) {
       line2: "",
       logoDataUrl: logo,
       logoMask,
-      googleUrl: design.googleUrl.trim(),
-      extraUrl,
+      googleUrl: pieces[0].nfcUrl,
+      extraUrl: pieces[1]?.nfcUrl,
+      pieces,
     },
     address: normalized,
     productPrice,
@@ -154,6 +218,7 @@ export async function POST(req: Request) {
   }
 
   const origin = new URL(req.url).origin;
+  const firstModel = pieces[0].model === "personalizada" ? "personalizada" : pieces[0].model;
   let checkoutUrl: string | null = null;
   try {
     checkoutUrl = await createPolarCheckout({
@@ -163,11 +228,16 @@ export async function POST(req: Request) {
       email: normalized.email,
       name: normalized.name,
       successUrl: `${origin}/pedido/ok?id=${id}&checkout_id={CHECKOUT_ID}`,
+      returnUrl: `${origin}/personalizar?models=${pieces.map((p) => p.model).join(",")}`,
+      productEuros: productPrice,
+      shippingEuros: shippingPrice,
       totalEuros: order.total,
       customerIp: customerIp(req),
       city: normalized.city,
       postalCode: normalized.postalCode,
       line1: normalized.line1,
+      zone: normalized.zone,
+      models: pieces.map((p) => p.model).join(","),
     });
   } catch {
     checkoutUrl = null;
@@ -184,5 +254,6 @@ export async function POST(req: Request) {
     order: { id: order.id, kind: order.kind, qty: order.qty, total: order.total, status: order.status },
     checkoutUrl: checkoutUrl || `/pedido/ok?id=${id}`,
     polar: polarReady(),
+    model: firstModel,
   });
 }

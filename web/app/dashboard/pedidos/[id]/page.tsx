@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { DashboardNav } from "@/components/DashboardNav";
 import { isAdmin } from "@/lib/auth";
-import { productLabel } from "@/lib/catalog";
+import { MODEL_LABEL, orderPieces, productLabel } from "@/lib/catalog";
 import { ATRIL } from "@/lib/atril-geom";
 import { orderToSpec, pauseLayer } from "@/lib/print-spec";
 import { euros, ZONE_LABEL } from "@/lib/shipping";
@@ -22,6 +22,7 @@ export default async function OrderPage({
   if (!order) notFound();
   const spec = orderToSpec(order);
   const pause = pauseLayer();
+  const pieces = orderPieces(order);
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-10">
@@ -31,7 +32,7 @@ export default async function OrderPage({
       </Link>
       <h1 className="mt-4 text-2xl font-semibold">{order.id}</h1>
       <p className="text-[#6f675c]">
-        {productLabel(order.kind, order.qty)} · {euros(order.total)} ·{" "}
+        {productLabel(order.kind, order.qty, pieces)} · {euros(order.total)} ·{" "}
         {order.handover === "mano" ? "En mano" : ZONE_LABEL[order.address.zone]} ·{" "}
         {order.source === "admin" ? "Admin" : "Web"}
       </p>
@@ -43,7 +44,7 @@ export default async function OrderPage({
         Descargar ZIP para Flash
       </a>
       <p className="mt-2 text-sm text-[#6f675c]">
-        Pozo bajo la G / el logo (no abajo). Pausa capa {pause.layer} ({pause.z.toFixed(2)} mm):
+        Pozo bajo el icono (no abajo). Pausa capa {pause.layer} ({pause.z.toFixed(2)} mm):
         hueco con disco de acento Ø{ATRIL.PAD_D}. Pegatina Ø{ATRIL.STICKER_D} encima, adhesivo
         abajo, y continuar.
       </p>
@@ -66,15 +67,20 @@ export default async function OrderPage({
           v={
             order.handover === "mano"
               ? "Entrega en mano"
-              : `${order.address.line1}, ${order.address.postalCode} ${order.address.city} (${order.address.province})`
+              : `${order.address.line1}${order.address.line2 ? `, ${order.address.line2}` : ""}, ${order.address.postalCode} ${order.address.city} (${order.address.province})`
           }
         />
-        <Item k="Cara" v={`${order.kind === "generica" ? "G de Google" : order.design.line1 || "Logo"} · TAP · estrellas`} />
-        <Item k="Google / NFC" v={order.design.googleUrl || "Pendiente"} />
-        {order.kind === "unica" ? <Item k="Segundo NFC" v={order.design.extraUrl || "Pendiente"} /> : null}
+        {pieces.map((p, i) => (
+          <Item
+            key={`${p.model}-${i}`}
+            k={pieces.length > 1 ? `Pieza ${i + 1} · ${MODEL_LABEL[p.model]}` : MODEL_LABEL[p.model]}
+            v={p.nfcUrl || "Pendiente"}
+          />
+        ))}
+        {order.kind === "unica" && !pieces[1] ? <Item k="Segundo NFC" v={order.design.extraUrl || "Pendiente"} /> : null}
         <Item k="Cuerpo" v={spec.colores.cuerpo} />
         <Item k="Acento" v={spec.colores.acento} />
-        <Item k="Envío" v={euros(order.shippingPrice)} />
+        <Item k="Envío Correos" v={euros(order.shippingPrice)} />
         <Item k="Estado" v={order.status} />
       </dl>
 

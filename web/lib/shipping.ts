@@ -1,8 +1,8 @@
 import type { ShippingSettings, ShippingZone } from "./types";
 
-/** Tarifas comerciales de partida (carta/sobre). Editables en el dashboard.
- *  Paq Estándar oficial Correos 2026 ~13,65 € (península ≤1 kg) se come el margen
- *  de una tarjeta a 20 €: envía en sobre / carta certificada. */
+/** Tarifas de partida: envío pequeño Correos (carta/sobre rígido), no Paq Estándar.
+ *  Un Paq Estándar ~1 kg se come el margen de una pieza a 20 €.
+ *  Editables en el dashboard. CP decide península / Baleares / Canarias / Ceuta-Melilla. */
 export const DEFAULT_SHIPPING: ShippingSettings = {
   peninsula: 3.9,
   baleares: 5.9,
@@ -29,7 +29,15 @@ export function zoneFromPostalCode(cp: string): ShippingZone {
 export function shippingCost(
   zone: ShippingZone,
   settings: ShippingSettings = DEFAULT_SHIPPING,
+  productPrice = 0,
 ) {
+  if (
+    zone === "peninsula" &&
+    settings.freePeninsulaFrom > 0 &&
+    productPrice >= settings.freePeninsulaFrom
+  ) {
+    return 0;
+  }
   return settings[zone];
 }
 

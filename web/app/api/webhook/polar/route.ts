@@ -1,4 +1,4 @@
-import { polarMarksPaid, verifyPolarWebhook } from "@/lib/polar-webhook";
+import { polarMarksPaid, polarOrderId, verifyPolarWebhook } from "@/lib/polar-webhook";
 import { updateOrder } from "@/lib/store";
 import { NextResponse } from "next/server";
 
@@ -15,16 +15,20 @@ export async function POST(req: Request) {
 
   let payload: {
     type?: string;
-    data?: { status?: string; metadata?: { orderId?: string } };
+    data?: {
+      status?: string;
+      metadata?: { orderId?: string };
+      checkout?: { metadata?: { orderId?: string } };
+    };
   };
   try {
     payload = JSON.parse(raw) as typeof payload;
   } catch {
     return NextResponse.json({ error: "JSON no válido" }, { status: 400 });
   }
-  const orderId = payload.data?.metadata?.orderId;
+  const orderId = polarOrderId(payload.data);
   const type = String(payload.type ?? "");
-  if (typeof orderId === "string" && polarMarksPaid(type, payload.data?.status)) {
+  if (orderId && polarMarksPaid(type, payload.data?.status)) {
     await updateOrder(orderId, { status: "pagado" });
   }
 

@@ -1,7 +1,8 @@
 import { DashboardNav } from "@/components/DashboardNav";
 import { isAdmin } from "@/lib/auth";
-import { productLabel } from "@/lib/catalog";
+import { orderPieces, productLabel } from "@/lib/catalog";
 import { euros, ZONE_LABEL } from "@/lib/shipping";
+import { polarMissing, polarReady } from "@/lib/polar";
 import { blobConfigured, getShipping, listOrders } from "@/lib/store";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -32,6 +33,21 @@ export default async function DashboardPage() {
         <p className="mt-4 rounded-2xl bg-[#fff4d6] px-4 py-3 text-sm">
           En Vercel los pedidos se pierden al redeploy si no hay Blob. Crea un Blob Store y pon
           BLOB_READ_WRITE_TOKEN.
+        </p>
+      )}
+
+      {!polarReady() && (
+        <p className="mt-4 rounded-2xl bg-[#fff4d6] px-4 py-3 text-sm">
+          Polar no está listo para cobrar. Falta: {polarMissing().join(", ")}. Crea los 4
+          productos (20 / 35 / 30 / 55) con <code>npm run polar:setup</code> y pega los IDs en
+          Vercel.
+        </p>
+      )}
+
+      {polarReady() && !process.env.POLAR_WEBHOOK_SECRET && (
+        <p className="mt-4 rounded-2xl bg-[#fff4d6] px-4 py-3 text-sm">
+          Polar puede cobrar, pero falta POLAR_WEBHOOK_SECRET: el pedido no pasará a pagado
+          solo. En Polar → Webhooks, endpoint https://nfctap.tech/api/webhook/polar.
         </p>
       )}
 
@@ -75,7 +91,14 @@ export default async function DashboardPage() {
                     {o.handover === "mano" ? "En mano" : ZONE_LABEL[o.address.zone]}
                   </div>
                 </td>
-                <td className="px-4 py-3">{productLabel(o.kind, o.qty)}</td>
+                <td className="px-4 py-3">
+                  <div>{productLabel(o.kind, o.qty, orderPieces(o))}</div>
+                  {orderPieces(o).map((p, i) => (
+                    <div key={`${p.model}-${i}`} className="max-w-[240px] truncate text-xs text-[#8a8173]">
+                      {p.nfcUrl}
+                    </div>
+                  ))}
+                </td>
                 <td className="px-4 py-3 capitalize">{o.source === "admin" ? "Admin" : "Web"}</td>
                 <td className="px-4 py-3">{euros(o.total)}</td>
                 <td className="px-4 py-3 capitalize">{o.status.replace("_", " ")}</td>
