@@ -1,6 +1,7 @@
 import { Designer } from "@/components/Designer";
+import { MetaViewContent } from "@/components/MetaPixel";
+import { parseKind, parseModels, PRICE } from "@/lib/catalog";
 import { getShipping } from "@/lib/store";
-import { parseKind, parseModels } from "@/lib/catalog";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Encarga tu NFCTap" };
@@ -16,6 +17,7 @@ export default async function PersonalizarPage({
 
   return (
     <div className="mx-auto max-w-6xl px-5 pb-6 pt-3 sm:py-10">
+      <MetaViewContent contentName="NFCTap" value={PRICE.generica.first} />
       <h1 className="font-[family-name:var(--font-display)] text-[1.75rem] leading-tight sm:text-5xl">
         Encarga tu NFCTap
       </h1>

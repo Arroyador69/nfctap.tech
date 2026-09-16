@@ -1,5 +1,6 @@
+import { sendMetaCapiPurchase } from "@/lib/meta-capi";
 import { polarMarksPaid, polarOrderId, verifyPolarWebhook } from "@/lib/polar-webhook";
-import { updateOrder } from "@/lib/store";
+import { getOrder, updateOrder } from "@/lib/store";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -29,7 +30,15 @@ export async function POST(req: Request) {
   const orderId = polarOrderId(payload.data);
   const type = String(payload.type ?? "");
   if (orderId && polarMarksPaid(type, payload.data?.status)) {
-    await updateOrder(orderId, { status: "pagado" });
+    const before = await getOrder(orderId);
+    const updated = await updateOrder(orderId, { status: "pagado" });
+    if (updated && before?.status !== "pagado") {
+      try {
+        await sendMetaCapiPurchase(updated);
+      } catch (err) {
+        console.error("Meta CAPI Purchase", err);
+      }
+    }
   }
 
   return NextResponse.json({ ok: true });

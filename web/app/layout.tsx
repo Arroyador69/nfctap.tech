@@ -1,5 +1,6 @@
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { MetaPixel } from "@/components/MetaPixel";
 import { BRAND, SOCIALS } from "@/lib/catalog";
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Outfit } from "next/font/google";
@@ -81,6 +82,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        <MetaPixel />
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />

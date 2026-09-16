@@ -17,6 +17,7 @@ import {
   nfcUrlOk,
   normalizeNfcUrl,
 } from "@/lib/logo";
+import { cleanMetaCookie, cleanMetaIp } from "@/lib/meta-capi";
 import { createPolarCheckout, customerIp, polarReady } from "@/lib/polar";
 import { shippingCost, zoneFromPostalCode } from "@/lib/shipping";
 import { addOrder, getShipping, listOrders } from "@/lib/store";
@@ -209,6 +210,9 @@ export async function POST(req: Request) {
     handover,
     previewDataUrl: preview,
     notes: fromAdmin ? "Creado desde el admin." : polarReady() ? "" : "Pago Polar pendiente de conectar.",
+    metaFbp: fromAdmin ? undefined : cleanMetaCookie(body.fbp, "fbp"),
+    metaFbc: fromAdmin ? undefined : cleanMetaCookie(body.fbc, "fbc"),
+    metaIp: fromAdmin ? undefined : cleanMetaIp(customerIp(req)),
   });
 
   if (fromAdmin) {

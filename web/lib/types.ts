@@ -69,6 +69,10 @@ export type Order = {
   polarCheckoutId?: string;
   notes?: string;
   tracking?: string;
+  /** Cookies Meta (_fbp / _fbc) para casar la compra con el anuncio. */
+  metaFbp?: string;
+  metaFbc?: string;
+  metaIp?: string;
 };
 
 export type ShippingSettings = {

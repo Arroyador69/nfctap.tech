@@ -1,3 +1,4 @@
+import { MetaPurchase } from "@/components/MetaPixel";
 import { getOrder } from "@/lib/store";
 import { euros } from "@/lib/shipping";
 import Link from "next/link";
@@ -7,13 +8,19 @@ export const metadata = { title: "Pedido recibido" };
 export default async function OkPage({
   searchParams,
 }: {
-  searchParams: Promise<{ id?: string; demo?: string }>;
+  searchParams: Promise<{ id?: string; checkout_id?: string; demo?: string }>;
 }) {
-  const { id } = await searchParams;
+  const { id, checkout_id } = await searchParams;
   const order = id ? await getOrder(id) : null;
+  const paid = Boolean(
+    order && order.source !== "admin" && (order.status === "pagado" || checkout_id),
+  );
 
   return (
     <div className="mx-auto max-w-xl px-5 py-20 text-center">
+      {paid && order ? (
+        <MetaPurchase orderId={order.id} value={order.total} qty={order.qty} kind={order.kind} />
+      ) : null}
       <p className="text-xs uppercase tracking-[0.2em] text-[#b0892c]">NFCTap</p>
       <h1 className="mt-3 font-[family-name:var(--font-display)] text-4xl">Pedido recibido</h1>
       <p className="mt-3 text-[#5c564c]">

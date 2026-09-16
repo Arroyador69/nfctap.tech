@@ -24,6 +24,7 @@ import {
   productPrice,
 } from "@/lib/catalog";
 import { fetchReviewFromInput, ReviewLookup } from "@/components/ReviewLookup";
+import { metaClickIds, trackMeta } from "@/lib/meta-pixel";
 import { isDirectReviewUrl, isGooglePlaceInput, parseGoogleInput } from "@/lib/google-url";
 import {
   isEmail,
@@ -280,6 +281,7 @@ export function Designer({
           qty: liveQty,
           source: admin ? "admin" : "web",
           handover: admin ? handover : "envio",
+          ...(!admin ? metaClickIds() : {}),
           design: {
             ...design,
             kind,
@@ -295,6 +297,22 @@ export function Designer({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "No se pudo crear el pedido");
+      if (!admin) {
+        const orderId = data.order?.id as string | undefined;
+        trackMeta(
+          "InitiateCheckout",
+          {
+            value: total,
+            currency: "EUR",
+            content_name: kind,
+            content_type: "product",
+            num_items: liveQty,
+            order_id: orderId,
+          },
+          orderId,
+        );
+        await new Promise((r) => setTimeout(r, 400));
+      }
       window.location.assign(data.checkoutUrl || `/pedido/ok?id=${data.order.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error");
