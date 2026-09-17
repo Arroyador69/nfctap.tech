@@ -92,34 +92,26 @@ export default async function VisitasPage() {
         </p>
         <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-[#5c564c]">
           <li>
-            Abre{" "}
-            <a
-              className="underline decoration-[#d9cfc0] underline-offset-2"
-              href="https://search.google.com/search-console"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Search Console
-            </a>{" "}
-            con la cuenta de Google de NFCTap.
+            El dominio está en <strong>Porkbun</strong>. La verificación de dominio mira el
+            DNS, no GitHub.
           </li>
           <li>
-            Añade propiedad <strong>Prefijo de URL</strong>: <code>https://nfctap.tech</code>
+            Porkbun → Domain → DNS → Add: tipo <strong>TXT</strong>, host <strong>@</strong>,
+            valor el texto que te dio Google (<code>google-site-verification=…</code>). No
+            borres los TXT de Zoho.
           </li>
           <li>
-            Elige <strong>Etiqueta HTML</strong>. Copia solo el código largo de{" "}
-            <code>content=&quot;…&quot;</code> (no toda la etiqueta) y pégalo aquí.
+            Vuelve a Search Console y pulsa <strong>Verificar</strong>. Puede tardar minutos.
           </li>
-          <li>Guarda. Vuelve a Google y pulsa Verificar.</li>
           <li>
             Sitemaps → añadir <code>https://nfctap.tech/sitemap.xml</code>
           </li>
         </ol>
         <GscForm current={report.googleVerification} />
         <p className="mt-4 text-xs text-[#8a8173]">
-          {report.googleVerification
-            ? "Hay un código guardado. Si Verificar falla, espera 1–2 min a que Vercel sirva la web y reintenta."
-            : "Hasta que no pegues el código, Google no puede verificar la web."}{" "}
+          El recuadro de abajo es por si Google te da etiqueta HTML (prefijo de URL). La
+          propiedad de dominio que estás verificando ahora solo se resuelve con el TXT en
+          Porkbun.{" "}
           <a
             className="underline decoration-[#d9cfc0] underline-offset-2"
             href="https://search.google.com/search-console"
