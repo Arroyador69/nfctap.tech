@@ -32,25 +32,48 @@ export function wifiQrLine(ssid: string, password: string, auth: WifiAuth) {
   return `WIFI:T:${t};S:${esc(ssid)};${auth === "open" ? "" : `P:${esc(password)};`};`;
 }
 
+function b64urlEncode(text: string) {
+  const bytes = utf8(text);
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  const b64 = btoa(bin);
+  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function b64urlDecode(raw: string) {
+  const pad = raw.length % 4 === 0 ? "" : "=".repeat(4 - (raw.length % 4));
+  const b64 = raw.replace(/-/g, "+").replace(/_/g, "/") + pad;
+  const bin = atob(b64);
+  return utf8dec(Array.from(bin, (c) => c.charCodeAt(0)));
+}
+
 /** URL que el iPhone sí abre al acercar (Apple no une Wi‑Fi por NFC). */
 export function wifiLandingUrl(ssid: string, password: string, auth: WifiAuth) {
   const t = auth === "open" ? "nopass" : "WPA";
-  const parts = [`s=${encodeURIComponent(ssid)}`, `t=${t}`];
-  if (auth !== "open" && password) parts.splice(1, 0, `p=${encodeURIComponent(password)}`);
-  return `${WIFI_LANDING}#${parts.join("&")}`;
+  const raw = JSON.stringify({ s: ssid, p: auth === "open" ? "" : password, t });
+  return `${WIFI_LANDING}#${b64urlEncode(raw)}`;
 }
 
 export function parseWifiLanding(url: string): WifiCreds | null {
   try {
     const u = new URL(url);
     if (u.pathname !== "/w" && u.pathname !== "/w/") return null;
-    const src = `${u.hash.replace(/^#/, "")}&${u.search.replace(/^\?/, "")}`;
-    const p = new URLSearchParams(src);
-    const ssid = (p.get("s") || "").trim();
+    const raw = u.hash.replace(/^#/, "").trim();
+    if (!raw) return null;
+    if (raw.includes("=") && /(^|&)s=/.test(raw)) {
+      const p = new URLSearchParams(raw);
+      const ssid = (p.get("s") || "").trim();
+      if (!ssid) return null;
+      const t = (p.get("t") || "WPA").toLowerCase();
+      const auth: WifiAuth = t === "nopass" || t === "open" ? "open" : "wpa2";
+      return { ssid, password: p.get("p") || "", auth };
+    }
+    const j = JSON.parse(b64urlDecode(raw)) as { s?: string; p?: string; t?: string };
+    const ssid = (j.s || "").trim();
     if (!ssid) return null;
-    const t = (p.get("t") || "WPA").toLowerCase();
+    const t = (j.t || "WPA").toLowerCase();
     const auth: WifiAuth = t === "nopass" || t === "open" ? "open" : "wpa2";
-    return { ssid, password: p.get("p") || "", auth };
+    return { ssid, password: j.p || "", auth };
   } catch {
     return null;
   }

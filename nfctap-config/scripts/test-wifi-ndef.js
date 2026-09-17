@@ -4,13 +4,18 @@
 const Ndef = require("../node_modules/react-native-nfc-manager/ndef-lib");
 
 function landingUrl(ssid, password) {
-  return `https://nfctap.tech/w#s=${encodeURIComponent(ssid)}&p=${encodeURIComponent(password)}&t=WPA`;
+  const raw = JSON.stringify({ s: ssid, p: password, t: "WPA" });
+  const b64 = Buffer.from(raw, "utf8").toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return `https://nfctap.tech/w#${b64}`;
 }
 
 function parseLanding(url) {
   const u = new URL(url);
-  const p = new URLSearchParams(u.hash.replace(/^#/, ""));
-  return { ssid: p.get("s"), password: p.get("p") };
+  const raw = u.hash.replace(/^#/, "");
+  const pad = raw.length % 4 === 0 ? "" : "=".repeat(4 - (raw.length % 4));
+  const json = Buffer.from(raw.replace(/-/g, "+").replace(/_/g, "/") + pad, "base64").toString("utf8");
+  const j = JSON.parse(json);
+  return { ssid: j.s, password: j.p };
 }
 
 const ssid = "CASA_ALBERTO";
@@ -53,6 +58,8 @@ const gotUri = Ndef.uri.decodePayload(decoded[0].payload);
 const parsed = parseLanding(gotUri);
 ok("URI conserva SSID", parsed.ssid === ssid, parsed.ssid);
 ok("URI conserva contraseña", parsed.password === password, parsed.password);
+ok("URI no lleva la clave en claro", !uri.includes(password));
+ok("URI no usa ?query (iría a logs)", !uri.includes("?"));
 
 const wsc = Ndef.wifiSimple.decodePayload(decoded[1].payload);
 ok("WSC SSID", wsc.ssid === ssid, wsc.ssid);
