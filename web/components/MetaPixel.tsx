@@ -10,7 +10,9 @@ export function MetaPixel() {
   const first = useRef(true);
 
   useEffect(() => {
-    if (!pathname || pathname.startsWith("/dashboard")) return;
+    if (!pathname || pathname.startsWith("/dashboard") || pathname === "/w" || pathname.startsWith("/w/")) {
+      return;
+    }
     if (first.current) {
       first.current = false;
       return;
@@ -18,7 +20,9 @@ export function MetaPixel() {
     trackMeta("PageView");
   }, [pathname]);
 
-  if (!META_PIXEL_ID || pathname?.startsWith("/dashboard")) return null;
+  if (!META_PIXEL_ID || pathname?.startsWith("/dashboard") || pathname === "/w" || pathname?.startsWith("/w/")) {
+    return null;
+  }
 
   return (
     <>

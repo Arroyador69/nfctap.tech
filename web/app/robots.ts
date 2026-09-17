@@ -5,7 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/dashboard", "/api/"],
+      disallow: ["/dashboard", "/api/", "/w"],
     },
     sitemap: "https://nfctap.tech/sitemap.xml",
   };

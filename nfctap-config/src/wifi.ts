@@ -1,4 +1,6 @@
-/** Wi‑Fi Simple Config (WSC) para NDEF. Android une la red al tocar. */
+/** Wi‑Fi Simple Config (WSC) para NDEF. Android puede unirse al tocar. */
+
+export const WIFI_LANDING = "https://nfctap.tech/w";
 
 function be16(n: number) {
   return [(n >> 8) & 0xff, n & 0xff];
@@ -12,12 +14,94 @@ function utf8(s: string) {
   return Array.from(new TextEncoder().encode(s));
 }
 
+function utf8dec(bytes: number[]) {
+  return new TextDecoder().decode(Uint8Array.from(bytes));
+}
+
 export type WifiAuth = "wpa2" | "wpa" | "open";
+
+export type WifiCreds = {
+  ssid: string;
+  password: string;
+  auth: WifiAuth;
+};
 
 export function wifiQrLine(ssid: string, password: string, auth: WifiAuth) {
   const t = auth === "open" ? "nopass" : "WPA";
   const esc = (v: string) => v.replace(/([\\;,:"])/g, "\\$1");
   return `WIFI:T:${t};S:${esc(ssid)};${auth === "open" ? "" : `P:${esc(password)};`};`;
+}
+
+/** URL que el iPhone sí abre al acercar (Apple no une Wi‑Fi por NFC). */
+export function wifiLandingUrl(ssid: string, password: string, auth: WifiAuth) {
+  const t = auth === "open" ? "nopass" : "WPA";
+  const parts = [`s=${encodeURIComponent(ssid)}`, `t=${t}`];
+  if (auth !== "open" && password) parts.splice(1, 0, `p=${encodeURIComponent(password)}`);
+  return `${WIFI_LANDING}#${parts.join("&")}`;
+}
+
+export function parseWifiLanding(url: string): WifiCreds | null {
+  try {
+    const u = new URL(url);
+    if (u.pathname !== "/w" && u.pathname !== "/w/") return null;
+    const src = `${u.hash.replace(/^#/, "")}&${u.search.replace(/^\?/, "")}`;
+    const p = new URLSearchParams(src);
+    const ssid = (p.get("s") || "").trim();
+    if (!ssid) return null;
+    const t = (p.get("t") || "WPA").toLowerCase();
+    const auth: WifiAuth = t === "nopass" || t === "open" ? "open" : "wpa2";
+    return { ssid, password: p.get("p") || "", auth };
+  } catch {
+    return null;
+  }
+}
+
+export function parseWifiQrLine(text: string): WifiCreds | null {
+  const m = text.trim().match(/^WIFI:(.*);;?\s*$/i);
+  if (!m) return null;
+  const fields: Record<string, string> = {};
+  const re = /([TSPH]):((?:\\.|[^;])*)/gi;
+  let hit: RegExpExecArray | null;
+  while ((hit = re.exec(m[1]))) {
+    fields[hit[1].toUpperCase()] = hit[2].replace(/\\([\\;,:"])/g, "$1");
+  }
+  const ssid = (fields.S || "").trim();
+  if (!ssid) return null;
+  const t = (fields.T || "WPA").toLowerCase();
+  const auth: WifiAuth = t === "nopass" || t === "open" ? "open" : "wpa2";
+  return { ssid, password: fields.P || "", auth };
+}
+
+function parseTlvs(bytes: number[]) {
+  const out: { type: number; value: number[] }[] = [];
+  let i = 0;
+  while (i + 4 <= bytes.length) {
+    const type = (bytes[i] << 8) | bytes[i + 1];
+    const len = (bytes[i + 2] << 8) | bytes[i + 3];
+    i += 4;
+    if (len < 0 || i + len > bytes.length) break;
+    out.push({ type, value: bytes.slice(i, i + len) });
+    i += len;
+  }
+  return out;
+}
+
+export function decodeWifiWsc(bytes: number[]): WifiCreds | null {
+  const top = parseTlvs(bytes);
+  const cred = top.find((t) => t.type === 0x100e)?.value ?? bytes;
+  const inner = parseTlvs(cred);
+  const ssidB = inner.find((t) => t.type === 0x1045);
+  if (!ssidB) return null;
+  const keyB = inner.find((t) => t.type === 0x1027);
+  const authB = inner.find((t) => t.type === 0x1003);
+  const authNum = authB && authB.value.length >= 2 ? (authB.value[0] << 8) | authB.value[1] : 0x0020;
+  const auth: WifiAuth = authNum === 0x0001 ? "open" : authNum === 0x0002 ? "wpa" : "wpa2";
+  return { ssid: utf8dec(ssidB.value), password: keyB ? utf8dec(keyB.value) : "", auth };
+}
+
+export function formatWifiCreds(c: WifiCreds) {
+  if (c.auth === "open" || !c.password) return `${c.ssid} · sin clave`;
+  return `${c.ssid} · ${c.password}`;
 }
 
 export function encodeWifiWsc(ssid: string, password: string, auth: WifiAuth) {

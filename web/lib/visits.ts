@@ -196,7 +196,7 @@ export function cleanPath(raw: string) {
   let p = raw.split("?")[0].split("#")[0] || "/";
   if (!p.startsWith("/")) p = `/${p}`;
   if (p.length > 80) p = p.slice(0, 80);
-  if (p.startsWith("/dashboard") || p.startsWith("/api")) return "";
+  if (p.startsWith("/dashboard") || p.startsWith("/api") || p === "/w" || p.startsWith("/w/")) return "";
   return p;
 }
 

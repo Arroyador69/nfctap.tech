@@ -1,10 +1,12 @@
-import { encodeWifiWsc, wifiQrLine, type WifiAuth } from "./wifi";
+import { wifiLandingUrl, type WifiAuth } from "./wifi";
 
 export type Field = {
   key: string;
   label: string;
   placeholder: string;
   keyboard?: "url" | "email" | "phone" | "default";
+  autoCapitalize?: "none" | "sentences";
+  secret?: boolean;
   multiline?: boolean;
   optional?: boolean;
   options?: { value: string; label: string }[];
@@ -24,7 +26,7 @@ export type Built = {
   text?: string;
   vcard?: string;
   androidId?: string;
-  wifi?: number[];
+  wifi?: { ssid: string; password: string };
   label: string;
 };
 
@@ -212,11 +214,24 @@ export const TEMPLATES: Template[] = [
   {
     id: "wifi",
     title: "Wi‑Fi con contraseña",
-    blurb: "Android se une solo. En iPhone se ve la red y la clave.",
+    blurb:
+      "Escribe el nombre y la clave aquí (se pueden editar). Al acercar el móvil se abre una página con esos datos: el iPhone no se une solo al Wi‑Fi por NFC.",
     group: "conexion",
     fields: [
-      { key: "ssid", label: "Nombre de la red (SSID)", placeholder: "BarPepe_WiFi" },
-      { key: "password", label: "Contraseña (si la red tiene)", placeholder: "la clave", optional: true },
+      {
+        key: "ssid",
+        label: "Nombre de la red (SSID)",
+        placeholder: "BarPepe_WiFi",
+        autoCapitalize: "none",
+      },
+      {
+        key: "password",
+        label: "Contraseña",
+        placeholder: "la clave del router",
+        autoCapitalize: "none",
+        secret: true,
+        optional: true,
+      },
       {
         key: "auth",
         label: "Seguridad",
@@ -272,7 +287,7 @@ function handle(value: string, host: string) {
 export function defaultsFor(template: Template) {
   const out: Record<string, string> = {};
   for (const f of template.fields) {
-    if (f.defaultValue) out[f.key] = f.defaultValue;
+    out[f.key] = f.defaultValue ?? "";
   }
   return out;
 }
@@ -336,9 +351,13 @@ export function buildPayload(id: string, values: Record<string, string>): Built 
       return { text: v.text, label: v.text.slice(0, 40) };
     case "wifi": {
       const auth = (v.auth || "wpa2") as WifiAuth;
+      if (!v.ssid) throw new Error("Pon el nombre de la red (SSID).");
+      if (auth !== "open" && !v.password) {
+        throw new Error("Pon la contraseña, o marca la red como abierta.");
+      }
       return {
-        wifi: encodeWifiWsc(v.ssid, v.password, auth),
-        text: wifiQrLine(v.ssid, v.password, auth),
+        uri: wifiLandingUrl(v.ssid, v.password, auth),
+        wifi: { ssid: v.ssid, password: v.password || "" },
         label: `Wi‑Fi ${v.ssid}`,
       };
     }

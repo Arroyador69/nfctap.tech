@@ -30,6 +30,7 @@ export function WriteForm({ templateId, onBack }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
+  const [showSecret, setShowSecret] = useState(true);
   const [placeHits, setPlaceHits] = useState<PlaceHit[]>([]);
   const [placeBusy, setPlaceBusy] = useState(false);
   const [placeError, setPlaceError] = useState("");
@@ -38,6 +39,10 @@ export function WriteForm({ templateId, onBack }: Props) {
     if (!template) return "";
     try {
       const built = buildPayload(template.id, values);
+      if (template.id === "wifi") {
+        const clave = values.auth === "open" ? "sin clave" : values.password || "(falta la clave)";
+        return `Red: ${values.ssid || "—"}\nClave: ${clave}\n${built.uri || ""}`;
+      }
       return built.uri || built.text || built.vcard || built.label;
     } catch {
       return "";
@@ -57,7 +62,11 @@ export function WriteForm({ templateId, onBack }: Props) {
     );
   }
 
+  const auth = values.auth || "wpa2";
   const ready = template.fields.every((f) => {
+    if (template.id === "wifi" && f.key === "password") {
+      return auth === "open" || Boolean((values.password || "").trim());
+    }
     if (f.optional) return true;
     return Boolean((values[f.key] ?? f.defaultValue ?? "").trim());
   });
@@ -111,7 +120,11 @@ export function WriteForm({ templateId, onBack }: Props) {
         label: built.label,
         payload,
       });
-      setOk("Escrita. Comprueba con otro móvil, no con este.");
+      setOk(
+        template.id === "wifi"
+          ? "Escrita. Cierra esta app, bloquea el iPhone y vuelve a acercarlo: tiene que salir Safari con el nombre y la clave. En Android a menudo se une solo."
+          : "Escrita. Comprueba con otro móvil, no con este.",
+      );
     } catch (e) {
       setError(nfcMessage(e, "No se pudo escribir"));
     } finally {
@@ -131,9 +144,20 @@ export function WriteForm({ templateId, onBack }: Props) {
         <Text style={{ fontSize: 24, fontWeight: "700", color: colors.ink }}>{template.title}</Text>
         <Text style={{ marginTop: 8, color: colors.muted, lineHeight: 21 }}>{template.blurb}</Text>
 
-        {template.fields.map((f) => (
+        {template.fields.map((f) => {
+          if (template.id === "wifi" && f.key === "password" && auth === "open") return null;
+          return (
           <View key={f.key} style={{ marginTop: 16 }}>
-            <Text style={{ color: colors.ink, marginBottom: 6 }}>{f.label}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+              <Text style={{ color: colors.ink }}>{f.label}</Text>
+              {f.secret ? (
+                <Pressable onPress={() => setShowSecret((s) => !s)} hitSlop={8}>
+                  <Text style={{ color: colors.goldSoft, fontWeight: "600", fontSize: 13 }}>
+                    {showSecret ? "Ocultar" : "Ver clave"}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
             {f.options ? (
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                 {f.options.map((opt) => {
@@ -158,13 +182,19 @@ export function WriteForm({ templateId, onBack }: Props) {
               </View>
             ) : (
               <TextInput
-                value={values[f.key] ?? f.defaultValue ?? ""}
+                value={values[f.key] ?? ""}
                 onChangeText={(t) => setValues((s) => ({ ...s, [f.key]: t }))}
                 placeholder={f.placeholder}
                 placeholderTextColor="#b3aa9c"
-                autoCapitalize={f.keyboard === "url" || f.keyboard === "email" ? "none" : "sentences"}
+                autoCapitalize={
+                  f.autoCapitalize ?? (f.keyboard === "url" || f.keyboard === "email" ? "none" : "sentences")
+                }
                 autoCorrect={false}
-                secureTextEntry={f.key === "password"}
+                spellCheck={false}
+                autoComplete="off"
+                textContentType="none"
+                editable
+                secureTextEntry={Boolean(f.secret) && !showSecret}
                 keyboardType={
                   f.keyboard === "url"
                     ? "url"
@@ -208,7 +238,8 @@ export function WriteForm({ templateId, onBack }: Props) {
               </Pressable>
             ) : null}
           </View>
-        ))}
+          );
+        })}
 
         {template.id === "google" && placeError ? (
           <Text style={{ marginTop: 10, color: "#b42318", fontSize: 13 }}>{placeError}</Text>
@@ -242,7 +273,9 @@ export function WriteForm({ templateId, onBack }: Props) {
 
         {!!preview && (
           <View style={{ marginTop: 18, backgroundColor: "#faf6ee", borderRadius: 14, padding: 12 }}>
-            <Text style={{ fontSize: 12, color: colors.muted }}>Se grabará</Text>
+            <Text style={{ fontSize: 12, color: colors.muted }}>
+              {template.id === "wifi" ? "En iPhone se abrirá" : "Se grabará"}
+            </Text>
             <Text selectable style={{ marginTop: 4, color: colors.ink }}>
               {preview}
             </Text>

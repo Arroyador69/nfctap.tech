@@ -1,5 +1,6 @@
 import Constants from "expo-constants";
 import { Platform } from "react-native";
+import { decodeWifiWsc, encodeWifiWsc, formatWifiCreds, parseWifiLanding, parseWifiQrLine } from "./wifi";
 
 export function isExpoGo() {
   return Constants.appOwnership === "expo";
@@ -12,6 +13,9 @@ export function nfcMessage(e: unknown, fallback: string) {
     return "Sesión NFC cancelada. Vuelve a pulsar y acerca la pegatina.";
   }
   if (/not support|unsupported/i.test(m)) return "Este dispositivo no tiene NFC.";
+  if (/undefined is not a function/i.test(m)) {
+    return "Fallo al preparar el Wi‑Fi. Cierra, abre de nuevo y graba otra vez.";
+  }
   return m.trim() || fallback;
 }
 
@@ -50,8 +54,13 @@ export type WritePayload = {
   text?: string;
   vcard?: string;
   androidId?: string;
-  wifi?: number[];
+  wifi?: { ssid: string; password: string };
 };
+
+/** NDEF exige Array real. Uint8Array no tiene charCodeAt → "undefined is not a function". */
+function ndefBytes(data: ArrayLike<number>): number[] {
+  return Array.prototype.slice.call(data);
+}
 
 export async function writePayload(payload: WritePayload) {
   const { default: NfcManager, NfcTech, Ndef } = await readyNfc();
@@ -61,8 +70,22 @@ export async function writePayload(payload: WritePayload) {
   if (payload.vcard) {
     records.push(Ndef.mimeMediaRecord("text/vcard", payload.vcard));
   }
-  if (payload.wifi?.length) {
-    records.push(Ndef.mimeMediaRecord("application/vnd.wfa.wsc", payload.wifi));
+  if (payload.wifi?.ssid) {
+    try {
+      records.push(
+        Ndef.wifiSimpleRecord({
+          ssid: payload.wifi.ssid,
+          networkKey: payload.wifi.password || "",
+        }),
+      );
+    } catch {
+      records.push(
+        Ndef.mimeMediaRecord(
+          "application/vnd.wfa.wsc",
+          ndefBytes(encodeWifiWsc(payload.wifi.ssid, payload.wifi.password, "wpa2")),
+        ),
+      );
+    }
   }
   if (payload.androidId && Platform.OS === "android") {
     records.push(Ndef.androidApplicationRecord(payload.androidId));
@@ -71,7 +94,13 @@ export async function writePayload(payload: WritePayload) {
 
   await NfcManager.requestTechnology(NfcTech.Ndef);
   try {
-    const bytes = Ndef.encodeMessage(records);
+    let bytes: number[] | undefined;
+    try {
+      bytes = Ndef.encodeMessage(records);
+    } catch {
+      if (!payload.uri) throw new Error("No se pudo preparar el mensaje NDEF");
+      bytes = Ndef.encodeMessage([Ndef.uriRecord(payload.uri)]);
+    }
     if (!bytes) throw new Error("No se pudo preparar el mensaje NDEF");
     await NfcManager.ndefHandler.writeNdefMessage(bytes);
   } finally {
@@ -96,8 +125,22 @@ export async function readTag(): Promise<ReadResult> {
         : String(rec.type ?? "");
       const payload = rec.payload ?? [];
       try {
-        if (type === "U") return { type: "URL", value: Ndef.uri.decodePayload(payload) };
-        if (type === "T") return { type: "Texto", value: Ndef.text.decodePayload(payload) };
+        if (type === "U") {
+          const value = Ndef.uri.decodePayload(payload);
+          const wifi = parseWifiLanding(value);
+          if (wifi) return { type: "Wi‑Fi", value: formatWifiCreds(wifi) };
+          return { type: "URL", value };
+        }
+        if (type === "T") {
+          const value = Ndef.text.decodePayload(payload);
+          const wifi = parseWifiQrLine(value);
+          if (wifi) return { type: "Wi‑Fi", value: formatWifiCreds(wifi) };
+          return { type: "Texto", value };
+        }
+        if (/wfa\.wsc/i.test(type) || type === "application/vnd.wfa.wsc") {
+          const wifi = decodeWifiWsc(payload);
+          if (wifi) return { type: "Wi‑Fi Android", value: formatWifiCreds(wifi) };
+        }
       } catch {
         /* raw */
       }

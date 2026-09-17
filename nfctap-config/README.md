@@ -12,7 +12,7 @@ Redes: Instagram, TikTok, Facebook, Telegram, Maps, YouTube, LinkedIn, X, Spotif
 
 Contacto: llamada, email, SMS, vCard.
 
-Conexión: **Wi‑Fi con contraseña** (Android se une solo; iPhone ve red y clave).
+Conexión: **Wi‑Fi con contraseña**. El iPhone **no se une solo** al Wi‑Fi por NFC (Apple no lo permite). Se graba una URL `nfctap.tech/w#…` que abre nombre y clave para copiar, más el registro WSC para que Android a menudo se una solo.
 
 Extra: texto, GPS, URI libre.
 
