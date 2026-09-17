@@ -1,7 +1,9 @@
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { MetaPixel } from "@/components/MetaPixel";
+import { VisitBeacon } from "@/components/VisitBeacon";
 import { BRAND, SOCIALS } from "@/lib/catalog";
+import { googleVerificationCode } from "@/lib/visits";
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Outfit } from "next/font/google";
 import "./globals.css";
@@ -24,7 +26,7 @@ export const viewport: Viewport = {
   themeColor: "#f6f1e8",
 };
 
-export const metadata: Metadata = {
+const siteMetadata: Metadata = {
   metadataBase: new URL("https://nfctap.tech"),
   title: {
     default: "NFCTap — Atril NFC para WhatsApp, Instagram o Google",
@@ -64,6 +66,12 @@ export const metadata: Metadata = {
   },
 };
 
+export async function generateMetadata(): Promise<Metadata> {
+  const google = await googleVerificationCode();
+  if (!google) return siteMetadata;
+  return { ...siteMetadata, verification: { google } };
+}
+
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
@@ -83,6 +91,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         <MetaPixel />
+        <VisitBeacon />
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
