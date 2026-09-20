@@ -2,6 +2,10 @@ import { isDirectReviewUrl, parseGoogleInput } from "./google-url";
 
 export const LOGO_MASK = 48;
 const LOGO_PREVIEW = 512;
+const WORK = 512;
+const ALPHA_BG = 28;
+const FLOOD_THRESH = 78;
+const INK_THRESH = 0.22;
 
 function hexRgb(hex: string): [number, number, number] {
   const h = hex.replace("#", "");
@@ -10,62 +14,321 @@ function hexRgb(hex: string): [number, number, number] {
 
 function containDraw(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement,
+  img: CanvasImageSource & { width: number; height: number },
   size: number,
 ) {
   ctx.clearRect(0, 0, size, size);
-  const scale = Math.min(size / img.width, size / img.height);
-  const dw = img.width * scale;
-  const dh = img.height * scale;
+  const iw = img.width || size;
+  const ih = img.height || size;
+  const scale = Math.min(size / iw, size / ih);
+  const dw = iw * scale;
+  const dh = ih * scale;
   ctx.drawImage(img, (size - dw) / 2, (size - dh) / 2, dw, dh);
 }
 
-function sampleLum(data: Uint8ClampedArray, i: number) {
-  return data[i] * 0.3 + data[i + 1] * 0.59 + data[i + 2] * 0.11;
+function lumAt(data: Uint8ClampedArray, i: number) {
+  return data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
 }
 
-/** Tinta = la marca. El fondo blanco de un JPG no se imprime. */
-function isInk(data: Uint8ClampedArray, w: number, h: number, x: number, y: number, bg: number, hasAlpha: boolean) {
-  const i = (y * w + x) * 4;
-  const a = data[i + 3];
-  if (a < 40) return false;
-  const lum = sampleLum(data, i);
-  if (hasAlpha) {
-    if (bg > 150) return lum < 200;
-    return lum > 70;
-  }
-  return bg > 140 ? lum < bg - 28 : lum > bg + 28;
+function rgbDist(data: Uint8ClampedArray, i: number, r: number, g: number, b: number) {
+  return Math.abs(data[i] - r) + Math.abs(data[i + 1] - g) + Math.abs(data[i + 2] - b);
 }
 
-function logoBackground(data: Uint8ClampedArray, w: number, h: number) {
-  let transparent = 0;
-  const corners = [0, w - 1, (h - 1) * w, h * w - 1];
-  let bg = 0;
-  let bgN = 0;
-  for (const p of corners) {
+function chromaAt(data: Uint8ClampedArray, i: number) {
+  const r = data[i];
+  const g = data[i + 1];
+  const b = data[i + 2];
+  return Math.max(r, g, b) - Math.min(r, g, b);
+}
+
+type FloodColor = { r: number; g: number; b: number };
+
+function dominantEdgeColor(data: Uint8ClampedArray, w: number, h: number): FloodColor | null {
+  const buckets = new Map<string, { n: number; r: number; g: number; b: number }>();
+  let opaque = 0;
+  const visit = (p: number) => {
     const i = p * 4;
-    if (data[i + 3] < 40) {
-      transparent += 1;
-      continue;
+    if (data[i + 3] < ALPHA_BG) return;
+    opaque += 1;
+    const key = `${data[i] >> 3},${data[i + 1] >> 3},${data[i + 2] >> 3}`;
+    const cur = buckets.get(key);
+    if (cur) {
+      cur.n += 1;
+      cur.r += data[i];
+      cur.g += data[i + 1];
+      cur.b += data[i + 2];
+    } else {
+      buckets.set(key, { n: 1, r: data[i], g: data[i + 1], b: data[i + 2] });
     }
-    bg += sampleLum(data, i);
-    bgN += 1;
+  };
+  for (let x = 0; x < w; x++) {
+    visit(x);
+    visit((h - 1) * w + x);
   }
-  for (let i = 0; i < data.length; i += 4) {
-    if (data[i + 3] < 40) transparent += 1;
+  for (let y = 1; y < h - 1; y++) {
+    visit(y * w);
+    visit(y * w + w - 1);
   }
-  const hasAlpha = transparent / (w * h) > 0.08;
-  if (bgN === 0) bg = hasAlpha ? 0 : 255;
-  else bg /= bgN;
-  return { bg, hasAlpha };
+  if (opaque < 8) return null;
+  let best: { n: number; r: number; g: number; b: number } | null = null;
+  for (const b of buckets.values()) {
+    if (!best || b.n > best.n) best = b;
+  }
+  if (!best || best.n / opaque < 0.38) return null;
+  return { r: best.r / best.n, g: best.g / best.n, b: best.b / best.n };
 }
 
-function inkMask(data: Uint8ClampedArray, w: number, h: number) {
-  const { bg, hasAlpha } = logoBackground(data, w, h);
-  let mask = "";
+function floodBackground(data: Uint8ClampedArray, w: number, h: number, flood: FloodColor | null) {
+  const n = w * h;
+  const bg = new Uint8Array(n);
+  const q = new Int32Array(n);
+  let head = 0;
+  let tail = 0;
+  const seed = (p: number) => {
+    if (bg[p]) return;
+    bg[p] = 1;
+    q[tail++] = p;
+  };
+  const edge = (p: number) => {
+    const i = p * 4;
+    if (data[i + 3] < ALPHA_BG) {
+      seed(p);
+      return;
+    }
+    if (flood && rgbDist(data, i, flood.r, flood.g, flood.b) <= FLOOD_THRESH) seed(p);
+  };
+  for (let x = 0; x < w; x++) {
+    edge(x);
+    edge((h - 1) * w + x);
+  }
+  for (let y = 1; y < h - 1; y++) {
+    edge(y * w);
+    edge(y * w + w - 1);
+  }
+  while (head < tail) {
+    const p = q[head++];
+    const x = p % w;
+    const y = (p / w) | 0;
+    if (x > 0) tryFlood(p - 1);
+    if (x + 1 < w) tryFlood(p + 1);
+    if (y > 0) tryFlood(p - w);
+    if (y + 1 < h) tryFlood(p + w);
+  }
+  function tryFlood(np: number) {
+    if (bg[np]) return;
+    const i = np * 4;
+    if (data[i + 3] < ALPHA_BG) {
+      seed(np);
+      return;
+    }
+    if (flood && rgbDist(data, i, flood.r, flood.g, flood.b) <= FLOOD_THRESH) seed(np);
+  }
+  return bg;
+}
+
+function dropDarkPlate(
+  data: Uint8ClampedArray,
+  bg: Uint8Array,
+  w: number,
+  h: number,
+  flood: FloodColor | null,
+) {
+  const n = w * h;
+  let remain = 0;
+  let darkN = 0;
+  let brightN = 0;
+  let dx0 = w;
+  let dy0 = h;
+  let dx1 = 0;
+  let dy1 = 0;
+  for (let p = 0; p < n; p++) {
+    if (bg[p]) continue;
+    const i = p * 4;
+    if (flood && rgbDist(data, i, flood.r, flood.g, flood.b) <= FLOOD_THRESH) continue;
+    remain += 1;
+    const L = lumAt(data, i);
+    const x = p % w;
+    const y = (p / w) | 0;
+    if (L < 62) {
+      darkN += 1;
+      if (x < dx0) dx0 = x;
+      if (y < dy0) dy0 = y;
+      if (x > dx1) dx1 = x;
+      if (y > dy1) dy1 = y;
+    } else if (L > 88 && chromaAt(data, i) > 22) {
+      brightN += 1;
+    }
+  }
+  if (remain < 80 || darkN / remain < 0.32 || brightN / remain < 0.05) return false;
+  const area = Math.max(1, (dx1 - dx0 + 1) * (dy1 - dy0 + 1));
+  return darkN / area > 0.48;
+}
+
+/** 0–1: qué tanto se imprime ese píxel en el color de acento. */
+export function logoCoverage(data: Uint8ClampedArray, w: number, h: number): Float32Array {
+  const n = w * h;
+  const flood = dominantEdgeColor(data, w, h);
+  const bg = floodBackground(data, w, h, flood);
+  const plate = dropDarkPlate(data, bg, w, h, flood);
+  const cover = new Float32Array(n);
+  let ink = 0;
+  for (let p = 0; p < n; p++) {
+    if (bg[p]) continue;
+    const i = p * 4;
+    const a = data[i + 3] / 255;
+    if (a < 0.08) continue;
+    if (flood && rgbDist(data, i, flood.r, flood.g, flood.b) <= FLOOD_THRESH) continue;
+    const L = lumAt(data, i);
+    if (plate && (L < 78 || chromaAt(data, i) < 18)) continue;
+    let strength: number;
+    if (flood) {
+      strength = Math.min(1, Math.max(0, (rgbDist(data, i, flood.r, flood.g, flood.b) - 18) / 140));
+    } else {
+      strength = a;
+    }
+    if (plate) strength = Math.min(1, Math.max(strength, (L - 48) / 110));
+    const v = strength * a;
+    if (v >= 0.06) {
+      cover[p] = v;
+      ink += 1;
+    }
+  }
+  if (ink >= 24) return cover;
+
+  let med = 0;
+  let opaque = 0;
+  for (let p = 0; p < n; p++) {
+    const i = p * 4;
+    if (data[i + 3] < ALPHA_BG) continue;
+    med += lumAt(data, i);
+    opaque += 1;
+  }
+  if (opaque < 8) return cover;
+  med /= opaque;
+  for (let p = 0; p < n; p++) {
+    const i = p * 4;
+    const a = data[i + 3] / 255;
+    if (a < 0.12) continue;
+    const L = lumAt(data, i);
+    const v = (med > 132 ? med - L : L - med) / 90;
+    if (v > 0.28) cover[p] = Math.min(1, v) * a;
+  }
+  return cover;
+}
+
+function coverageBox(cover: Float32Array, w: number, h: number, t = INK_THRESH) {
+  let x0 = w;
+  let y0 = h;
+  let x1 = 0;
+  let y1 = 0;
+  let n = 0;
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
-      mask += isInk(data, w, h, x, y, bg, hasAlpha) ? "1" : "0";
+      if (cover[y * w + x] < t) continue;
+      n += 1;
+      if (x < x0) x0 = x;
+      if (y < y0) y0 = y;
+      if (x > x1) x1 = x;
+      if (y > y1) y1 = y;
+    }
+  }
+  if (n < 8) return null;
+  return { x0, y0, x1, y1 };
+}
+
+function sampleCover(cover: Float32Array, w: number, h: number, x: number, y: number) {
+  if (x < 0 || y < 0 || x >= w - 1 || y >= h - 1) {
+    const xi = Math.max(0, Math.min(w - 1, Math.round(x)));
+    const yi = Math.max(0, Math.min(h - 1, Math.round(y)));
+    return cover[yi * w + xi];
+  }
+  const x0 = Math.floor(x);
+  const y0 = Math.floor(y);
+  const fx = x - x0;
+  const fy = y - y0;
+  const a = cover[y0 * w + x0];
+  const b = cover[y0 * w + x0 + 1];
+  const c = cover[(y0 + 1) * w + x0];
+  const d = cover[(y0 + 1) * w + x0 + 1];
+  return a * (1 - fx) * (1 - fy) + b * fx * (1 - fy) + c * (1 - fx) * fy + d * fx * fy;
+}
+
+function rasterLogo(img: CanvasImageSource & { width: number; height: number }, size: number) {
+  const c = document.createElement("canvas");
+  c.width = size;
+  c.height = size;
+  const ctx = c.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return null;
+  containDraw(ctx, img, size);
+  return ctx.getImageData(0, 0, size, size);
+}
+
+function paintCover(
+  cover: Float32Array,
+  srcW: number,
+  srcH: number,
+  size: number,
+  color: string,
+): HTMLCanvasElement {
+  const off = document.createElement("canvas");
+  off.width = size;
+  off.height = size;
+  const o = off.getContext("2d");
+  if (!o) return off;
+  const box = coverageBox(cover, srcW, srcH);
+  const out = o.createImageData(size, size);
+  const [cr, cg, cb] = hexRgb(color);
+  if (!box) {
+    o.putImageData(out, 0, 0);
+    return off;
+  }
+  const bw = box.x1 - box.x0 + 1;
+  const bh = box.y1 - box.y0 + 1;
+  const inner = size * 0.84;
+  const sc = Math.min(inner / bw, inner / bh);
+  const dw = bw * sc;
+  const dh = bh * sc;
+  const ox = (size - dw) / 2;
+  const oy = (size - dh) / 2;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const sx = box.x0 + (x - ox) / sc;
+      const sy = box.y0 + (y - oy) / sc;
+      if (sx < box.x0 - 0.5 || sy < box.y0 - 0.5 || sx > box.x1 + 0.5 || sy > box.y1 + 0.5) continue;
+      const a = sampleCover(cover, srcW, srcH, sx, sy);
+      if (a < 0.04) continue;
+      const i = (y * size + x) * 4;
+      out.data[i] = cr;
+      out.data[i + 1] = cg;
+      out.data[i + 2] = cb;
+      out.data[i + 3] = Math.round(Math.min(1, a) * 255);
+    }
+  }
+  o.putImageData(out, 0, 0);
+  return off;
+}
+
+function maskFromCover(cover: Float32Array, srcW: number, srcH: number, n: number) {
+  const box = coverageBox(cover, srcW, srcH);
+  let mask = "";
+  if (!box) {
+    for (let i = 0; i < n * n; i++) mask += "0";
+    return mask;
+  }
+  const bw = box.x1 - box.x0 + 1;
+  const bh = box.y1 - box.y0 + 1;
+  const inner = n * 0.84;
+  const sc = Math.min(inner / bw, inner / bh);
+  const dw = bw * sc;
+  const dh = bh * sc;
+  const ox = (n - dw) / 2;
+  const oy = (n - dh) / 2;
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      const sx = box.x0 + (x - ox) / sc;
+      const sy = box.y0 + (y - oy) / sc;
+      const a = sampleCover(cover, srcW, srcH, sx, sy);
+      mask += a >= 0.4 ? "1" : "0";
     }
   }
   return mask;
@@ -77,33 +340,16 @@ export function paintAccentLogo(
   size: number,
   color: string,
 ): HTMLCanvasElement {
-  const off = document.createElement("canvas");
-  off.width = size;
-  off.height = size;
-  const o = off.getContext("2d");
-  if (!o) return off;
-  const iw = img.width || size;
-  const ih = img.height || size;
-  const scale = Math.min(size / iw, size / ih);
-  const dw = iw * scale;
-  const dh = ih * scale;
-  o.clearRect(0, 0, size, size);
-  o.drawImage(img, (size - dw) / 2, (size - dh) / 2, dw, dh);
-  const data = o.getImageData(0, 0, size, size);
-  const { bg, hasAlpha } = logoBackground(data.data, size, size);
-  const [cr, cg, cb] = hexRgb(color);
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const i = (y * size + x) * 4;
-      const ink = isInk(data.data, size, size, x, y, bg, hasAlpha);
-      data.data[i] = cr;
-      data.data[i + 1] = cg;
-      data.data[i + 2] = cb;
-      data.data[i + 3] = ink ? Math.max(data.data[i + 3], 230) : 0;
-    }
+  const work = Math.max(WORK, Math.min(768, Math.round(size) * 2));
+  const raster = rasterLogo(img, work);
+  if (!raster) {
+    const empty = document.createElement("canvas");
+    empty.width = size;
+    empty.height = size;
+    return empty;
   }
-  o.putImageData(data, 0, 0);
-  return off;
+  const cover = logoCoverage(raster.data, work, work);
+  return paintCover(cover, work, work, Math.max(8, Math.round(size)), color);
 }
 
 export function prepareLogo(file: File): Promise<{ dataUrl: string; mask: string }> {
@@ -112,27 +358,15 @@ export function prepareLogo(file: File): Promise<{ dataUrl: string; mask: string
     const img = new Image();
     img.onload = () => {
       URL.revokeObjectURL(url);
-      const canvas = document.createElement("canvas");
-      canvas.width = LOGO_PREVIEW;
-      canvas.height = LOGO_PREVIEW;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
+      const raster = rasterLogo(img, WORK);
+      if (!raster) {
         reject(new Error("No se pudo leer el logo"));
         return;
       }
-      containDraw(ctx, img, LOGO_PREVIEW);
-
-      const maskCanvas = document.createElement("canvas");
-      maskCanvas.width = LOGO_MASK;
-      maskCanvas.height = LOGO_MASK;
-      const mx = maskCanvas.getContext("2d");
-      if (!mx) {
-        reject(new Error("No se pudo leer el logo"));
-        return;
-      }
-      containDraw(mx, img, LOGO_MASK);
-      const mask = inkMask(mx.getImageData(0, 0, LOGO_MASK, LOGO_MASK).data, LOGO_MASK, LOGO_MASK);
-      resolve({ dataUrl: canvas.toDataURL("image/png"), mask });
+      const cover = logoCoverage(raster.data, WORK, WORK);
+      const stamp = paintCover(cover, WORK, WORK, LOGO_PREVIEW, "#ffffff");
+      const mask = maskFromCover(cover, WORK, WORK, LOGO_MASK);
+      resolve({ dataUrl: stamp.toDataURL("image/png"), mask });
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);

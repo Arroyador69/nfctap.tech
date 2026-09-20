@@ -12,9 +12,9 @@ export default function LegalPage() {
         Aviso legal y condiciones de compra
       </h1>
       <p className="mt-6">
-        {BRAND.name} ({BRAND.domain}) vende atriles NFC físicos para que el cliente de un
-        negocio abra WhatsApp, Instagram o la reseña de Google. Los pedidos recogen nombre,
-        email, teléfono, dirección, el modelo y el enlace para fabricar y enviar.
+        {BRAND.name} ({BRAND.domain}) vende atriles NFC y placas TAP Wi‑Fi de pared. Los
+        pedidos recogen nombre, email, teléfono, dirección, el modelo y el enlace (o la red
+        Wi‑Fi y su clave) para fabricar, programar el chip y enviar.
       </p>
       <p className="mt-4">
         No hay partnership con Google, Meta ni WhatsApp. El NFC se programa con el enlace
@@ -34,6 +34,11 @@ export default function LegalPage() {
           Con logo: primera {euros(PRICE.personalizada.first)} · cada una más{" "}
           {euros(PRICE.personalizada.extra)} (2 = {euros(productPrice("personalizada", 2))}, no{" "}
           {euros(packWas("personalizada", 2))}).
+        </li>
+        <li>
+          TAP Wi‑Fi de pared: {euros(PRICE.wifi.first)} cada una. Diseño fijo (Wi‑Fi + TAP
+          HERE), adhesivo para pared incluido. No se personaliza el dibujo. Al encargar nos
+          das el nombre de la red y la contraseña para grabar el chip.
         </li>
         <li>
           Pieza única: {euros(PRICE.unica.first)}. Se encarga por email a {BRAND.email}, no

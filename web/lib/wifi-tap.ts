@@ -48,3 +48,15 @@ export function parseWifiFragment(hash: string): WifiTapCreds | null {
 export function encodeWifiFragment(ssid: string, password: string, open: boolean) {
   return b64urlEncode(JSON.stringify({ s: ssid, p: open ? "" : password, t: open ? "nopass" : "WPA" }));
 }
+
+export function wifiLandingUrl(ssid: string, password: string, open: boolean) {
+  return `https://nfctap.tech/w#${encodeWifiFragment(ssid.trim(), open ? "" : password, open)}`;
+}
+
+export function wifiConfigOk(ssid: string, password: string, open: boolean) {
+  const s = ssid.trim();
+  if (s.length < 1 || s.length > 32) return false;
+  if (open) return true;
+  const p = password.trim();
+  return p.length >= 8 && p.length <= 63;
+}

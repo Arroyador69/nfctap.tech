@@ -48,6 +48,19 @@ export type PrintSpec = {
     acento: string;
   };
   cliente: string;
+  wifiSsid?: string;
+  wifiOpen?: boolean;
+};
+
+export const WIFI_PLAQUE = {
+  ancho: 70,
+  alto: 58,
+  grosor: 3.4,
+  radio: 10,
+  nfc: NFC_STOCK.id,
+  nfc_desde_base: 1.2,
+  nfc_grosor: 0.8,
+  relieve: 0.5,
 };
 
 export function printText(value: string) {
@@ -75,6 +88,7 @@ export function slugName(order: Order) {
 export function orderToSpec(order: Order): PrintSpec {
   const pieces = orderPieces(order);
   const generic = order.kind === "generica";
+  const wifi = order.kind === "wifi";
   const body = BODY_COLORS.find((c) => c.id === order.design.bodyColor)?.label ?? "negro";
   const accent = order.design.accentColor;
   return {
@@ -83,20 +97,22 @@ export function orderToSpec(order: Order): PrintSpec {
     nombre: slugName(order),
     kind: order.kind,
     qty: order.qty,
-    ...STAND,
-    linea1: generic ? "TAP" : (order.design.line1 || ""),
+    ...(wifi ? WIFI_PLAQUE : STAND),
+    linea1: generic || wifi ? "TAP" : (order.design.line1 || ""),
     linea2: "",
-    nombreNegocio: generic ? undefined : order.design.line1,
-    logoMask: generic ? undefined : order.design.logoMask,
+    nombreNegocio: generic || wifi ? undefined : order.design.line1,
+    logoMask: generic || wifi ? undefined : order.design.logoMask,
     googleUrl: pieces[0]?.nfcUrl || order.design.googleUrl,
     extraUrl: pieces[1]?.nfcUrl || (order.kind === "unica" ? order.design.extraUrl : undefined),
-    model: pieces[0]?.model || (generic ? "google" : "personalizada"),
+    model: pieces[0]?.model || (generic ? "google" : wifi ? "wifi" : "personalizada"),
     pieces,
     colores: {
       cuerpo: `${order.design.bodyColor} (${body})`,
       acento: `${accent} (${ACCENT_HEX[accent] ?? accent})`,
     },
     cliente: order.address.name,
+    wifiSsid: order.design.wifiSsid,
+    wifiOpen: order.design.wifiOpen,
   };
 }
 

@@ -1,6 +1,6 @@
-export type ProductKind = "generica" | "personalizada" | "unica";
+export type ProductKind = "generica" | "personalizada" | "unica" | "wifi";
 export type CatalogModel = "google" | "whatsapp" | "instagram";
-export type FaceModel = CatalogModel | "personalizada";
+export type FaceModel = CatalogModel | "personalizada" | "wifi";
 export type Qty = number;
 export type BodyColor = "negro" | "blanco" | "rojo";
 export type AccentColor = "oro" | "amarillo" | "blanco" | "rojo" | "negro";
@@ -38,6 +38,19 @@ export type CardDesign = {
   /** Segundo NFC (pieza única o segunda genérica). */
   extraUrl?: string;
   pieces?: OrderPiece[];
+  /** TAP Wi‑Fi de pared: red que grabamos en el chip. */
+  wifiSsid?: string;
+  wifiPassword?: string;
+  wifiOpen?: boolean;
+};
+
+export type WifiAddon = {
+  qty: number;
+  bodyColor: BodyColor;
+  accentColor: AccentColor;
+  ssid: string;
+  password: string;
+  open: boolean;
 };
 
 export type Address = {
@@ -67,6 +80,8 @@ export type Order = {
   handover?: Handover;
   previewDataUrl?: string;
   polarCheckoutId?: string;
+  /** TAP Wi‑Fi de pared añadido al pedir atriles. */
+  wifiAddon?: WifiAddon;
   notes?: string;
   tracking?: string;
   /** Cookies Meta (_fbp / _fbc) para casar la compra con el anuncio. */

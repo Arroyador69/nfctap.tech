@@ -1,8 +1,8 @@
 import { DashboardNav } from "@/components/DashboardNav";
 import { isAdmin } from "@/lib/auth";
-import { orderPieces, productLabel } from "@/lib/catalog";
+import { orderGoodsLabel, orderPieces } from "@/lib/catalog";
 import { euros, ZONE_LABEL } from "@/lib/shipping";
-import { polarMissing, polarReady } from "@/lib/polar";
+import { polarMissing, polarReady, polarWifiReady } from "@/lib/polar";
 import { blobConfigured, getShipping, listOrders } from "@/lib/store";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -38,9 +38,15 @@ export default async function DashboardPage() {
 
       {!polarReady() && (
         <p className="mt-4 rounded-2xl bg-[#fff4d6] px-4 py-3 text-sm">
-          Polar no está listo para cobrar. Falta: {polarMissing().join(", ")}. Crea los 4
-          productos (20 / 35 / 30 / 55) con <code>npm run polar:setup</code> y pega los IDs en
-          Vercel.
+          Polar no está listo para cobrar. Falta: {polarMissing().join(", ")}. Crea los
+          productos con <code>npm run polar:setup</code> y pega los IDs en Vercel.
+        </p>
+      )}
+
+      {polarReady() && !polarWifiReady() && (
+        <p className="mt-4 rounded-2xl bg-[#fff4d6] px-4 py-3 text-sm">
+          Falta POLAR_PRODUCT_WIFI_1: los atriles se cobran, el TAP Wi‑Fi de pared no. Corre{" "}
+          <code>npm run polar:setup</code> y pega el ID en Vercel.
         </p>
       )}
 
@@ -92,7 +98,7 @@ export default async function DashboardPage() {
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <div>{productLabel(o.kind, o.qty, orderPieces(o))}</div>
+                  <div>{orderGoodsLabel(o.kind, o.qty, orderPieces(o), o.wifiAddon?.qty || 0)}</div>
                   {orderPieces(o).map((p, i) => (
                     <div key={`${p.model}-${i}`} className="max-w-[240px] truncate text-xs text-[#8a8173]">
                       {p.nfcUrl}

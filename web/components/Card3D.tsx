@@ -85,7 +85,7 @@ function Atril({ design }: { design: CardDesign }) {
     () =>
       buildAtrilMeshes({
         kind: personalized ? "personalizada" : "generica",
-        model,
+        model: model === "wifi" ? "google" : model,
         logoMask: undefined,
         line1: design.line1,
         shopView: true,

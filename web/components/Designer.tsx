@@ -8,20 +8,22 @@ import {
   FACE_MODELS,
   KIND_META,
   MAX_QTY,
-  MODEL_LABEL,
   PRICE,
   clampQty,
   countTotal,
   countsFromModels,
   defaultDesign,
   emptyCounts,
+  goodsPrice,
   kindsFor,
   needsLogo,
+  orderGoodsLabel,
   packSaving,
   packWas,
   piecesFromCounts,
   productLabel,
   productPrice,
+  wifiPrice,
 } from "@/lib/catalog";
 import { fetchReviewFromInput, ReviewLookup } from "@/components/ReviewLookup";
 import { metaClickIds, trackMeta } from "@/lib/meta-pixel";
@@ -33,11 +35,15 @@ import {
   isPostalCode,
   nfcUrlOk,
   normalizeNfcUrl,
+  paintAccentLogo,
   prepareLogo,
 } from "@/lib/logo";
 import { PROVINCIAS } from "@/lib/provinces";
 import { euros, shippingCost, zoneFromPostalCode, ZONE_LABEL } from "@/lib/shipping";
+import { wifiConfigOk, wifiLandingUrl } from "@/lib/wifi-tap";
 import type {
+  AccentColor,
+  BodyColor,
   CardDesign,
   CatalogModel,
   FaceModel,
@@ -47,7 +53,7 @@ import type {
   ShippingSettings,
   ShippingZone,
 } from "@/lib/types";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 type Props = {
   initialKind?: ProductKind;
@@ -58,6 +64,41 @@ type Props = {
 };
 
 type Step = "diseno" | "envio";
+
+function LogoPreview({
+  dataUrl,
+  accent,
+  body,
+}: {
+  dataUrl: string;
+  accent: string;
+  body: string;
+}) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const img = new Image();
+    img.onload = () => {
+      const stamp = paintAccentLogo(img, 256, accent);
+      ctx.fillStyle = body;
+      ctx.fillRect(0, 0, 256, 256);
+      ctx.drawImage(stamp, 0, 0);
+    };
+    img.src = dataUrl;
+  }, [dataUrl, accent, body]);
+  return (
+    <canvas
+      ref={ref}
+      width={256}
+      height={256}
+      className="h-16 w-16 shrink-0 rounded-2xl border border-[#e6ddd0] bg-[#141416]"
+      aria-label="Así queda el logo en el atril"
+    />
+  );
+}
 
 export function Designer({
   initialKind = "generica",
@@ -70,7 +111,7 @@ export function Designer({
   const startKind =
     !admin && initialKind === "unica" ? "generica" : initialKind;
   const startModels: CatalogModel[] =
-    startKind === "personalizada" || startKind === "unica"
+    startKind === "personalizada" || startKind === "unica" || startKind === "wifi"
       ? []
       : initialModels?.length
         ? initialModels
@@ -90,11 +131,22 @@ export function Designer({
   const [qty, setQty] = useState(1);
   const [design, setDesign] = useState<CardDesign>(() => {
     const model: FaceModel =
-      startKind === "generica" ? startModels[0] || "google" : "personalizada";
+      startKind === "wifi"
+        ? "wifi"
+        : startKind === "generica"
+          ? startModels[0] || "google"
+          : "personalizada";
     const d = defaultDesign(startKind, model);
     if (initialGoogleUrl) d.googleUrl = initialGoogleUrl;
     return d;
   });
+  const [addWifi, setAddWifi] = useState(false);
+  const [wifiQty, setWifiQty] = useState(1);
+  const [wifiSsid, setWifiSsid] = useState("");
+  const [wifiPassword, setWifiPassword] = useState("");
+  const [wifiOpen, setWifiOpen] = useState(false);
+  const [wifiBody, setWifiBody] = useState<BodyColor>("negro");
+  const [wifiAccent, setWifiAccent] = useState<AccentColor>("blanco");
   const [preview, setPreview] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -112,25 +164,34 @@ export function Designer({
   });
 
   const generic = kind === "generica";
+  const wifiOnly = kind === "wifi";
   const liveQty = generic ? countTotal(counts) : kind === "unica" ? 1 : qty;
+  const addonQty = !wifiOnly && addWifi ? wifiQty : 0;
   const picked = FACE_MODELS.filter((m) => counts[m.id] > 0);
-  const pieces: OrderPiece[] = generic
-    ? piecesFromCounts(counts, {
-        google: normalizeNfcUrl("google", urls.google),
-        whatsapp: normalizeNfcUrl("whatsapp", urls.whatsapp),
-        instagram: normalizeNfcUrl("instagram", urls.instagram),
-      })
-    : Array.from({ length: liveQty }, () => ({
-        model: "personalizada" as const,
-        nfcUrl: design.googleUrl.trim(),
-      }));
-  const previewModel: FaceModel = generic
-    ? counts[focus] > 0
-      ? focus
-      : picked[0]?.id || "google"
-    : "personalizada";
+  const pieces: OrderPiece[] = wifiOnly
+    ? Array.from({ length: liveQty }, () => ({
+        model: "wifi" as const,
+        nfcUrl: wifiLandingUrl(design.wifiSsid || "", design.wifiPassword || "", Boolean(design.wifiOpen)),
+      }))
+    : generic
+      ? piecesFromCounts(counts, {
+          google: normalizeNfcUrl("google", urls.google),
+          whatsapp: normalizeNfcUrl("whatsapp", urls.whatsapp),
+          instagram: normalizeNfcUrl("instagram", urls.instagram),
+        })
+      : Array.from({ length: liveQty }, () => ({
+          model: "personalizada" as const,
+          nfcUrl: design.googleUrl.trim(),
+        }));
+  const previewModel: FaceModel = wifiOnly
+    ? "wifi"
+    : generic
+      ? counts[focus] > 0
+        ? focus
+        : picked[0]?.id || "google"
+      : "personalizada";
   const zone: ShippingZone = zoneFromPostalCode(form.postalCode);
-  const price = productPrice(kind, liveQty);
+  const price = goodsPrice(kind, liveQty, addonQty);
   const ship = handover === "mano" ? 0 : shippingCost(zone, shipping, price);
   const total = price + ship;
   const patch = (p: Partial<CardDesign>) => setDesign((d) => ({ ...d, ...p }));
@@ -169,6 +230,9 @@ export function Designer({
   }
 
   const designOk = useMemo(() => {
+    if (wifiOnly) {
+      return wifiConfigOk(design.wifiSsid || "", design.wifiPassword || "", Boolean(design.wifiOpen));
+    }
     if (kind === "unica" && !isHttpUrl(design.extraUrl || "")) return false;
     if (needsLogo(kind) && !design.logoDataUrl) return false;
     if (generic) {
@@ -176,7 +240,19 @@ export function Designer({
       return picked.every((m) => nfcUrlOk(m.id, urls[m.id]));
     }
     return nfcUrlOk("personalizada", design.googleUrl);
-  }, [kind, generic, picked, urls, design.googleUrl, design.logoDataUrl, design.extraUrl]);
+  }, [
+    kind,
+    wifiOnly,
+    generic,
+    picked,
+    urls,
+    design.googleUrl,
+    design.logoDataUrl,
+    design.extraUrl,
+    design.wifiSsid,
+    design.wifiPassword,
+    design.wifiOpen,
+  ]);
 
   const shipOk = useMemo(() => {
     if (admin && handover === "mano") return Boolean(form.name.trim());
@@ -228,6 +304,14 @@ export function Designer({
     setTried(true);
     setError("");
     if (!designOk) {
+      if (wifiOnly) {
+        setError(
+          !(design.wifiSsid || "").trim()
+            ? "Pon el nombre de la red Wi‑Fi (SSID)."
+            : "La contraseña Wi‑Fi tiene que tener al menos 8 caracteres, o marca red abierta.",
+        );
+        return;
+      }
       if (generic && !picked.length) {
         setError("Elige al menos una. Sube o baja la cantidad con + y −.");
         return;
@@ -267,11 +351,19 @@ export function Designer({
       );
       return;
     }
+    if (addonQty > 0 && !wifiConfigOk(wifiSsid, wifiPassword, wifiOpen)) {
+      setError(
+        !wifiSsid.trim()
+          ? "El TAP Wi‑Fi necesita el nombre de la red."
+          : "La contraseña Wi‑Fi tiene que tener al menos 8 caracteres, o marca red abierta.",
+      );
+      return;
+    }
     setBusy(true);
     try {
       const normalizedPieces = pieces.map((p) => ({
         model: p.model,
-        nfcUrl: normalizeNfcUrl(p.model, p.nfcUrl),
+        nfcUrl: wifiOnly ? p.nfcUrl : normalizeNfcUrl(p.model, p.nfcUrl),
       }));
       const res = await fetch("/api/orders", {
         method: "POST",
@@ -290,8 +382,22 @@ export function Designer({
             extraUrl: kind === "unica" ? design.extraUrl : normalizedPieces[1]?.nfcUrl,
             googleUrl: normalizedPieces[0]?.nfcUrl || design.googleUrl,
             pieces: kind === "unica" ? undefined : normalizedPieces,
+            wifiSsid: wifiOnly ? (design.wifiSsid || "").trim() : undefined,
+            wifiPassword: wifiOnly ? (design.wifiOpen ? "" : design.wifiPassword || "") : undefined,
+            wifiOpen: wifiOnly ? Boolean(design.wifiOpen) : undefined,
           },
-          previewDataUrl: preview,
+          wifiAddon:
+            addonQty > 0
+              ? {
+                  qty: addonQty,
+                  bodyColor: wifiBody,
+                  accentColor: wifiAccent,
+                  ssid: wifiSsid.trim(),
+                  password: wifiOpen ? "" : wifiPassword,
+                  open: wifiOpen,
+                }
+              : undefined,
+          previewDataUrl: wifiOnly ? undefined : preview,
           address: { ...form, zone },
         }),
       });
@@ -306,7 +412,7 @@ export function Designer({
             currency: "EUR",
             content_name: kind,
             content_type: "product",
-            num_items: liveQty,
+            num_items: liveQty + addonQty,
             order_id: orderId,
           },
           orderId,
@@ -323,7 +429,9 @@ export function Designer({
   const priceHint =
     kind === "unica"
       ? euros(PRICE.unica.first)
-      : `La primera ${euros(PRICE[kind].first)}, cada una más ${euros(PRICE[kind].extra)}`;
+      : kind === "wifi"
+        ? `${euros(PRICE.wifi.first)} cada una, con adhesivo para pared`
+        : `La primera ${euros(PRICE[kind].first)}, cada una más ${euros(PRICE[kind].extra)}`;
 
   return (
     <div className="pb-28 lg:pb-0">
@@ -372,15 +480,17 @@ export function Designer({
                   Elige y encarga
                 </h2>
                 <p className="mt-1 text-sm text-[#6f675c]">
-                  {generic
-                    ? `${priceHint}. Mezcla Google, WhatsApp e Instagram. Hasta ${MAX_QTY} en el mismo pedido.`
-                    : `${priceHint}. Hasta ${MAX_QTY} en el mismo pedido.`}{" "}
+                  {wifiOnly
+                    ? `${priceHint}. El diseño es este: Wi‑Fi y TAP HERE. Eliges colores y nos das la red.`
+                    : generic
+                      ? `${priceHint}. Mezcla Google, WhatsApp e Instagram. Hasta ${MAX_QTY} en el mismo pedido.`
+                      : `${priceHint}. Hasta ${MAX_QTY} en el mismo pedido.`}{" "}
                   Lo ves en 3D. Luego la dirección en España.
                 </p>
               </div>
 
               {admin ? (
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {kindsFor(true).map((k) => (
                     <button
                       key={k}
@@ -388,6 +498,7 @@ export function Designer({
                       onClick={() => {
                         setKind(k);
                         setQty(1);
+                        setAddWifi(false);
                         if (k === "generica") {
                           setCounts(countsFromModels(["google"]));
                           setFocus("google");
@@ -408,7 +519,47 @@ export function Designer({
                 </div>
               ) : null}
 
-              {generic ? (
+              {wifiOnly ? (
+                <>
+                  <p className="rounded-2xl bg-[#faf6ee] p-3 text-sm text-[#5c564c]">
+                    Diseño fijo: Wi‑Fi + TAP HERE. Lleva adhesivo para pared. Al TAP, tus
+                    clientes ven la red y la clave (Android se une; iPhone copia y pega).
+                    Alquileres, hoteles, restaurantes y cualquier negocio con Wi‑Fi de
+                    invitados.
+                  </p>
+                  <div>
+                    <p className="mb-2 text-sm text-[#3f3a34]">Cuántas</p>
+                    <div className="flex items-center justify-between rounded-2xl bg-[#f3eee4] px-3 py-3">
+                      <div>
+                        <div className="text-sm font-semibold">{productLabel("wifi", qty)}</div>
+                        <div className="text-lg font-semibold">{euros(productPrice("wifi", qty))}</div>
+                        <p className="mt-1 text-xs text-[#8a8173]">{euros(PRICE.wifi.first)} cada una</p>
+                      </div>
+                      <QtyStepper
+                        value={qty}
+                        onDec={() => setQty((q) => clampQty(q - 1))}
+                        onInc={() => setQty((q) => clampQty(q + 1))}
+                        disableDec={qty <= 1}
+                        disableInc={qty >= MAX_QTY}
+                      />
+                    </div>
+                  </div>
+                  <WifiCredsFields
+                    ssid={design.wifiSsid || ""}
+                    password={design.wifiPassword || ""}
+                    open={Boolean(design.wifiOpen)}
+                    tried={tried}
+                    onSsid={(v) => patch({ wifiSsid: v })}
+                    onPassword={(v) => patch({ wifiPassword: v })}
+                    onOpen={(v) => patch({ wifiOpen: v, wifiPassword: v ? "" : design.wifiPassword })}
+                  />
+                  {!admin ? (
+                    <a href="/personalizar" className="text-sm text-[#7a7266] underline">
+                      Prefiero el atril de barra (Google, WhatsApp o Instagram)
+                    </a>
+                  ) : null}
+                </>
+              ) : generic ? (
                 <>
                   <div>
                     <p className="mb-2 text-sm text-[#3f3a34]">Cuántas de cada una</p>
@@ -563,18 +714,27 @@ export function Designer({
                         <p className="mb-2 text-sm text-[#3f3a34]">
                           Logo {tried && !design.logoDataUrl ? <span className="text-red-700">· obligatorio</span> : null}
                         </p>
-                        <label className="flex min-h-14 cursor-pointer items-center justify-center rounded-2xl border border-dashed border-[#cfc4b2] bg-[#fffcf7] px-3 text-sm">
-                          {design.logoDataUrl ? "Cambiar logo" : "Subir logo"}
-                          <input
-                            type="file"
-                            accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                            className="sr-only"
-                            onChange={(e) => onLogo(e.target.files?.[0])}
-                          />
-                        </label>
+                        <div className="flex items-center gap-3">
+                          {design.logoDataUrl ? (
+                            <LogoPreview
+                              dataUrl={design.logoDataUrl}
+                              accent={ACCENT_HEX[design.accentColor] ?? ACCENT_HEX.amarillo}
+                              body={BODY_COLORS.find((c) => c.id === design.bodyColor)?.hex ?? "#141416"}
+                            />
+                          ) : null}
+                          <label className="flex min-h-14 flex-1 cursor-pointer items-center justify-center rounded-2xl border border-dashed border-[#cfc4b2] bg-[#fffcf7] px-3 text-sm">
+                            {design.logoDataUrl ? "Cambiar logo" : "Subir logo"}
+                            <input
+                              type="file"
+                              accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                              className="sr-only"
+                              onChange={(e) => onLogo(e.target.files?.[0])}
+                            />
+                          </label>
+                        </div>
                         <p className="mt-2 text-xs text-[#8a8173]">
-                          PNG con fondo transparente si puedes. Se imprime en el color de acento, en
-                          el mismo sitio que la G.
+                          PNG, JPG o WebP. Da igual si tiene fondo blanco, negro u otro color: lo
+                          quitamos y lo imprimimos en el color de acento, donde iría la G.
                         </p>
                         {design.logoDataUrl && (
                           <button
@@ -671,7 +831,9 @@ export function Designer({
               </div>
 
               <div>
-                <p className="mb-2 text-sm text-[#3f3a34]">Relieve (logo, TAP, texto)</p>
+                <p className="mb-2 text-sm text-[#3f3a34]">
+                  {wifiOnly ? "Relieve (Wi‑Fi y TAP HERE)" : "Relieve (logo, TAP, texto)"}
+                </p>
                 <div className="flex gap-3">
                   {ACCENT_COLORS.map((c) => (
                     <button
@@ -834,25 +996,115 @@ export function Designer({
                 </>
               )}
 
+              {!wifiOnly ? (
+                <div className="rounded-[22px] border border-[#e6ddd0] bg-[#fffcf7] p-4">
+                  <label className="flex cursor-pointer items-start gap-3">
+                    <input
+                      type="checkbox"
+                      className="mt-1 h-4 w-4"
+                      checked={addWifi}
+                      onChange={(e) => setAddWifi(e.target.checked)}
+                    />
+                    <span>
+                      <span className="font-semibold text-[#1c1915]">Añade TAP Wi‑Fi de pared</span>
+                      <span className="mt-0.5 block text-sm text-[#6f675c]">
+                        {euros(PRICE.wifi.first)} cada una. Se pega a la pared. Tus clientes TAP y
+                        se conectan al Wi‑Fi. Diseño fijo, con adhesivo. Ideal en alquileres,
+                        hoteles y restaurantes.
+                      </span>
+                    </span>
+                  </label>
+                  {addWifi ? (
+                    <div className="mt-4 space-y-3 border-t border-[#eee6da] pt-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Unidades · {euros(wifiPrice(wifiQty))}</span>
+                        <QtyStepper
+                          value={wifiQty}
+                          onDec={() => setWifiQty((q) => clampQty(q - 1))}
+                          onInc={() => setWifiQty((q) => clampQty(q + 1))}
+                          disableDec={wifiQty <= 1}
+                          disableInc={wifiQty >= MAX_QTY}
+                        />
+                      </div>
+                      <div>
+                        <p className="mb-2 text-sm text-[#3f3a34]">Color</p>
+                        <div className="flex gap-3">
+                          {BODY_COLORS.map((c) => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              title={c.label}
+                              onClick={() => setWifiBody(c.id)}
+                              className={`h-10 w-10 rounded-full border-2 ${
+                                wifiBody === c.id ? "border-[#1c1915]" : "border-[#e6ddd0]"
+                              }`}
+                              style={{ background: c.hex }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="mb-2 text-sm text-[#3f3a34]">Relieve</p>
+                        <div className="flex gap-3">
+                          {ACCENT_COLORS.map((c) => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              title={c.label}
+                              onClick={() => setWifiAccent(c.id)}
+                              className={`h-10 w-10 rounded-full border-2 ${
+                                wifiAccent === c.id ? "border-[#1c1915]" : "border-[#e6ddd0]"
+                              }`}
+                              style={{ background: ACCENT_HEX[c.id] }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <WifiCredsFields
+                        ssid={wifiSsid}
+                        password={wifiPassword}
+                        open={wifiOpen}
+                        tried={tried}
+                        onSsid={setWifiSsid}
+                        onPassword={setWifiPassword}
+                        onOpen={(v) => {
+                          setWifiOpen(v);
+                          if (v) setWifiPassword("");
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <a href="/wifi" className="mt-3 inline-block text-sm text-[#7a7266] underline">
+                      Ver el TAP Wi‑Fi en 3D
+                    </a>
+                  )}
+                </div>
+              ) : null}
+
               <div className="rounded-2xl bg-[#faf6ee] p-4 text-sm">
                 <Row
                   k="Producto"
-                  v={`${productLabel(kind, liveQty, pieces)} · ${euros(price)}`}
+                  v={`${orderGoodsLabel(kind, liveQty, pieces, addonQty)} · ${euros(price)}`}
                 />
                 {packSaving(kind, liveQty) > 0 ? (
                   <Row k="Pack" v={`Ahorras ${euros(packSaving(kind, liveQty))} (no ${euros(packWas(kind, liveQty))})`} />
                 ) : null}
-                {generic
-                  ? picked.map((m) => (
-                      <Row
-                        key={m.id}
-                        k={counts[m.id] > 1 ? `${m.label} × ${counts[m.id]}` : m.label}
-                        v={urls[m.id] || "—"}
-                      />
-                    ))
-                  : (
-                      <Row k="NFC" v={design.googleUrl || "—"} />
-                    )}
+                {addonQty > 0 ? (
+                  <Row k="TAP Wi‑Fi" v={`${wifiQty > 1 ? `× ${wifiQty} · ` : ""}${euros(wifiPrice(addonQty))}`} />
+                ) : null}
+                {wifiOnly ? (
+                  <Row k="Red Wi‑Fi" v={design.wifiSsid || "—"} />
+                ) : generic ? (
+                  picked.map((m) => (
+                    <Row
+                      key={m.id}
+                      k={counts[m.id] > 1 ? `${m.label} × ${counts[m.id]}` : m.label}
+                      v={urls[m.id] || "—"}
+                    />
+                  ))
+                ) : (
+                  <Row k="NFC" v={design.googleUrl || "—"} />
+                )}
                 <Row k="Zona" v={form.postalCode.length === 5 ? ZONE_LABEL[zone] : "Pon el CP"} />
                 <Row k="Envío Correos" v={form.postalCode.length === 5 ? (ship === 0 ? "Gratis" : euros(ship)) : "—"} />
                 <div className="mt-3 flex justify-between text-lg font-semibold">
@@ -882,7 +1134,9 @@ export function Designer({
       >
         <div className="mx-auto flex max-w-6xl items-center gap-3">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm text-[#6f675c]">{productLabel(kind, liveQty, pieces)}</p>
+            <p className="truncate text-sm text-[#6f675c]">
+              {orderGoodsLabel(kind, liveQty, pieces, addonQty)}
+            </p>
             <p className="font-semibold">{euros(total)}</p>
           </div>
           {step === "diseno" ? (
@@ -905,6 +1159,67 @@ export function Designer({
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function WifiCredsFields({
+  ssid,
+  password,
+  open,
+  tried,
+  onSsid,
+  onPassword,
+  onOpen,
+}: {
+  ssid: string;
+  password: string;
+  open: boolean;
+  tried: boolean;
+  onSsid: (v: string) => void;
+  onPassword: (v: string) => void;
+  onOpen: (v: boolean) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <Field
+        label="Nombre de la red (SSID)"
+        hint={tried && !ssid.trim() ? "Obligatorio. Lo grabamos en el chip." : ""}
+      >
+        <input
+          autoCapitalize="none"
+          autoCorrect="off"
+          maxLength={32}
+          placeholder="WiFi_Invitados"
+          value={ssid}
+          onChange={(e) => onSsid(e.target.value)}
+        />
+      </Field>
+      <label className="flex items-center gap-2 text-sm text-[#3f3a34]">
+        <input type="checkbox" className="h-4 w-4" checked={open} onChange={(e) => onOpen(e.target.checked)} />
+        Red abierta (sin contraseña)
+      </label>
+      {open ? null : (
+        <Field
+          label="Contraseña Wi‑Fi"
+          hint={tried && password.trim().length < 8 ? "Mínimo 8 caracteres (WPA)." : ""}
+        >
+          <input
+            type="text"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            maxLength={63}
+            placeholder="La clave que das a los clientes"
+            value={password}
+            onChange={(e) => onPassword(e.target.value)}
+          />
+        </Field>
+      )}
+      <p className="text-xs text-[#8a8173]">
+        La clave va en el chip, no en una web pública. iPhone abre la red y la clave; Android
+        se une solo. No se puede cambiar el dibujo: es TAP HERE.
+      </p>
     </div>
   );
 }

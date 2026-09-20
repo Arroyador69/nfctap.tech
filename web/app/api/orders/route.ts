@@ -1,12 +1,12 @@
 import { isAdmin } from "@/lib/auth";
 import {
   clampQty,
+  goodsPrice,
   isCatalogModel,
   isFaceModel,
   MAX_QTY,
   needsLogo,
   parseKind,
-  productPrice as catalogPrice,
 } from "@/lib/catalog";
 import { newId } from "@/lib/ids";
 import {
@@ -21,7 +21,8 @@ import { cleanMetaCookie, cleanMetaIp } from "@/lib/meta-capi";
 import { createPolarCheckout, customerIp, polarReady } from "@/lib/polar";
 import { shippingCost, zoneFromPostalCode } from "@/lib/shipping";
 import { addOrder, getShipping, listOrders } from "@/lib/store";
-import type { Address, CardDesign, FaceModel, Handover, OrderPiece } from "@/lib/types";
+import type { Address, AccentColor, BodyColor, CardDesign, FaceModel, Handover, OrderPiece, WifiAddon } from "@/lib/types";
+import { wifiConfigOk, wifiLandingUrl } from "@/lib/wifi-tap";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -32,6 +33,21 @@ export async function GET() {
 }
 
 function parsePieces(kind: CardDesign["kind"], design: CardDesign, qty: number): OrderPiece[] | { error: string } {
+  if (kind === "wifi") {
+    const ssid = (design?.wifiSsid || "").trim();
+    const open = Boolean(design?.wifiOpen);
+    const password = open ? "" : (design?.wifiPassword || "").trim();
+    if (!wifiConfigOk(ssid, password, open)) {
+      return {
+        error: !ssid
+          ? "Falta el nombre de la red Wi‑Fi"
+          : "La contraseña Wi‑Fi tiene que tener al menos 8 caracteres, o marca red abierta",
+      };
+    }
+    const url = wifiLandingUrl(ssid, password, open);
+    const piece: OrderPiece = { model: "wifi", nfcUrl: url };
+    return Array.from({ length: clampQty(qty) }, () => ({ ...piece }));
+  }
   const raw = Array.isArray(design?.pieces) ? design.pieces : [];
   if (kind === "unica") {
     if (!nfcUrlOk("google", design?.googleUrl || "") && !isHttpUrl(design?.googleUrl || "")) {
@@ -83,6 +99,31 @@ function parsePieces(kind: CardDesign["kind"], design: CardDesign, qty: number):
   return pieces;
 }
 
+const BODY_OK: BodyColor[] = ["negro", "blanco", "rojo"];
+const ACCENT_OK: AccentColor[] = ["oro", "amarillo", "blanco", "rojo", "negro"];
+
+function parseWifiAddon(kind: CardDesign["kind"], raw: unknown): WifiAddon | undefined | { error: string } {
+  if (kind === "wifi" || raw == null) return undefined;
+  if (typeof raw !== "object") return { error: "TAP Wi‑Fi no válido" };
+  const v = raw as Record<string, unknown>;
+  const qty = clampQty(v.qty);
+  const ssid = typeof v.ssid === "string" ? v.ssid.trim() : "";
+  const open = Boolean(v.open);
+  const password = open ? "" : typeof v.password === "string" ? v.password.trim() : "";
+  if (!wifiConfigOk(ssid, password, open)) {
+    return {
+      error: !ssid
+        ? "El TAP Wi‑Fi necesita el nombre de la red"
+        : "La contraseña Wi‑Fi del TAP de pared no es válida",
+    };
+  }
+  const bodyColor = BODY_OK.includes(v.bodyColor as BodyColor) ? (v.bodyColor as BodyColor) : "negro";
+  const accentColor = ACCENT_OK.includes(v.accentColor as AccentColor)
+    ? (v.accentColor as AccentColor)
+    : "blanco";
+  return { qty, ssid, password, open, bodyColor, accentColor };
+}
+
 export async function POST(req: Request) {
   const body = await req.json();
   const admin = await isAdmin();
@@ -105,6 +146,11 @@ export async function POST(req: Request) {
   if (kind !== "unica" && qty < 1) {
     return NextResponse.json({ error: "Elige al menos una pieza" }, { status: 400 });
   }
+  const addonOrErr = parseWifiAddon(kind, body.wifiAddon);
+  if (addonOrErr && "error" in addonOrErr) {
+    return NextResponse.json({ error: addonOrErr.error }, { status: 400 });
+  }
+  const wifiAddon = addonOrErr;
   const address = (body.address || {}) as Address;
 
   if (
@@ -178,7 +224,7 @@ export async function POST(req: Request) {
       : undefined;
 
   const settings = await getShipping();
-  const productEuros = catalogPrice(kind, qty);
+  const productEuros = goodsPrice(kind, qty, wifiAddon?.qty || 0);
   const shippingPrice = handover === "mano" ? 0 : shippingCost(normalized.zone, settings, productEuros);
   const id = newId();
 
@@ -192,14 +238,17 @@ export async function POST(req: Request) {
       model: pieces[0].model,
       template: "clasica",
       bodyColor: design?.bodyColor ?? "negro",
-      accentColor: design?.accentColor ?? "amarillo",
-      line1: kind === "generica" ? "" : (design.line1 || "").trim().slice(0, 22),
+      accentColor: design?.accentColor ?? (kind === "wifi" ? "blanco" : "amarillo"),
+      line1: kind === "generica" || kind === "wifi" ? "" : (design.line1 || "").trim().slice(0, 22),
       line2: "",
       logoDataUrl: logo,
       logoMask,
       googleUrl: pieces[0].nfcUrl,
       extraUrl: pieces[1]?.nfcUrl,
       pieces,
+      wifiSsid: kind === "wifi" ? (design.wifiSsid || "").trim() : undefined,
+      wifiPassword: kind === "wifi" ? (design.wifiOpen ? "" : design.wifiPassword || "") : undefined,
+      wifiOpen: kind === "wifi" ? Boolean(design.wifiOpen) : undefined,
     },
     address: normalized,
     productPrice: productEuros,
@@ -209,6 +258,7 @@ export async function POST(req: Request) {
     source: fromAdmin ? "admin" : "web",
     handover,
     previewDataUrl: preview,
+    wifiAddon,
     notes: fromAdmin ? "Creado desde el admin." : polarReady() ? "" : "Pago Polar pendiente de conectar.",
     metaFbp: fromAdmin ? undefined : cleanMetaCookie(body.fbp, "fbp"),
     metaFbc: fromAdmin ? undefined : cleanMetaCookie(body.fbc, "fbc"),
@@ -234,7 +284,7 @@ export async function POST(req: Request) {
       email: normalized.email,
       name: normalized.name,
       successUrl: `${origin}/pedido/ok?id=${id}&checkout_id={CHECKOUT_ID}`,
-      returnUrl: `${origin}/personalizar?models=${pieces.map((p) => p.model).join(",")}`,
+      returnUrl: `${origin}${kind === "wifi" ? "/wifi" : `/personalizar?models=${pieces.map((p) => p.model).join(",")}`}`,
       productEuros,
       shippingEuros: shippingPrice,
       totalEuros: order.total,
@@ -244,6 +294,7 @@ export async function POST(req: Request) {
       line1: normalized.line1,
       zone: normalized.zone,
       models: pieces.map((p) => p.model).join(","),
+      wifiQty: wifiAddon?.qty || (kind === "wifi" ? qty : 0),
     });
   } catch {
     checkoutUrl = null;

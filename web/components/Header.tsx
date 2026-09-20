@@ -26,6 +26,9 @@ export function Header() {
           <Link href="/#precios" className="hover:text-[#1c1915]">
             Precios
           </Link>
+          <Link href="/wifi" className="hover:text-[#1c1915]">
+            Wi‑Fi
+          </Link>
           <Link
             href="/personalizar"
             className="rounded-full bg-[#1c1915] px-4 py-2 font-medium text-[#f6f1e7]"

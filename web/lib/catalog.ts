@@ -32,6 +32,7 @@ export const PRICE = {
   generica: { first: 20, extra: 15 },
   personalizada: { first: 30, extra: 25 },
   unica: { first: 70, extra: 0 },
+  wifi: { first: 15, extra: 15 },
 } as const;
 
 /** Compat: una y pack de dos. El resto usa productPrice(). */
@@ -39,6 +40,7 @@ export const PRICES: Record<ProductKind, { 1: number; 2: number }> = {
   generica: { 1: PRICE.generica.first, 2: PRICE.generica.first + PRICE.generica.extra },
   personalizada: { 1: PRICE.personalizada.first, 2: PRICE.personalizada.first + PRICE.personalizada.extra },
   unica: { 1: PRICE.unica.first, 2: PRICE.unica.first },
+  wifi: { 1: PRICE.wifi.first, 2: PRICE.wifi.first + PRICE.wifi.extra },
 };
 
 export function productPrice(kind: ProductKind, qty: number) {
@@ -47,6 +49,16 @@ export function productPrice(kind: ProductKind, qty: number) {
   if (kind === "unica") return PRICE.unica.first;
   const { first, extra } = PRICE[kind];
   return first + extra * (n - 1);
+}
+
+export function wifiPrice(qty: number) {
+  return productPrice("wifi", qty);
+}
+
+/** Atriles + TAP Wi‑Fi de pared en el mismo pedido. */
+export function goodsPrice(kind: ProductKind, qty: number, wifiAddonQty = 0) {
+  const wifi = kind === "wifi" ? 0 : wifiPrice(wifiAddonQty);
+  return productPrice(kind, qty) + wifi;
 }
 
 export type ModelCounts = Record<CatalogModel, number>;
@@ -101,6 +113,7 @@ export const MODEL_LABEL: Record<FaceModel, string> = {
   whatsapp: "WhatsApp",
   instagram: "Instagram",
   personalizada: "Con logo",
+  wifi: "TAP Wi‑Fi",
 };
 
 export function clampQty(value: unknown, min = 1) {
@@ -129,9 +142,9 @@ export function packWas(kind: ProductKind, qty = 2) {
   return PRICE[kind].first * Math.max(1, Math.floor(qty));
 }
 
-/** 5 € por cada pieza a partir de la segunda. */
+/** 5 € por cada pieza a partir de la segunda. Wi‑Fi no tiene pack. */
 export function packSaving(kind: ProductKind, qty: number) {
-  if (kind === "unica" || qty < 2) return 0;
+  if (kind === "unica" || kind === "wifi" || qty < 2) return 0;
   return PRICE[kind].first * qty - productPrice(kind, qty);
 }
 
@@ -178,6 +191,7 @@ export const KIND_META: Record<ProductKind, { label: string; short: string }> = 
   generica: { label: "Genérica", short: "Google, WhatsApp o Instagram" },
   personalizada: { label: "Con tu logo", short: "Tu marca" },
   unica: { label: "Pieza única", short: "Tu negocio · 2 NFC" },
+  wifi: { label: "TAP Wi‑Fi pared", short: "Pared · adhesivo" },
 };
 
 export function isCatalogModel(value: unknown): value is CatalogModel {
@@ -185,11 +199,11 @@ export function isCatalogModel(value: unknown): value is CatalogModel {
 }
 
 export function isFaceModel(value: unknown): value is FaceModel {
-  return isCatalogModel(value) || value === "personalizada";
+  return isCatalogModel(value) || value === "personalizada" || value === "wifi";
 }
 
 export function needsLogo(kind: ProductKind) {
-  return kind !== "generica";
+  return kind === "personalizada" || kind === "unica";
 }
 
 export function qtysFor(kind: ProductKind): number[] {
@@ -197,7 +211,7 @@ export function qtysFor(kind: ProductKind): number[] {
 }
 
 export function parseKind(value: unknown, allowUnica = false): ProductKind {
-  if (value === "generica" || value === "personalizada") return value;
+  if (value === "generica" || value === "personalizada" || value === "wifi") return value;
   if (allowUnica && value === "unica") return value;
   return "generica";
 }
@@ -212,15 +226,25 @@ export function parseModels(value: unknown): CatalogModel[] {
 }
 
 export function kindsFor(admin: boolean): ProductKind[] {
-  return admin ? ["generica", "personalizada", "unica"] : ["generica", "personalizada"];
+  return admin ? ["generica", "personalizada", "unica", "wifi"] : ["generica", "personalizada"];
 }
 
 export function productLabel(kind: ProductKind, qty: number, pieces?: OrderPiece[]) {
+  if (kind === "wifi") {
+    const n = Math.max(1, qty);
+    return n > 1 ? `TAP Wi‑Fi pared × ${n}` : "TAP Wi‑Fi pared";
+  }
   const fromPieces = piecesLabel(pieces);
   if (fromPieces) return fromPieces;
   const base = KIND_META[kind].label;
   if (kind === "unica") return base;
   return `${base} × ${Math.max(1, qty)}`;
+}
+
+export function orderGoodsLabel(kind: ProductKind, qty: number, pieces?: OrderPiece[], wifiQty = 0) {
+  const base = productLabel(kind, qty, pieces);
+  if (kind === "wifi" || wifiQty < 1) return base;
+  return `${base} + TAP Wi‑Fi${wifiQty > 1 ? ` × ${wifiQty}` : ""}`;
 }
 
 export function piecesLabel(pieces?: OrderPiece[] | null) {
@@ -239,6 +263,10 @@ export function orderPieces(order: Pick<Order, "kind" | "qty" | "design">): Orde
   const listed = (order.design.pieces || []).filter(
     (p) => isFaceModel(p.model) && typeof p.nfcUrl === "string" && p.nfcUrl.trim(),
   );
+  if (order.kind === "wifi") {
+    const url = listed[0]?.nfcUrl || (order.design.googleUrl || "").trim();
+    return Array.from({ length: clampQty(order.qty) }, () => ({ model: "wifi" as const, nfcUrl: url }));
+  }
   if (listed.length) return listed.slice(0, MAX_QTY);
   const first: OrderPiece = {
     model:
@@ -266,7 +294,24 @@ export function orderPieces(order: Pick<Order, "kind" | "qty" | "design">): Orde
   return Array.from({ length: n }, () => ({ ...first }));
 }
 
-export function defaultDesign(kind: ProductKind, model: FaceModel = kind === "generica" ? "google" : "personalizada"): CardDesign {
+export function defaultDesign(kind: ProductKind, model: FaceModel = kind === "generica" ? "google" : kind === "wifi" ? "wifi" : "personalizada"): CardDesign {
+  if (kind === "wifi") {
+    return {
+      kind: "wifi",
+      model: "wifi",
+      template: "clasica",
+      bodyColor: "negro",
+      accentColor: "blanco",
+      line1: "",
+      line2: "",
+      googleUrl: "",
+      extraUrl: "",
+      wifiSsid: "",
+      wifiPassword: "",
+      wifiOpen: false,
+      pieces: [{ model: "wifi", nfcUrl: "" }],
+    };
+  }
   return {
     kind,
     model,
@@ -282,7 +327,8 @@ export function defaultDesign(kind: ProductKind, model: FaceModel = kind === "ge
 }
 
 export function designForModel(model: FaceModel, base?: CardDesign): CardDesign {
-  const kind: ProductKind = model === "personalizada" ? "personalizada" : "generica";
+  const kind: ProductKind =
+    model === "wifi" ? "wifi" : model === "personalizada" ? "personalizada" : "generica";
   return {
     ...(base || defaultDesign(kind, model)),
     kind,

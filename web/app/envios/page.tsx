@@ -17,7 +17,8 @@ export default async function EnviosPage() {
         {euros(productPrice("generica", 2))}, no {euros(packWas("generica", 2))}) y con logo la
         primera {euros(PRICE.personalizada.first)}, cada una más{" "}
         {euros(PRICE.personalizada.extra)} (2 = {euros(productPrice("personalizada", 2))}, no{" "}
-        {euros(packWas("personalizada", 2))}).
+        {euros(packWas("personalizada", 2))}). TAP Wi‑Fi de pared {euros(PRICE.wifi.first)}{" "}
+        cada una, con adhesivo.
       </p>
       <ul className="mt-8 space-y-3 text-sm">
         <li className="flex justify-between rounded-2xl border border-[#e6ddd0] bg-white px-4 py-3">

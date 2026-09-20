@@ -23,6 +23,7 @@ npm run dev
 | Pack × 2 (también una de cada) | `POLAR_PRODUCT_GENERIC_2` | 35 € (no 40 €) |
 | Con logo × 1 | `POLAR_PRODUCT_CUSTOM_1` | 30 € |
 | Con logo × 2 | `POLAR_PRODUCT_CUSTOM_2` | 55 € (no 60 €) |
+| TAP Wi‑Fi pared × 1+ | `POLAR_PRODUCT_WIFI_1` | 15 € cada una |
 
 La pieza única (70 €) no se vende en Polar: se cierra por email.
 
@@ -34,7 +35,7 @@ En [polar.sh](https://polar.sh) (organización NFCTap, **producción**, no sandb
 
 1. Settings → Organization Access Token con `products:write`, `checkouts:write` y `checkouts:read`.
 2. Settings → Webhooks → endpoint `https://nfctap.tech/api/webhook/polar` (formato Raw). Eventos: `checkout.updated`, `order.created`, `order.paid`. Copia el secret `whsec_…`.
-3. Crea los 4 productos:
+3. Crea los productos (atriles + TAP Wi‑Fi):
 
 ```bash
 cd web
@@ -43,7 +44,7 @@ POLAR_ACCESS_TOKEN=polar_oat_… POLAR_SERVER=production npm run polar:setup
 
 El script escribe los IDs en `.env.local`. Pégalos también en Vercel.
 
-4. En Vercel: `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET`, `POLAR_SERVER=production` y los cuatro `POLAR_PRODUCT_*`.
+4. En Vercel: `POLAR_ACCESS_TOKEN`, `POLAR_WEBHOOK_SECRET`, `POLAR_SERVER=production` y los `POLAR_PRODUCT_*` (incl. `POLAR_PRODUCT_WIFI_1`).
 
 **Bizum** no se activa a mano. Polar lo muestra en el checkout cuando el comprador está en España (EUR, pago único). La web le pasa la IP y el país ES. El cliente confirma en su banco; Polar cobra, envía el recibo y avisa a la web por webhook. No uses Bizum al número de teléfono de la tienda: eso es entre particulares, no hay confirmación automática del pedido.
 

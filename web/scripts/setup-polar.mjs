@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Crea en Polar los 4 productos one-time (20 / 35 / 30 / 55 €).
+ * Crea en Polar los productos one-time (20 / 35 / 30 / 55 / Wi‑Fi 15 €).
  * El pack de dos NO es un cupón: es otro producto.
  *
  *   cd web && npm run polar:setup
@@ -51,6 +51,14 @@ const PRODUCTS = [
     euros: 55,
     description:
       "Pack de dos personalizadas: 55 € (no 60 €). Impreso en España. Precio con IVA. En el pago se suma el envío según zona.",
+  },
+  {
+    env: "POLAR_PRODUCT_WIFI_1",
+    sku: "WIFI_1",
+    name: "NFCTap Wi‑Fi pared",
+    euros: 15,
+    description:
+      "Placa NFC de pared TAP HERE: el huésped acerca el móvil y se conecta al Wi‑Fi. Diseño fijo, adhesivo incluido. Impreso en España. Precio con IVA. En el pago se suma el envío según zona.",
   },
 ];
 

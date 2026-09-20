@@ -76,6 +76,43 @@ export default function HomePage() {
           </article>
         </div>
 
+        <section id="otros" className="mt-16">
+          <p className="text-xs uppercase tracking-[0.2em] text-[#b0892c]">Otros productos NFC</p>
+          <h2 className="mt-2 font-[family-name:var(--font-display)] text-3xl sm:text-4xl">
+            TAP Wi‑Fi de pared
+          </h2>
+          <p className="mt-3 max-w-2xl text-[#5c564c]">
+            Tus clientes tienen el Wi‑Fi y la contraseña configurados en el chip. Acercan el
+            móvil y se conectan. Diseño fijo, con adhesivo para pared. Alquileres vacacionales,
+            hoteles, restaurantes y cualquier negocio.
+          </p>
+          <article className="mt-8 grid items-center gap-6 rounded-[28px] border border-[#e6ddd0] bg-white p-5 sm:grid-cols-[minmax(0,220px)_1fr] sm:p-6">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/wifi-pared.jpg"
+              alt="Placa NFC Wi‑Fi de pared TAP HERE"
+              className="mx-auto w-full max-w-[220px] rounded-[22px] bg-[#f3eee4] object-cover"
+            />
+            <div className="flex flex-col">
+              <p className="text-xs uppercase tracking-wider text-[#b0892c]">15 € · adhesivo incluido</p>
+              <h3 className="mt-1 text-xl font-semibold">Wi‑Fi + TAP HERE</h3>
+              <p className="mt-2 flex-1 text-sm text-[#6f675c]">
+                No se personaliza el dibujo. Eliges colores de PLA (negro, blanco, rojo /
+                amarillo). Lo ves en 3D. Al encargar nos das la red y la clave; nosotros
+                programamos el NFC. Al pedir atriles te lo recomendamos también.
+              </p>
+              <p className="mt-4 text-4xl font-semibold">{euros(PRICE.wifi.first)}</p>
+              <p className="text-sm text-[#8a8173]">cada una · envío a España en 24 h</p>
+              <Link
+                href="/wifi"
+                className="mt-6 inline-block w-fit rounded-full bg-[#1c1915] px-5 py-2.5 text-center text-sm font-medium text-[#f6f1e7]"
+              >
+                Ver en 3D y encargar
+              </Link>
+            </div>
+          </article>
+        </section>
+
         <p className="mt-10 max-w-2xl text-sm leading-6 text-[#6f675c]">
           <span className="font-semibold text-[#1c1915]">Hasta {MAX_QTY} por pedido. </span>
           Las cantidades se eligen en la página de encargo. Si necesitas más,{" "}

@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { DashboardNav } from "@/components/DashboardNav";
 import { isAdmin } from "@/lib/auth";
-import { MODEL_LABEL, orderPieces, productLabel } from "@/lib/catalog";
+import { MODEL_LABEL, orderGoodsLabel, orderPieces } from "@/lib/catalog";
 import { ATRIL } from "@/lib/atril-geom";
 import { orderToSpec, pauseLayer } from "@/lib/print-spec";
 import { euros, ZONE_LABEL } from "@/lib/shipping";
@@ -32,7 +32,7 @@ export default async function OrderPage({
       </Link>
       <h1 className="mt-4 text-2xl font-semibold">{order.id}</h1>
       <p className="text-[#6f675c]">
-        {productLabel(order.kind, order.qty, pieces)} · {euros(order.total)} ·{" "}
+        {orderGoodsLabel(order.kind, order.qty, pieces, order.wifiAddon?.qty || 0)} · {euros(order.total)} ·{" "}
         {order.handover === "mano" ? "En mano" : ZONE_LABEL[order.address.zone]} ·{" "}
         {order.source === "admin" ? "Admin" : "Web"}
       </p>
@@ -47,6 +47,9 @@ export default async function OrderPage({
         Pozo bajo el icono (no abajo). Pausa capa {pause.layer} ({pause.z.toFixed(2)} mm):
         hueco con disco de acento Ø{ATRIL.PAD_D}. Pegatina Ø{ATRIL.STICKER_D} encima, adhesivo
         abajo, y continuar.
+        {order.kind === "wifi" || order.wifiAddon
+          ? " TAP Wi‑Fi: reverso en cama, pausa capa 10, adhesivo 3M en el sobre."
+          : ""}
       </p>
 
       {order.previewDataUrl && (
@@ -77,6 +80,28 @@ export default async function OrderPage({
             v={p.nfcUrl || "Pendiente"}
           />
         ))}
+        {order.kind === "wifi" ? (
+          <>
+            <Item k="Red Wi‑Fi" v={order.design.wifiSsid || "—"} />
+            <Item
+              k="Clave Wi‑Fi"
+              v={order.design.wifiOpen ? "Red abierta" : order.design.wifiPassword || "—"}
+            />
+          </>
+        ) : null}
+        {order.wifiAddon ? (
+          <>
+            <Item
+              k="TAP Wi‑Fi extra"
+              v={`${order.wifiAddon.qty} × ${order.wifiAddon.bodyColor} / ${order.wifiAddon.accentColor}`}
+            />
+            <Item k="Red TAP Wi‑Fi" v={order.wifiAddon.ssid} />
+            <Item
+              k="Clave TAP Wi‑Fi"
+              v={order.wifiAddon.open ? "Red abierta" : order.wifiAddon.password}
+            />
+          </>
+        ) : null}
         {order.kind === "unica" && !pieces[1] ? <Item k="Segundo NFC" v={order.design.extraUrl || "Pendiente"} /> : null}
         <Item k="Cuerpo" v={spec.colores.cuerpo} />
         <Item k="Acento" v={spec.colores.acento} />

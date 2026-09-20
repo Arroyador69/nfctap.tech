@@ -8,6 +8,8 @@ const PRODUCT_ENV = [
   "POLAR_PRODUCT_CUSTOM_2",
 ] as const;
 
+const WIFI_ENV = "POLAR_PRODUCT_WIFI_1";
+
 export function polarHasToken() {
   return Boolean(process.env.POLAR_ACCESS_TOKEN);
 }
@@ -26,7 +28,12 @@ export function polarMissing() {
   return missing;
 }
 
+export function polarWifiReady() {
+  return Boolean(polarReady() && process.env[WIFI_ENV]);
+}
+
 export function polarProductSlot(kind: ProductKind, qty: number) {
+  if (kind === "wifi") return WIFI_ENV;
   const slot = qty >= 2 ? 2 : 1;
   const k = kind === "generica" ? "GENERIC" : kind === "unica" ? "UNICA" : "CUSTOM";
   return `POLAR_PRODUCT_${k}_${slot}`;
@@ -78,8 +85,13 @@ export async function createPolarCheckout(input: {
   line1?: string;
   zone?: ShippingZone;
   models?: string;
+  wifiQty?: number;
 }) {
   if (!polarReady()) return null;
+  if (input.kind === "wifi" && !process.env[WIFI_ENV]) {
+    console.error(`Polar: falta ${WIFI_ENV}`);
+    return null;
+  }
 
   const productId = process.env[productEnvKey(input.kind, input.qty)];
   if (!productId) {
@@ -121,6 +133,7 @@ export async function createPolarCheckout(input: {
       zone: input.zone || "",
       catalog: String(productPrice(input.kind, input.qty)),
       models: input.models || input.kind,
+      wifi: input.wifiQty ? String(input.wifiQty) : "0",
     },
   };
   if (input.returnUrl) body.return_url = input.returnUrl;

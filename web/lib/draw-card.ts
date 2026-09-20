@@ -23,6 +23,7 @@ function py(y: number) {
 
 function faceModelOf(design: CardDesign): FaceModel {
   if (design.model) return design.model;
+  if (design.kind === "wifi") return "wifi";
   if (design.kind === "personalizada" || design.kind === "unica") return "personalizada";
   return "google";
 }

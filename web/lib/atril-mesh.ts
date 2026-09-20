@@ -525,7 +525,7 @@ export function atrilBody(opts?: { shopView?: boolean }) {
 }
 
 export type AtrilAccentInput = {
-  kind?: "generica" | "personalizada" | "unica";
+  kind?: "generica" | "personalizada" | "unica" | "wifi";
   model?: FaceModel;
   logoMask?: string;
   line1?: string;
@@ -581,6 +581,7 @@ function instagramMark(cx: number, cy: number, z0: number, z1: number) {
 
 function faceModelOf(input: AtrilAccentInput): FaceModel {
   if (input.model) return input.model;
+  if (input.kind === "wifi") return "google";
   if (input.kind === "personalizada" || input.kind === "unica") return "personalizada";
   return "google";
 }
