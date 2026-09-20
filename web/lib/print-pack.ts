@@ -81,6 +81,18 @@ Pedido: ${input.orderId}
 `;
 }
 
+function pieceSpecFor(spec: PrintSpec, model: FaceModel, copies: number): PrintSpec {
+  const custom = model === "personalizada";
+  return {
+    ...spec,
+    kind: custom ? "personalizada" : spec.kind === "unica" ? "unica" : "generica",
+    model,
+    qty: copies,
+    logoMask: custom ? spec.logoMask : undefined,
+    nombreNegocio: custom ? spec.nombreNegocio : undefined,
+  };
+}
+
 function wifiStls() {
   const dir = path.join(process.cwd(), "print-assets/wifi-pared");
   return {
@@ -196,12 +208,12 @@ export async function buildPrintPack(order: Order) {
   if (groups.length > 1) {
     groups.forEach((g) => {
       const sub = folder.folder(g.model)!;
-      writePair(sub, { ...spec, model: g.model, qty: g.copies });
+      writePair(sub, pieceSpecFor(spec, g.model, g.copies));
       if (g.copies > 1) sub.file("COPIAS.txt", copiesNote(MODEL_LABEL[g.model], g.copies, g.nfcUrl));
     });
   } else {
-    writePair(folder, spec);
     const g = groups[0];
+    writePair(folder, g ? pieceSpecFor(spec, g.model, g.copies) : spec);
     if (g && g.copies > 1) {
       folder.file("COPIAS.txt", copiesNote(MODEL_LABEL[g.model], g.copies, g.nfcUrl));
     }

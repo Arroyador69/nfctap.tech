@@ -2,8 +2,6 @@ import { Designer } from "@/components/Designer";
 import { MetaViewContent } from "@/components/MetaPixel";
 import { parseKind, parseModels, PRICE } from "@/lib/catalog";
 import { getShipping } from "@/lib/store";
-import Link from "next/link";
-import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Encarga tu NFCTap" };
@@ -15,7 +13,6 @@ export default async function PersonalizarPage({
 }) {
   const q = await searchParams;
   const initial = parseKind(q.kind);
-  if (initial === "wifi") redirect("/wifi");
   const models = parseModels(q.models || q.model);
 
   return (
@@ -25,13 +22,9 @@ export default async function PersonalizarPage({
         Encarga tu NFCTap
       </h1>
       <p className="mt-2 max-w-xl text-sm text-[#5c564c] sm:text-base">
-        WhatsApp, Instagram o Google. Las que quieras, las cantidades que quieras. La
-        primera 20 €, cada una más 15 €. Lo giras en 3D. Pegas el enlace. Dirección en
-        España y paga. Sale en 24 h. En el envío puedes añadir el{" "}
-        <Link href="/wifi" className="underline decoration-[#d9cfc0] underline-offset-2">
-          TAP Wi‑Fi de pared
-        </Link>{" "}
-        (15 €, adhesivo incluido).
+        WhatsApp, Instagram o Google, con logo, o TAP Wi‑Fi de pared. Lo añades al carrito
+        y pagas todo junto. La primera de barra 20 €, cada una más 15 €. Con logo 30 €.
+        Wi‑Fi 15 €, adhesivo incluido.
       </p>
       <div className="mt-5">
         <Designer initialKind={initial} initialModels={models} shipping={await getShipping()} />

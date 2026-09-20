@@ -39,12 +39,15 @@ import {
   prepareLogo,
 } from "@/lib/logo";
 import { PROVINCIAS } from "@/lib/provinces";
+import { addCartLines } from "@/lib/cart";
+import { newId } from "@/lib/ids";
 import { euros, shippingCost, zoneFromPostalCode, ZONE_LABEL } from "@/lib/shipping";
 import { wifiConfigOk, wifiLandingUrl } from "@/lib/wifi-tap";
 import type {
   AccentColor,
   BodyColor,
   CardDesign,
+  CartLine,
   CatalogModel,
   FaceModel,
   Handover,
@@ -151,6 +154,7 @@ export function Designer({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [tried, setTried] = useState(false);
+  const [added, setAdded] = useState(false);
   const [googleHint, setGoogleHint] = useState("");
   const [form, setForm] = useState({
     name: "",
@@ -284,60 +288,101 @@ export function Designer({
     setDesign((d) => ({ ...d, kind: "generica", model: id }));
   }
 
-  function goPersonalizada() {
-    setKind("personalizada");
+  function goWifi() {
+    setKind("wifi");
     setQty(1);
     setCounts(emptyCounts());
-    setDesign(defaultDesign("personalizada"));
+    setDesign(defaultDesign("wifi"));
     setTried(false);
+    setAdded(false);
+    setAddWifi(false);
   }
 
-  function goGenerica() {
-    setKind("generica");
-    setCounts(countsFromModels(["google"]));
-    setFocus("google");
-    setDesign(defaultDesign("generica", "google"));
-    setTried(false);
+  function designError() {
+    if (designOk) return "";
+    if (wifiOnly) {
+      return !(design.wifiSsid || "").trim()
+        ? "Pon el nombre de la red Wi‑Fi (SSID)."
+        : "La contraseña Wi‑Fi tiene que tener al menos 8 caracteres, o marca red abierta.";
+    }
+    if (generic && !picked.length) return "Elige al menos una. Sube o baja la cantidad con + y −.";
+    if (generic) {
+      const miss = picked.find((m) => !nfcUrlOk(m.id, urls[m.id]));
+      if (miss?.id === "whatsapp") return "Pon el número o el enlace de WhatsApp.";
+      if (miss?.id === "instagram") return "Pon @cuenta o el enlace de Instagram.";
+      return "Falta el enlace de reseña de Google.";
+    }
+    if (needsLogo(kind)) {
+      return kind === "unica"
+        ? "Sube el logo, el enlace de Google y el segundo NFC (carta, Instagram o menú)."
+        : "Sube el logo y pega el enlace que abrirá el móvil.";
+    }
+    return "Falta el enlace.";
   }
 
   function goShip() {
     setTried(true);
-    setError("");
-    if (!designOk) {
-      if (wifiOnly) {
-        setError(
-          !(design.wifiSsid || "").trim()
-            ? "Pon el nombre de la red Wi‑Fi (SSID)."
-            : "La contraseña Wi‑Fi tiene que tener al menos 8 caracteres, o marca red abierta.",
-        );
-        return;
-      }
-      if (generic && !picked.length) {
-        setError("Elige al menos una. Sube o baja la cantidad con + y −.");
-        return;
-      }
-      if (generic) {
-        const miss = picked.find((m) => !nfcUrlOk(m.id, urls[m.id]));
-        setError(
-          miss?.id === "whatsapp"
-            ? "Pon el número o el enlace de WhatsApp."
-            : miss?.id === "instagram"
-              ? "Pon @cuenta o el enlace de Instagram."
-              : "Falta el enlace de reseña de Google.",
-        );
-        return;
-      }
-      setError(
-        needsLogo(kind)
-          ? kind === "unica"
-            ? "Sube el logo, el enlace de Google y el segundo NFC (carta, Instagram o menú)."
-            : "Sube el logo y pega el enlace que abrirá el móvil."
-          : "Falta el enlace.",
-      );
+    const err = designError();
+    if (err) {
+      setError(err);
       return;
     }
     setTried(false);
+    setError("");
     setStep("envio");
+  }
+
+  function addToCart() {
+    setTried(true);
+    const err = designError();
+    if (err) {
+      setError(err);
+      return;
+    }
+    const lines: CartLine[] = [];
+    if (wifiOnly) {
+      lines.push({
+        id: newId(),
+        kind: "wifi",
+        model: "wifi",
+        qty: liveQty,
+        bodyColor: design.bodyColor,
+        accentColor: design.accentColor,
+        nfcUrl: wifiLandingUrl(design.wifiSsid || "", design.wifiPassword || "", Boolean(design.wifiOpen)),
+        wifiSsid: (design.wifiSsid || "").trim(),
+        wifiPassword: design.wifiOpen ? "" : design.wifiPassword || "",
+        wifiOpen: Boolean(design.wifiOpen),
+      });
+    } else if (generic) {
+      for (const m of picked) {
+        lines.push({
+          id: newId(),
+          kind: "generica",
+          model: m.id,
+          qty: counts[m.id],
+          bodyColor: design.bodyColor,
+          accentColor: design.accentColor,
+          nfcUrl: normalizeNfcUrl(m.id, urls[m.id]),
+        });
+      }
+    } else {
+      lines.push({
+        id: newId(),
+        kind: "personalizada",
+        model: "personalizada",
+        qty: liveQty,
+        bodyColor: design.bodyColor,
+        accentColor: design.accentColor,
+        nfcUrl: design.googleUrl.trim(),
+        line1: design.line1,
+        logoDataUrl: design.logoDataUrl,
+        logoMask: design.logoMask,
+      });
+    }
+    addCartLines(lines);
+    setAdded(true);
+    setTried(false);
+    setError("");
   }
 
   async function submit() {
@@ -462,6 +507,7 @@ export function Designer({
               ))}
             </div>
           ) : null}
+          {!admin && !wifiOnly ? <WifiRecommend compact onPick={goWifi} /> : null}
         </div>
 
         <div className="space-y-5 rounded-[24px] border border-[#e6ddd0] bg-white p-4 shadow-[0_16px_40px_rgba(40,28,10,0.05)] sm:p-6">
@@ -469,7 +515,7 @@ export function Designer({
             <span className={step === "diseno" ? "font-semibold text-[#1c1915]" : "text-[#8a8173]"}>1. Elige</span>
             <span className="text-[#cfc4b2]">→</span>
             <span className={step === "envio" ? "font-semibold text-[#1c1915]" : "text-[#8a8173]"}>
-              2. {admin ? "Cliente" : "Envío"}
+              2. {admin ? "Cliente" : "Carrito"}
             </span>
           </div>
 
@@ -483,41 +529,42 @@ export function Designer({
                   {wifiOnly
                     ? `${priceHint}. El diseño es este: Wi‑Fi y TAP HERE. Eliges colores y nos das la red.`
                     : generic
-                      ? `${priceHint}. Mezcla Google, WhatsApp e Instagram. Hasta ${MAX_QTY} en el mismo pedido.`
-                      : `${priceHint}. Hasta ${MAX_QTY} en el mismo pedido.`}{" "}
-                  Lo ves en 3D. Luego la dirección en España.
+                      ? `${priceHint}. Mezcla Google, WhatsApp e Instagram.`
+                      : `${priceHint}.`}{" "}
+                  {admin ? "Lo ves en 3D. Luego los datos del cliente." : "Lo ves en 3D. Lo añades al carrito y pagas todo junto."}
                 </p>
               </div>
 
-              {admin ? (
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {kindsFor(true).map((k) => (
-                    <button
-                      key={k}
-                      type="button"
-                      onClick={() => {
-                        setKind(k);
-                        setQty(1);
-                        setAddWifi(false);
-                        if (k === "generica") {
-                          setCounts(countsFromModels(["google"]));
-                          setFocus("google");
-                          setDesign(defaultDesign("generica", "google"));
-                        } else {
-                          setCounts(emptyCounts());
-                          setDesign(defaultDesign(k));
-                        }
-                        setTried(false);
-                      }}
-                      className={`min-h-12 rounded-2xl px-2 py-3 text-xs font-medium sm:text-sm ${
-                        kind === k ? "bg-[#1c1915] text-[#f6f1e7]" : "bg-[#f3eee4] text-[#5c564c]"
-                      }`}
-                    >
-                      {KIND_META[k].label}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
+              <div className={`grid gap-2 ${admin ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
+                {kindsFor(admin).map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => {
+                      setKind(k);
+                      setQty(1);
+                      setAddWifi(false);
+                      setAdded(false);
+                      if (k === "generica") {
+                        setCounts(countsFromModels(["google"]));
+                        setFocus("google");
+                        setDesign(defaultDesign("generica", "google"));
+                      } else {
+                        setCounts(emptyCounts());
+                        setDesign(defaultDesign(k));
+                      }
+                      setTried(false);
+                    }}
+                    className={`min-h-12 rounded-2xl px-2 py-3 text-xs font-medium sm:text-sm ${
+                      kind === k ? "bg-[#1c1915] text-[#f6f1e7]" : "bg-[#f3eee4] text-[#5c564c]"
+                    }`}
+                  >
+                    {k === "generica" ? "Atril" : k === "wifi" ? "Wi‑Fi pared" : k === "personalizada" ? "Con logo" : KIND_META[k].label}
+                  </button>
+                ))}
+              </div>
+
+              {!admin && !wifiOnly ? <WifiRecommend onPick={goWifi} /> : null}
 
               {wifiOnly ? (
                 <>
@@ -553,11 +600,6 @@ export function Designer({
                     onPassword={(v) => patch({ wifiPassword: v })}
                     onOpen={(v) => patch({ wifiOpen: v, wifiPassword: v ? "" : design.wifiPassword })}
                   />
-                  {!admin ? (
-                    <a href="/personalizar" className="text-sm text-[#7a7266] underline">
-                      Prefiero el atril de barra (Google, WhatsApp o Instagram)
-                    </a>
-                  ) : null}
                 </>
               ) : generic ? (
                 <>
@@ -663,19 +705,9 @@ export function Designer({
                       {googleHint ? <p className="mt-2 text-xs text-[#6f675c]">{googleHint}</p> : null}
                     </div>
                   ) : null}
-
-                  <button type="button" className="text-sm text-[#7a7266] underline" onClick={goPersonalizada}>
-                    Prefiero la de mi logo ({euros(PRICE.personalizada.first)})
-                  </button>
                 </>
               ) : (
                 <>
-                  {!admin ? (
-                    <button type="button" className="text-sm text-[#7a7266]" onClick={goGenerica}>
-                      ← Volver a Google, WhatsApp o Instagram
-                    </button>
-                  ) : null}
-
                   {kind !== "unica" ? (
                     <div>
                       <p className="mb-2 text-sm text-[#3f3a34]">Cuántas</p>
@@ -851,14 +883,43 @@ export function Designer({
               </div>
 
               {error && <p className="text-sm text-red-700">{error}</p>}
+              {added && !admin ? (
+                <p className="rounded-2xl bg-[#faf6ee] px-4 py-3 text-sm text-[#3f3a34]">
+                  En el carrito. Puedes añadir más o{" "}
+                  <a href="/carrito" className="font-semibold underline">
+                    ir a pagar
+                  </a>
+                  .
+                </p>
+              ) : null}
 
-              <button
-                type="button"
-                onClick={goShip}
-                className="hidden min-h-12 w-full rounded-full bg-[#1c1915] py-3.5 font-semibold text-[#f6f1e7] lg:block"
-              >
-                {admin ? "Continuar al cliente" : "Continuar al envío"}
-              </button>
+              {admin ? (
+                <button
+                  type="button"
+                  onClick={goShip}
+                  className="hidden min-h-12 w-full rounded-full bg-[#1c1915] py-3.5 font-semibold text-[#f6f1e7] lg:block"
+                >
+                  Continuar al cliente
+                </button>
+              ) : (
+                <div className="hidden gap-2 lg:flex">
+                  <button
+                    type="button"
+                    onClick={addToCart}
+                    className="min-h-12 flex-1 rounded-full bg-[#1c1915] py-3.5 font-semibold text-[#f6f1e7]"
+                  >
+                    Añadir al carrito
+                  </button>
+                  {added ? (
+                    <a
+                      href="/carrito"
+                      className="grid min-h-12 place-items-center rounded-full bg-[#e2b43a] px-5 font-semibold text-[#1c1915]"
+                    >
+                      Pagar
+                    </a>
+                  ) : null}
+                </div>
+              )}
             </>
           ) : (
             <>
@@ -1140,13 +1201,23 @@ export function Designer({
             <p className="font-semibold">{euros(total)}</p>
           </div>
           {step === "diseno" ? (
-            <button
-              type="button"
-              onClick={goShip}
-              className="min-h-12 shrink-0 rounded-full bg-[#1c1915] px-5 font-semibold text-[#f6f1e7]"
-            >
-              {admin ? "Cliente" : "Envío"}
-            </button>
+            admin ? (
+              <button
+                type="button"
+                onClick={goShip}
+                className="min-h-12 shrink-0 rounded-full bg-[#1c1915] px-5 font-semibold text-[#f6f1e7]"
+              >
+                Cliente
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={addToCart}
+                className="min-h-12 shrink-0 rounded-full bg-[#1c1915] px-5 font-semibold text-[#f6f1e7]"
+              >
+                Al carrito
+              </button>
+            )
           ) : (
             <button
               type="button"
@@ -1160,6 +1231,44 @@ export function Designer({
         </div>
       </div>
     </div>
+  );
+}
+
+function WifiRecommend({ compact, onPick }: { compact?: boolean; onPick: () => void }) {
+  if (compact) {
+    return (
+      <aside className="mt-2 rounded-2xl bg-[#1c1915] p-3 text-[#f6f1e7] lg:hidden">
+        <p className="text-[11px] uppercase tracking-[0.18em] text-[#e2b43a]">Recomendado</p>
+        <p className="mt-1 text-sm font-semibold">TAP Wi‑Fi de pared · {euros(PRICE.wifi.first)}</p>
+        <p className="mt-1 text-xs leading-5 text-[#d5cbb8]">
+          Acerca el móvil y se conecta al Wi‑Fi. Se pega a la pared.
+        </p>
+        <button
+          type="button"
+          onClick={onPick}
+          className="mt-2 rounded-full bg-[#e2b43a] px-3 py-1.5 text-xs font-semibold text-[#1c1915]"
+        >
+          Añadir Wi‑Fi
+        </button>
+      </aside>
+    );
+  }
+  return (
+    <aside className="hidden rounded-[22px] border border-[#1c1915] bg-[#1c1915] p-4 text-[#f6f1e7] lg:block">
+      <p className="text-[11px] uppercase tracking-[0.18em] text-[#e2b43a]">Recomendado</p>
+      <p className="mt-1 font-semibold">TAP Wi‑Fi de pared · {euros(PRICE.wifi.first)}</p>
+      <p className="mt-1 text-sm text-[#d5cbb8]">
+        Acerca el móvil y se conecta al Wi‑Fi. Se pega a la pared. Adhesivo incluido. Para
+        alquileres, hoteles y restaurantes.
+      </p>
+      <button
+        type="button"
+        onClick={onPick}
+        className="mt-3 rounded-full bg-[#e2b43a] px-4 py-2 text-sm font-semibold text-[#1c1915]"
+      >
+        Ver y añadir al carrito
+      </button>
+    </aside>
   );
 }
 

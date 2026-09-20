@@ -8,7 +8,8 @@ import { usePathname } from "next/navigation";
 export function Footer() {
   const path = usePathname();
   if (path.startsWith("/dashboard") || path === "/w" || path.startsWith("/w/")) return null;
-  const shopBar = path.startsWith("/personalizar") || path.startsWith("/wifi");
+  const shopBar =
+    path.startsWith("/personalizar") || path.startsWith("/wifi") || path.startsWith("/carrito");
 
   return (
     <footer

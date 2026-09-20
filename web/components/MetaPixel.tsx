@@ -39,6 +39,7 @@ export function MetaPixel() {
         fbq('track', 'PageView');
       `}</Script>
       <noscript>
+        {/* Pixel de Meta: el noscript tiene que ser un <img> crudo, no next/image. */}
         <img
           height={1}
           width={1}

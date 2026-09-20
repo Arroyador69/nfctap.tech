@@ -98,7 +98,7 @@ export default async function DashboardPage() {
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <div>{orderGoodsLabel(o.kind, o.qty, orderPieces(o), o.wifiAddon?.qty || 0)}</div>
+                  <div>{orderGoodsLabel(o.kind, o.qty, orderPieces(o), o.wifiAddon?.qty || 0, o.lines)}</div>
                   {orderPieces(o).map((p, i) => (
                     <div key={`${p.model}-${i}`} className="max-w-[240px] truncate text-xs text-[#8a8173]">
                       {p.nfcUrl}

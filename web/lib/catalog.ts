@@ -226,7 +226,7 @@ export function parseModels(value: unknown): CatalogModel[] {
 }
 
 export function kindsFor(admin: boolean): ProductKind[] {
-  return admin ? ["generica", "personalizada", "unica", "wifi"] : ["generica", "personalizada"];
+  return admin ? ["generica", "personalizada", "unica", "wifi"] : ["generica", "personalizada", "wifi"];
 }
 
 export function productLabel(kind: ProductKind, qty: number, pieces?: OrderPiece[]) {
@@ -241,10 +241,28 @@ export function productLabel(kind: ProductKind, qty: number, pieces?: OrderPiece
   return `${base} × ${Math.max(1, qty)}`;
 }
 
-export function orderGoodsLabel(kind: ProductKind, qty: number, pieces?: OrderPiece[], wifiQty = 0) {
+export function orderGoodsLabel(
+  kind: ProductKind,
+  qty: number,
+  pieces?: OrderPiece[],
+  wifiQty = 0,
+  lines?: { model: FaceModel; qty: number }[] | null,
+) {
+  const fromLines = linesLabel(lines);
+  if (fromLines) return fromLines;
   const base = productLabel(kind, qty, pieces);
   if (kind === "wifi" || wifiQty < 1) return base;
   return `${base} + TAP Wi‑Fi${wifiQty > 1 ? ` × ${wifiQty}` : ""}`;
+}
+
+export function linesLabel(lines?: { model: FaceModel; qty: number }[] | null) {
+  if (!lines?.length) return "";
+  return lines
+    .map((l) => {
+      const name = MODEL_LABEL[l.model] || l.model;
+      return l.qty > 1 ? `${name} × ${l.qty}` : name;
+    })
+    .join(" + ");
 }
 
 export function piecesLabel(pieces?: OrderPiece[] | null) {

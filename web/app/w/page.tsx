@@ -1,9 +1,10 @@
 "use client";
 
 import { parseWifiFragment, type WifiTapCreds } from "@/lib/wifi-tap";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 
 type Lang = "es" | "en";
+type Copied = "ssid" | "password" | "";
 
 const COPY: Record<
   Lang,
@@ -58,8 +59,7 @@ const COPY: Record<
   },
 };
 
-function detectLang(): Lang {
-  if (typeof window === "undefined") return "es";
+function readLang(): Lang {
   try {
     const saved = window.localStorage.getItem("nfctap-w-lang");
     if (saved === "en" || saved === "es") return saved;
@@ -67,6 +67,23 @@ function detectLang(): Lang {
     /* private mode */
   }
   return /^en\b/i.test(navigator.language) ? "en" : "es";
+}
+
+function subscribeLang(onChange: () => void) {
+  window.addEventListener("nfctap-w-lang", onChange);
+  return () => window.removeEventListener("nfctap-w-lang", onChange);
+}
+
+function subscribeHash(onChange: () => void) {
+  if (window.location.search) {
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.hash}`);
+  }
+  window.addEventListener("hashchange", onChange);
+  return () => window.removeEventListener("hashchange", onChange);
+}
+
+function readCreds(): WifiTapCreds | null {
+  return parseWifiFragment(window.location.hash);
 }
 
 async function copyText(value: string) {
@@ -115,32 +132,21 @@ function Flags({ lang, onChange }: { lang: Lang; onChange: (l: Lang) => void }) 
 }
 
 export default function WifiPage() {
-  const [creds, setCreds] = useState<WifiTapCreds | null>(null);
-  const [lang, setLang] = useState<Lang>("es");
-  const [copied, setCopied] = useState<"ssid" | "password" | "">("");
-
-  useEffect(() => {
-    setLang(detectLang());
-    if (window.location.search) {
-      window.history.replaceState(null, "", `${window.location.pathname}${window.location.hash}`);
-    }
-    const apply = () => setCreds(parseWifiFragment(window.location.hash));
-    apply();
-    window.addEventListener("hashchange", apply);
-    return () => window.removeEventListener("hashchange", apply);
-  }, []);
+  const lang = useSyncExternalStore(subscribeLang, readLang, () => "es" as Lang);
+  const creds = useSyncExternalStore(subscribeHash, readCreds, () => null);
+  const [copied, setCopied] = useState<Copied>("");
 
   const setAndStore = useCallback((next: Lang) => {
-    setLang(next);
     try {
       window.localStorage.setItem("nfctap-w-lang", next);
     } catch {
       /* private mode */
     }
+    window.dispatchEvent(new Event("nfctap-w-lang"));
   }, []);
 
-  const copy = useCallback(async (what: "ssid" | "password", value: string) => {
-    if (!value) return;
+  const copy = useCallback(async (what: Copied, value: string) => {
+    if (!what || !value) return;
     const ok = await copyText(value);
     if (ok) {
       setCopied(what);

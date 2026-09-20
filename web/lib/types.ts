@@ -65,6 +65,24 @@ export type Address = {
   zone: ShippingZone;
 };
 
+export type OrderLine = {
+  id?: string;
+  kind: ProductKind;
+  model: FaceModel;
+  qty: number;
+  bodyColor: BodyColor;
+  accentColor: AccentColor;
+  nfcUrl: string;
+  line1?: string;
+  logoDataUrl?: string;
+  logoMask?: string;
+  wifiSsid?: string;
+  wifiPassword?: string;
+  wifiOpen?: boolean;
+};
+
+export type CartLine = OrderLine & { id: string };
+
 export type Order = {
   id: string;
   createdAt: string;
@@ -82,6 +100,8 @@ export type Order = {
   polarCheckoutId?: string;
   /** TAP Wi‑Fi de pared añadido al pedir atriles. */
   wifiAddon?: WifiAddon;
+  /** Pedido mixto (atriles + logo + Wi‑Fi) desde el carrito. */
+  lines?: OrderLine[];
   notes?: string;
   tracking?: string;
   /** Cookies Meta (_fbp / _fbc) para casar la compra con el anuncio. */

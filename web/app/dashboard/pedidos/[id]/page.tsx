@@ -32,7 +32,7 @@ export default async function OrderPage({
       </Link>
       <h1 className="mt-4 text-2xl font-semibold">{order.id}</h1>
       <p className="text-[#6f675c]">
-        {orderGoodsLabel(order.kind, order.qty, pieces, order.wifiAddon?.qty || 0)} · {euros(order.total)} ·{" "}
+        {orderGoodsLabel(order.kind, order.qty, pieces, order.wifiAddon?.qty || 0, order.lines)} · {euros(order.total)} ·{" "}
         {order.handover === "mano" ? "En mano" : ZONE_LABEL[order.address.zone]} ·{" "}
         {order.source === "admin" ? "Admin" : "Web"}
       </p>

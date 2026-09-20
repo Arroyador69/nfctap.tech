@@ -1,3 +1,4 @@
+import { ClearCartOnOk } from "@/components/ClearCartOnOk";
 import { MetaPurchase } from "@/components/MetaPixel";
 import { getOrder } from "@/lib/store";
 import { euros } from "@/lib/shipping";
@@ -18,6 +19,7 @@ export default async function OkPage({
 
   return (
     <div className="mx-auto max-w-xl px-5 py-20 text-center">
+      {paid ? <ClearCartOnOk /> : null}
       {paid && order ? (
         <MetaPurchase orderId={order.id} value={order.total} qty={order.qty} kind={order.kind} />
       ) : null}

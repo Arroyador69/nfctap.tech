@@ -87,8 +87,9 @@ export function slugName(order: Order) {
 
 export function orderToSpec(order: Order): PrintSpec {
   const pieces = orderPieces(order);
-  const generic = order.kind === "generica";
+  const generic = order.kind === "generica" && !pieces.some((p) => p.model === "personalizada");
   const wifi = order.kind === "wifi";
+  const hasLogo = Boolean(order.design.logoMask) && !wifi;
   const body = BODY_COLORS.find((c) => c.id === order.design.bodyColor)?.label ?? "negro";
   const accent = order.design.accentColor;
   return {
@@ -101,7 +102,7 @@ export function orderToSpec(order: Order): PrintSpec {
     linea1: generic || wifi ? "TAP" : (order.design.line1 || ""),
     linea2: "",
     nombreNegocio: generic || wifi ? undefined : order.design.line1,
-    logoMask: generic || wifi ? undefined : order.design.logoMask,
+    logoMask: hasLogo ? order.design.logoMask : undefined,
     googleUrl: pieces[0]?.nfcUrl || order.design.googleUrl,
     extraUrl: pieces[1]?.nfcUrl || (order.kind === "unica" ? order.design.extraUrl : undefined),
     model: pieces[0]?.model || (generic ? "google" : wifi ? "wifi" : "personalizada"),

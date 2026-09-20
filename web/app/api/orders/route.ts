@@ -8,6 +8,7 @@ import {
   needsLogo,
   parseKind,
 } from "@/lib/catalog";
+import { cartGoodsPrice, isCartLine, polarFromCart } from "@/lib/cart";
 import { newId } from "@/lib/ids";
 import {
   isEmail,
@@ -21,7 +22,7 @@ import { cleanMetaCookie, cleanMetaIp } from "@/lib/meta-capi";
 import { createPolarCheckout, customerIp, polarReady } from "@/lib/polar";
 import { shippingCost, zoneFromPostalCode } from "@/lib/shipping";
 import { addOrder, getShipping, listOrders } from "@/lib/store";
-import type { Address, AccentColor, BodyColor, CardDesign, FaceModel, Handover, OrderPiece, WifiAddon } from "@/lib/types";
+import type { Address, AccentColor, BodyColor, CardDesign, FaceModel, Handover, OrderLine, OrderPiece, ProductKind, WifiAddon } from "@/lib/types";
 import { wifiConfigOk, wifiLandingUrl } from "@/lib/wifi-tap";
 import { NextResponse } from "next/server";
 
@@ -124,6 +125,118 @@ function parseWifiAddon(kind: CardDesign["kind"], raw: unknown): WifiAddon | und
   return { qty, ssid, password, open, bodyColor, accentColor };
 }
 
+function parseCartItems(raw: unknown):
+  | {
+      kind: ProductKind;
+      qty: number;
+      pieces: OrderPiece[];
+      design: CardDesign;
+      wifiAddon?: WifiAddon;
+      lines: OrderLine[];
+      productEuros: number;
+    }
+  | { error: string }
+  | null {
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+  const lines: OrderLine[] = [];
+  let used = 0;
+  for (const item of raw) {
+    if (!isCartLine(item)) return { error: "Hay un producto del carrito que no es válido" };
+    if (item.kind === "unica") return { error: "La pieza única se encarga por email" };
+    const qty = clampQty(item.qty);
+    if (used + qty > MAX_QTY) return { error: `Tope ${MAX_QTY} piezas por pedido` };
+    used += qty;
+    if (item.kind === "wifi") {
+      const ssid = (item.wifiSsid || "").trim();
+      const open = Boolean(item.wifiOpen);
+      const password = open ? "" : (item.wifiPassword || "").trim();
+      if (!wifiConfigOk(ssid, password, open)) {
+        return { error: "El TAP Wi‑Fi necesita la red y una contraseña de al menos 8 caracteres" };
+      }
+      lines.push({
+        ...item,
+        qty,
+        nfcUrl: wifiLandingUrl(ssid, password, open),
+        wifiSsid: ssid,
+        wifiPassword: password,
+        wifiOpen: open,
+      });
+      continue;
+    }
+    if (item.kind === "personalizada") {
+      if (!isHttpUrl(item.nfcUrl || "")) return { error: "Falta el enlace de la pieza con logo" };
+      if (!(typeof item.logoDataUrl === "string" && item.logoDataUrl.startsWith("data:image/"))) {
+        return { error: "Falta el logo" };
+      }
+      lines.push({ ...item, qty, nfcUrl: item.nfcUrl.trim() });
+      continue;
+    }
+    if (!isCatalogModel(item.model) || !nfcUrlOk(item.model, item.nfcUrl || "")) {
+      return { error: "Falta el enlace de Google, WhatsApp o Instagram" };
+    }
+    lines.push({
+      ...item,
+      qty,
+      nfcUrl: normalizeNfcUrl(item.model, item.nfcUrl),
+    });
+  }
+  if (!lines.length) return { error: "El carrito está vacío" };
+
+  const pieces: OrderPiece[] = [];
+  let wifiAddon: WifiAddon | undefined;
+  for (const l of lines) {
+    if (l.kind === "wifi") {
+      wifiAddon = {
+        qty: (wifiAddon?.qty || 0) + l.qty,
+        bodyColor: l.bodyColor,
+        accentColor: l.accentColor,
+        ssid: l.wifiSsid || "",
+        password: l.wifiPassword || "",
+        open: Boolean(l.wifiOpen),
+      };
+      continue;
+    }
+    for (let i = 0; i < l.qty && pieces.length < MAX_QTY; i++) {
+      pieces.push({ model: l.model, nfcUrl: l.nfcUrl });
+    }
+  }
+  const first = lines[0];
+  const custom = lines.find((l) => l.kind === "personalizada");
+  const polar = polarFromCart(lines);
+  const wifiOnly = lines.every((l) => l.kind === "wifi");
+  const design: CardDesign = {
+    kind: polar.kind,
+    model: wifiOnly ? "wifi" : pieces[0]?.model || first.model,
+    template: "clasica",
+    bodyColor: (custom || first).bodyColor,
+    accentColor: (custom || first).accentColor,
+    line1: (custom?.line1 || "").slice(0, 22),
+    line2: "",
+    logoDataUrl: custom?.logoDataUrl,
+    logoMask: custom?.logoMask,
+    googleUrl: pieces[0]?.nfcUrl || first.nfcUrl,
+    extraUrl: pieces[1]?.nfcUrl,
+    pieces: pieces.length ? pieces : undefined,
+    wifiSsid: wifiAddon?.ssid,
+    wifiPassword: wifiAddon?.password,
+    wifiOpen: wifiAddon?.open,
+  };
+  return {
+    kind: polar.kind,
+    qty: wifiOnly ? wifiAddon?.qty || first.qty : Math.max(1, pieces.length),
+    pieces: wifiOnly
+      ? Array.from({ length: wifiAddon?.qty || 1 }, () => ({
+          model: "wifi" as const,
+          nfcUrl: first.nfcUrl,
+        }))
+      : pieces,
+    design,
+    wifiAddon: wifiOnly ? undefined : wifiAddon,
+    lines,
+    productEuros: cartGoodsPrice(lines),
+  };
+}
+
 export async function POST(req: Request) {
   const body = await req.json();
   const admin = await isAdmin();
@@ -135,25 +248,30 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
-  const kind = parseKind(body.kind, fromAdmin);
-  const design = body.design as CardDesign;
-  const parsed = parsePieces(kind, design, clampQty(body.qty));
-  if ("error" in parsed) {
+  const cart = parseCartItems(body.items);
+  if (cart && "error" in cart) {
+    return NextResponse.json({ error: cart.error }, { status: 400 });
+  }
+  const kind = cart ? cart.kind : parseKind(body.kind, fromAdmin);
+  const design = cart ? cart.design : (body.design as CardDesign);
+  const parsed = cart ? cart.pieces : parsePieces(kind, design, clampQty(body.qty));
+  if (!cart && parsed && "error" in parsed) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
-  const pieces = parsed;
-  const qty = kind === "unica" ? 1 : pieces.length;
+  const pieces = cart ? cart.pieces : (parsed as OrderPiece[]);
+  const qty = cart ? cart.qty : kind === "unica" ? 1 : pieces.length;
   if (kind !== "unica" && qty < 1) {
     return NextResponse.json({ error: "Elige al menos una pieza" }, { status: 400 });
   }
-  const addonOrErr = parseWifiAddon(kind, body.wifiAddon);
+  const addonOrErr = cart ? cart.wifiAddon : parseWifiAddon(kind, body.wifiAddon);
   if (addonOrErr && "error" in addonOrErr) {
     return NextResponse.json({ error: addonOrErr.error }, { status: 400 });
   }
-  const wifiAddon = addonOrErr;
+  const wifiAddon = cart ? cart.wifiAddon : addonOrErr;
   const address = (body.address || {}) as Address;
 
   if (
+    !cart &&
     needsLogo(kind) &&
     !(typeof design?.logoDataUrl === "string" && design.logoDataUrl.startsWith("data:image/"))
   ) {
@@ -202,7 +320,6 @@ export async function POST(req: Request) {
   }
 
   const logo =
-    needsLogo(kind) &&
     typeof design?.logoDataUrl === "string" &&
     design.logoDataUrl.startsWith("data:image/") &&
     design.logoDataUrl.length < 1_200_000
@@ -210,7 +327,6 @@ export async function POST(req: Request) {
       : undefined;
 
   const logoMask =
-    needsLogo(kind) &&
     typeof design?.logoMask === "string" &&
     /^[01]{64,2500}$/.test(design.logoMask)
       ? design.logoMask
@@ -224,7 +340,7 @@ export async function POST(req: Request) {
       : undefined;
 
   const settings = await getShipping();
-  const productEuros = goodsPrice(kind, qty, wifiAddon?.qty || 0);
+  const productEuros = cart ? cart.productEuros : goodsPrice(kind, qty, wifiAddon?.qty || 0);
   const shippingPrice = handover === "mano" ? 0 : shippingCost(normalized.zone, settings, productEuros);
   const id = newId();
 
@@ -259,6 +375,7 @@ export async function POST(req: Request) {
     handover,
     previewDataUrl: preview,
     wifiAddon,
+    lines: cart?.lines,
     notes: fromAdmin ? "Creado desde el admin." : polarReady() ? "" : "Pago Polar pendiente de conectar.",
     metaFbp: fromAdmin ? undefined : cleanMetaCookie(body.fbp, "fbp"),
     metaFbc: fromAdmin ? undefined : cleanMetaCookie(body.fbc, "fbc"),
@@ -284,7 +401,7 @@ export async function POST(req: Request) {
       email: normalized.email,
       name: normalized.name,
       successUrl: `${origin}/pedido/ok?id=${id}&checkout_id={CHECKOUT_ID}`,
-      returnUrl: `${origin}${kind === "wifi" ? "/wifi" : `/personalizar?models=${pieces.map((p) => p.model).join(",")}`}`,
+      returnUrl: `${origin}/carrito`,
       productEuros,
       shippingEuros: shippingPrice,
       totalEuros: order.total,
