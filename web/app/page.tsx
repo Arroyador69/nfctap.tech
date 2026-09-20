@@ -1,5 +1,5 @@
 import { HomeHero } from "@/components/HomeHero";
-import { BRAND, FACE_MODELS, MAX_QTY, PRICE, PRICES, packSaving, packWas, productPrice } from "@/lib/catalog";
+import { BRAND, FACE_MODELS, PRICE, PRICES, packSaving, packWas, productPrice } from "@/lib/catalog";
 import { euros } from "@/lib/shipping";
 import Link from "next/link";
 
@@ -27,8 +27,7 @@ export default function HomePage() {
         <h2 className="font-[family-name:var(--font-display)] text-4xl">Encarga la tuya</h2>
         <p className="mt-3 max-w-xl text-[#5c564c]">
           El mismo atril que ves en 3D es el que se imprime. La primera no es el doble de las
-          siguientes. Hasta {MAX_QTY} en un pedido. Envío a España en 24 h. Pago con Polar:
-          tarjeta, Apple Pay o Bizum.
+          siguientes. Envío a España en 24 h. Pago con Polar: tarjeta, Apple Pay o Bizum.
         </p>
         <div className="mt-8 grid gap-5 md:grid-cols-3">
           <article className="flex flex-col rounded-[28px] border border-[#e6ddd0] bg-white p-6">
@@ -98,14 +97,6 @@ export default function HomePage() {
         </div>
 
         <p className="mt-10 max-w-2xl text-sm leading-6 text-[#6f675c]">
-          <span className="font-semibold text-[#1c1915]">Hasta {MAX_QTY} por pedido. </span>
-          Las cantidades se eligen en la página de encargo. Si necesitas más,{" "}
-          <a className="underline decoration-[#d9cfc0] underline-offset-2" href={`mailto:${BRAND.email}`}>
-            {BRAND.email}
-          </a>
-          .
-        </p>
-        <p className="mt-4 max-w-2xl text-sm leading-6 text-[#6f675c]">
           <span className="font-semibold text-[#1c1915]">Pieza única · {euros(PRICES.unica[1])}. </span>
           Pieza a medida de tu negocio (forma, logo, dos NFC). Cada caso se diseña aparte: no
           se encarga desde aquí.{" "}

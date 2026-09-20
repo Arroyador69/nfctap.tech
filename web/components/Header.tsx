@@ -30,13 +30,13 @@ export function Header() {
           <Link href="/wifi" className="hover:text-[#1c1915]">
             Wi‑Fi
           </Link>
-          <CartButton />
           <Link
             href="/personalizar"
             className="rounded-full bg-[#1c1915] px-4 py-2 font-medium text-[#f6f1e7]"
           >
             Encargar
           </Link>
+          <CartButton />
         </nav>
       </div>
     </header>
