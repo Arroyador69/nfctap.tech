@@ -1,9 +1,15 @@
 import { SocialLinks } from "@/components/SocialLinks";
 import { BRAND, PRICE, packWas, productPrice } from "@/lib/catalog";
+import { pageMeta } from "@/lib/seo";
 import { DEFAULT_SHIPPING } from "@/lib/shipping";
 import { euros } from "@/lib/shipping";
 
-export const metadata = { title: "Aviso legal y condiciones" };
+export const metadata = pageMeta({
+  title: "Aviso legal y condiciones",
+  description:
+    "Aviso legal, condiciones de compra y privacidad de NFCTap. Atriles NFC y TAP Wi‑Fi impresos en España.",
+  path: "/legal",
+});
 
 export default function LegalPage() {
   return (

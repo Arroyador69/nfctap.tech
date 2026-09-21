@@ -1,9 +1,15 @@
 import { PRICE, packSaving, packWas, productPrice } from "@/lib/catalog";
+import { pageMeta } from "@/lib/seo";
 import { DEFAULT_SHIPPING, ZONE_LABEL, euros } from "@/lib/shipping";
 import { getShipping } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Envíos" };
+export const metadata = pageMeta({
+  title: "Envíos a España",
+  description:
+    "Correos, sale en 24 h. Península, Baleares, Canarias, Ceuta y Melilla. Atril NFC y TAP Wi‑Fi de pared.",
+  path: "/envios",
+});
 
 export default async function EnviosPage() {
   const s = await getShipping();

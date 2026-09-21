@@ -1,28 +1,36 @@
 import { Designer } from "@/components/Designer";
+import { JsonLd } from "@/components/JsonLd";
 import { MetaViewContent } from "@/components/MetaPixel";
 import { BRAND, PRICE } from "@/lib/catalog";
+import { pageMeta, productJsonLd } from "@/lib/seo";
 import { euros } from "@/lib/shipping";
 import { getShipping } from "@/lib/store";
-import type { Metadata } from "next";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
+const WIFI_DESC =
+  "Placa NFC de pared: el huésped acerca el móvil y se conecta al Wi‑Fi. Diseño fijo, adhesivo incluido. 15 €. Impreso en España.";
+
+export const metadata = pageMeta({
   title: "TAP Wi‑Fi de pared",
-  description:
-    "Placa NFC de pared: el huésped acerca el móvil y se conecta al Wi‑Fi. Diseño fijo, adhesivo incluido. 15 €. Impreso en España.",
-  openGraph: {
-    title: "TAP Wi‑Fi de pared · NFCTap",
-    description:
-      "Acerca el móvil y se conecta al Wi‑Fi. Para alquileres, hoteles y restaurantes. 15 €, con adhesivo.",
-    images: [{ url: "/wifi-pared.jpg", width: 1080, height: 1440, alt: "TAP Wi‑Fi de pared NFCTap" }],
-  },
-};
+  description: WIFI_DESC,
+  path: "/wifi",
+  image: { url: "/wifi-pared.jpg", width: 1080, height: 1440, alt: "TAP Wi‑Fi de pared NFCTap" },
+});
 
 export default async function WifiPage() {
   return (
     <div className="mx-auto max-w-6xl px-5 pb-6 pt-3 sm:py-10">
+      <JsonLd
+        data={productJsonLd({
+          name: "TAP Wi‑Fi de pared",
+          description: WIFI_DESC,
+          price: PRICE.wifi.first,
+          path: "/wifi",
+          image: "/wifi-pared.jpg",
+        })}
+      />
       <MetaViewContent contentName="wifi" value={PRICE.wifi.first} />
       <p className="text-xs uppercase tracking-[0.22em] text-[#b0892c]">Otro producto NFC</p>
       <h1 className="mt-2 font-[family-name:var(--font-display)] text-[1.75rem] leading-tight sm:text-5xl">
@@ -51,7 +59,14 @@ export default async function WifiPage() {
           Encargar atril
         </Link>
         . El TAP de pared es el complemento: Android se une al tocar; iPhone enseña red y
-        clave. Contacto {BRAND.email}.
+        clave. Contacto {BRAND.email}.{" "}
+        <Link
+          href="/guia/wifi-nfc-alquiler-hotel"
+          className="underline decoration-[#d9cfc0] underline-offset-2"
+        >
+          Guía Wi‑Fi NFC
+        </Link>
+        .
       </p>
       <div className="mt-8">
         <Designer initialKind="wifi" shipping={await getShipping()} />

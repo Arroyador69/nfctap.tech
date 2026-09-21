@@ -1,10 +1,16 @@
 import { CartCheckout } from "@/components/CartCheckout";
 import { MetaViewContent } from "@/components/MetaPixel";
 import { PRICE } from "@/lib/catalog";
+import { pageMeta } from "@/lib/seo";
 import { getShipping } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Carrito" };
+export const metadata = pageMeta({
+  title: "Carrito",
+  description: "Tu pedido NFCTap. Atriles, logo y TAP Wi‑Fi juntos.",
+  path: "/carrito",
+  index: false,
+});
 
 export default async function CarritoPage() {
   return (

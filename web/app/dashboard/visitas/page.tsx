@@ -1,6 +1,7 @@
 import { DashboardNav } from "@/components/DashboardNav";
 import { isAdmin } from "@/lib/auth";
 import { getVisitReport } from "@/lib/visits";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { GscForm } from "./gsc-form";
 
@@ -104,7 +105,8 @@ export default async function VisitasPage() {
             Vuelve a Search Console y pulsa <strong>Verificar</strong>. Puede tardar minutos.
           </li>
           <li>
-            Sitemaps → añadir <code>https://nfctap.tech/sitemap.xml</code>
+            Sitemaps → añadir o volver a enviar <code>https://nfctap.tech/sitemap.xml</code>{" "}
+            (incluye /guia).
           </li>
         </ol>
         <GscForm current={report.googleVerification} />
@@ -120,6 +122,20 @@ export default async function VisitasPage() {
           >
             Abrir Search Console
           </a>
+          . ChatGPT usa Bing:{" "}
+          <a
+            className="underline decoration-[#d9cfc0] underline-offset-2"
+            href="https://www.bing.com/webmasters"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Webmaster
+          </a>
+          . Checklist y borradores en{" "}
+          <Link className="underline decoration-[#d9cfc0] underline-offset-2" href="/dashboard/seo">
+            SEO
+          </Link>
+          .
         </p>
       </section>
     </div>

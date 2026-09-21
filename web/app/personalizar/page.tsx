@@ -1,10 +1,17 @@
 import { Designer } from "@/components/Designer";
 import { MetaViewContent } from "@/components/MetaPixel";
 import { parseKind, parseModels, PRICE } from "@/lib/catalog";
+import { pageMeta } from "@/lib/seo";
 import { getShipping } from "@/lib/store";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Encarga tu NFCTap" };
+export const metadata = pageMeta({
+  title: "Encarga tu NFCTap",
+  description:
+    "WhatsApp, Instagram o Google, con logo, o TAP Wi‑Fi de pared. Lo ves en 3D. Primera de barra 20 €. Envío España 24 h.",
+  path: "/personalizar",
+});
 
 export default async function PersonalizarPage({
   searchParams,
@@ -24,7 +31,11 @@ export default async function PersonalizarPage({
       <p className="mt-2 max-w-xl text-sm text-[#5c564c] sm:text-base">
         WhatsApp, Instagram o Google, con logo, o TAP Wi‑Fi de pared. Lo añades al carrito
         y pagas todo junto. La primera de barra 20 €, cada una más 15 €. Con logo 30 €.
-        Wi‑Fi 15 €, adhesivo incluido.
+        Wi‑Fi 15 €, adhesivo incluido.{" "}
+        <Link href="/guia" className="underline decoration-[#d9cfc0] underline-offset-2">
+          Cómo se usa en barra
+        </Link>
+        .
       </p>
       <div className="mt-5">
         <Designer initialKind={initial} initialModels={models} shipping={await getShipping()} />

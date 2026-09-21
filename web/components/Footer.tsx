@@ -23,6 +23,9 @@ export function Footer() {
         </p>
         <div className="flex flex-col gap-6 sm:items-end">
           <div className="flex flex-wrap gap-5 sm:justify-end">
+            <Link href="/guia" className="hover:text-[#1c1915]">
+              Guía
+            </Link>
             <Link href="/envios" className="hover:text-[#1c1915]">
               Envíos
             </Link>

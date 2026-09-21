@@ -1,7 +1,19 @@
+import { FaqList } from "@/components/FaqList";
 import { HomeHero } from "@/components/HomeHero";
+import { JsonLd } from "@/components/JsonLd";
 import { BRAND, FACE_MODELS, PRICE, PRICES, packSaving, packWas, productPrice } from "@/lib/catalog";
+import { GUIDES } from "@/lib/guides";
+import { faqJsonLd, HOME_FAQ, pageMeta, productListJsonLd } from "@/lib/seo";
 import { euros } from "@/lib/shipping";
 import Link from "next/link";
+
+export const metadata = pageMeta({
+  title: "NFCTap — Atril NFC para WhatsApp, Instagram o Google",
+  description:
+    "Atril NFC impreso en España. WhatsApp, Instagram o Google. Lo ves en 3D y lo encargas. Desde 20 €. Envío en 24 h. Pago con tarjeta, Apple Pay o Bizum.",
+  path: "/",
+  absoluteTitle: true,
+});
 
 export default function HomePage() {
   return (
@@ -106,6 +118,35 @@ export default function HomePage() {
           .
         </p>
       </section>
+
+      <section className="mx-auto max-w-6xl px-5 pb-16">
+        <h2 className="font-[family-name:var(--font-display)] text-3xl sm:text-4xl">Guía</h2>
+        <p className="mt-3 max-w-xl text-[#5c564c]">
+          Cómo pedir reseñas, abrir WhatsApp o pegar el Wi‑Fi en la pared. Para que Google y
+          los chats te encuentren por lo que haces, no solo por el nombre.
+        </p>
+        <div className="mt-6 grid gap-3 md:grid-cols-2">
+          {GUIDES.map((g) => (
+            <Link
+              key={g.slug}
+              href={`/guia/${g.slug}`}
+              className="rounded-[22px] border border-[#e6ddd0] bg-white p-5 hover:border-[#1c1915]"
+            >
+              <p className="text-[11px] uppercase tracking-[0.18em] text-[#b0892c]">{g.kicker}</p>
+              <p className="mt-1 font-semibold text-[#1c1915]">{g.title}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-5 pb-20">
+        <h2 className="font-[family-name:var(--font-display)] text-3xl sm:text-4xl">Preguntas</h2>
+        <div className="mt-6">
+          <FaqList items={HOME_FAQ} />
+        </div>
+      </section>
+      <JsonLd data={productListJsonLd()} />
+      <JsonLd data={faqJsonLd(HOME_FAQ)} />
     </>
   );
 }

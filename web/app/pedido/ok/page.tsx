@@ -1,10 +1,16 @@
 import { ClearCartOnOk } from "@/components/ClearCartOnOk";
 import { MetaPurchase } from "@/components/MetaPixel";
+import { pageMeta } from "@/lib/seo";
 import { getOrder } from "@/lib/store";
 import { euros } from "@/lib/shipping";
 import Link from "next/link";
 
-export const metadata = { title: "Pedido recibido" };
+export const metadata = pageMeta({
+  title: "Pedido recibido",
+  description: "Confirmación de pedido NFCTap.",
+  path: "/pedido/ok",
+  index: false,
+});
 
 export default async function OkPage({
   searchParams,

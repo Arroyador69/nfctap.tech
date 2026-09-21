@@ -16,6 +16,9 @@ export function DashboardNav() {
         <Link href="/dashboard/resenas" className="rounded-full bg-white px-4 py-2 ring-1 ring-[#e6ddd0]">
           Reseña Google
         </Link>
+        <Link href="/dashboard/seo" className="rounded-full bg-white px-4 py-2 ring-1 ring-[#e6ddd0]">
+          SEO
+        </Link>
       </nav>
       <a href="/api/auth/logout" className="text-sm text-[#7a7266] hover:text-[#1c1915]">
         Salir

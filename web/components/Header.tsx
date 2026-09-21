@@ -27,6 +27,9 @@ export function Header() {
           <Link href="/#precios" className="hover:text-[#1c1915]">
             Precios
           </Link>
+          <Link href="/guia" className="hover:text-[#1c1915]">
+            Guía
+          </Link>
           <Link href="/wifi" className="hover:text-[#1c1915]">
             Wi‑Fi
           </Link>

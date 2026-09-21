@@ -1,8 +1,9 @@
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { JsonLd } from "@/components/JsonLd";
 import { MetaPixel } from "@/components/MetaPixel";
 import { VisitBeacon } from "@/components/VisitBeacon";
-import { BRAND, SOCIALS } from "@/lib/catalog";
+import { organizationJsonLd } from "@/lib/seo";
 import { googleVerificationCode } from "@/lib/visits";
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Outfit } from "next/font/google";
@@ -61,9 +62,6 @@ const siteMetadata: Metadata = {
     icon: [{ url: "/icon.svg?v=3", type: "image/svg+xml" }],
     apple: "/icon.svg?v=3",
   },
-  alternates: {
-    canonical: "https://nfctap.tech",
-  },
 };
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -72,24 +70,11 @@ export async function generateMetadata(): Promise<Metadata> {
   return { ...siteMetadata, verification: { google } };
 }
 
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  name: BRAND.name,
-  url: BRAND.url,
-  email: BRAND.email,
-  logo: "https://nfctap.tech/icon.svg",
-  sameAs: SOCIALS.map((s) => s.href),
-};
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={`${outfit.variable} ${fraunces.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col font-[family-name:var(--font-outfit)] pb-[env(safe-area-inset-bottom)]">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
+        <JsonLd data={organizationJsonLd()} />
         <MetaPixel />
         <VisitBeacon />
         <Header />
