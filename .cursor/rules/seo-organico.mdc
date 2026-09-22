@@ -1,0 +1,21 @@
+---
+description: SEO orgánico NFCTap — no artículos automáticos; vídeos a las 4 guías
+alwaysApply: true
+---
+
+# SEO orgánico NFCTap
+
+No generar ni publicar un artículo por cada Reel. No clonar repos de rank-and-rent, blogs de IA a granel ni páginas ciudad × servicio.
+
+Hay 4 hubs en `/guia`. Cada guía muestra el producto en 3D y el editor para encargar. Los 2 vídeos/día apuntan a la guía del tema.
+
+- Reseñas / Maps → `/guia/atril-nfc-resenas-google`
+- QR / papel → `/guia/nfc-o-qr-hosteleria`
+- WhatsApp, Instagram, logo → `/guia/atril-nfc-whatsapp-instagram`
+- Wi‑Fi pared → `/guia/wifi-nfc-alquiler-hotel`
+
+Captions (`media/nfctap_media/web_guides.py`): URL de esa guía. YouTube la pone la primera. Locutado: no decir `/guia/…`; cierre «Lo podrás encontrar en la web.»
+
+Si Search Console marca `https://nfctap.tech/` como redirección, Vercel está mandando el apex a www. Producción = nfctap.tech sin www; www redirige al apex. No pulsar «Validar corrección» hasta que el apex responda 200.
+
+OpenAI en `/dashboard/seo` es borrador, nunca publish. Sitemap: `https://nfctap.tech/sitemap.xml`. ChatGPT usa Bing.

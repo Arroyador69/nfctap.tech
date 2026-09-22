@@ -21,6 +21,9 @@ plans:
   personalizada_2:
     price: 55 €
     includes: Dos con tu logo
+  wifi_1:
+    price: 15 €
+    includes: TAP Wi‑Fi de pared, adhesivo, diseño fijo Wi‑Fi + TAP HERE
   unica:
     price: 70 €
     includes: Pieza a medida, se encarga por email
@@ -34,8 +37,8 @@ must_not_say:
   - te lleno el local
   - te llenamos el local
   - cero reseñas negativas
-  - 15 €
-  - 15 euros
+  - atril 15
+  - primera de barra 15
   - testimonios de clientes inventados
   - 600.000
   - nunca te van a multar

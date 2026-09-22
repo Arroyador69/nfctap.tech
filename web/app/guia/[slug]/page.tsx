@@ -1,9 +1,14 @@
 import { FaqList } from "@/components/FaqList";
+import { GuideBuy } from "@/components/GuideBuy";
 import { JsonLd } from "@/components/JsonLd";
+import { PRICE } from "@/lib/catalog";
 import { GUIDES, guideBySlug } from "@/lib/guides";
-import { articleJsonLd, pageMeta } from "@/lib/seo";
+import { articleJsonLd, pageMeta, productJsonLd } from "@/lib/seo";
+import { getShipping } from "@/lib/store";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+
+export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
   return GUIDES.map((g) => ({ slug: g.slug }));
@@ -24,8 +29,11 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
   const { slug } = await params;
   const guide = guideBySlug(slug);
   if (!guide) notFound();
+  const shipping = await getShipping();
+  const price = guide.product.kind === "wifi" ? PRICE.wifi.first : PRICE.generica.first;
 
   return (
+    <>
     <article className="mx-auto max-w-2xl px-5 py-12 sm:py-16">
       <JsonLd
         data={articleJsonLd({
@@ -34,6 +42,14 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
           path: `/guia/${guide.slug}`,
           datePublished: guide.datePublished,
           faq: guide.faq,
+        })}
+      />
+      <JsonLd
+        data={productJsonLd({
+          name: guide.product.kind === "wifi" ? "TAP Wi‑Fi de pared" : guide.title,
+          description: guide.description,
+          price,
+          path: `/guia/${guide.slug}`,
         })}
       />
       <p className="text-xs uppercase tracking-[0.2em] text-[#b0892c]">{guide.kicker}</p>
@@ -54,17 +70,15 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
       <div className="mt-10">
         <FaqList items={guide.faq} />
       </div>
-      <Link
-        href={guide.cta.href}
-        className="mt-10 inline-block rounded-full bg-[#1c1915] px-6 py-3 font-semibold text-[#f6f1e7]"
-      >
-        {guide.cta.label}
-      </Link>
-      <p className="mt-6 text-sm">
+      <p className="mt-8 text-sm">
         <Link href="/guia" className="text-[#7a7266] underline">
           Más guías NFCTap
         </Link>
       </p>
     </article>
+    <div className="mx-auto max-w-6xl px-5 pb-16">
+      <GuideBuy guide={guide} shipping={shipping} />
+    </div>
+    </>
   );
 }

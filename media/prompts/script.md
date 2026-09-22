@@ -18,6 +18,8 @@ Reglas:
 - Primer segundo: dolor concreto (se van sin reseña, QR sucio, Maps, anuncios, WhatsApp que no entra, Instagram que no siguen).
 - Luego el atril, que lo fabricáis aquí, y el precio solo si está en product.yaml (20 / 35 / 30 / 55 / 70 €).
 - El cuerpo termina en el producto. El cierre oral es siempre «Lo podrás encontrar en la web. Envíos a toda España.»
+- No locutes la URL larga de /guia/… Eso va en el caption de YouTube/Instagram, no en la voz.
+- Si el dolor es reseñas o Maps, el producto es el atril de Google. Si es WhatsApp o Instagram, ese modelo. Si es QR o papel, el atril de barra. Si es Wi‑Fi de pared, la placa de 15 €.
 - No inventes partnership con Google, Meta ni WhatsApp. No digas “te lleno el local”.
 - No uses nombres de clientes reales. Es una escena, no un testimonio falso.
 - No emojis. No hashtags dentro del locutado.

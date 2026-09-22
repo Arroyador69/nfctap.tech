@@ -96,6 +96,31 @@ export default async function SeoPage() {
         </ol>
       </section>
 
+      <section className="mt-6 rounded-3xl border border-[#fff4d6] bg-[#fffaf0] p-5">
+        <h2 className="font-semibold">Si Search Console dice «Página con redirección»</h2>
+        <p className="mt-2 text-sm text-[#5c564c]">
+          <code>http://nfctap.tech</code> → https es normal. El problema es que{" "}
+          <code>https://nfctap.tech</code> ahora salta a <code>www.nfctap.tech</code>.
+          Google no indexa el origen, indexa www. El sitemap y las bios usan sin www.
+        </p>
+        <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-[#5c564c]">
+          <li>Vercel → el proyecto nfctap.tech → Settings → Domains.</li>
+          <li>
+            <strong>nfctap.tech</strong> = dominio de producción (el que abre la web, sin
+            www).
+          </li>
+          <li>
+            <strong>www.nfctap.tech</strong> → Redirect to <strong>nfctap.tech</strong> (al
+            revés de ahora).
+          </li>
+          <li>
+            En Search Console, Inspeccionar <code>https://nfctap.tech/</code>: debe decir
+            200, no redirección. Entonces «Validar corrección». Hasta entonces no pulses
+            Validar.
+          </li>
+        </ol>
+      </section>
+
       <section className="mt-6 rounded-3xl border border-[#e6ddd0] bg-white p-5">
         <h2 className="font-semibold">3. Bing (ChatGPT y Copilot)</h2>
         <p className="mt-2 text-sm text-[#5c564c]">
@@ -144,23 +169,43 @@ export default async function SeoPage() {
       </section>
 
       <section className="mt-6 rounded-3xl border border-[#e6ddd0] bg-white p-5">
-        <h2 className="font-semibold">5. Cosas extra que sí suman</h2>
+        <h2 className="font-semibold">5. Los 2 vídeos al día (no un artículo por vídeo)</h2>
+        <p className="mt-2 text-sm text-[#5c564c]">
+          Un Reel no es una página nueva. Las 4 redes empujan a la misma guía. El
+          producto (encargar) ya está en esa página. Publicar 2 posts de IA al día
+          hace daño.
+        </p>
         <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-[#5c564c]">
           <li>
-            Instagram, TikTok, YouTube y Facebook: en el bio el enlace{" "}
-            <strong>https://nfctap.tech</strong> (no solo el de Linktree).
+            Reseñas / Maps →{" "}
+            <code className="break-all">/guia/atril-nfc-resenas-google</code>
           </li>
           <li>
-            Cada vídeo o post puede apuntar a una guía concreta, no siempre a la home.
-            Ejemplo: vídeo de reseñas → /guia/atril-nfc-resenas-google
+            QR sucio o papel → <code className="break-all">/guia/nfc-o-qr-hosteleria</code>
           </li>
           <li>
-            Cuando un cliente te deje reseña en Google (tu ficha, si la tienes) o un
-            comentario, eso es prueba de negocio real. No hace falta comprar backlinks.
+            WhatsApp, Instagram o logo →{" "}
+            <code className="break-all">/guia/atril-nfc-whatsapp-instagram</code>
           </li>
           <li>
-            No crees 50 artículos de IA. Si sale un tema nuevo (peluquería, clínica, packing
-            de 3), lo escribimos igual que estas 4: corto, con precio y CTA.
+            Wi‑Fi pared → <code className="break-all">/guia/wifi-nfc-alquiler-hotel</code>
+          </li>
+        </ul>
+        <p className="mt-3 text-sm text-[#5c564c]">
+          El pack del día ya pega esa URL en CAPTION_REEL_*.txt y en COMO_PUBLICAR.txt.
+          En YouTube, esa URL en la descripción (arriba).
+        </p>
+      </section>
+
+      <section className="mt-6 rounded-3xl border border-[#e6ddd0] bg-white p-5">
+        <h2 className="font-semibold">6. Bios y prueba real</h2>
+        <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-[#5c564c]">
+          <li>
+            Instagram, TikTok, YouTube y Facebook: bio{" "}
+            <strong>https://nfctap.tech</strong> (no solo Linktree).
+          </li>
+          <li>
+            OpenAI en este panel es borrador. Nunca «publicar automático».
           </li>
         </ul>
       </section>

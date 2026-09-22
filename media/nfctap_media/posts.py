@@ -8,6 +8,7 @@ from nfctap_media.bank import pick_carousel_photos
 from nfctap_media.config import Config, load_yaml
 from nfctap_media.paths import ROOT
 from nfctap_media.script import Pain, Persona, Script
+from nfctap_media.web_guides import guide_url
 
 SIZES = {
     "ig": (1080, 1350),
@@ -204,8 +205,8 @@ def make_carousel_card(
 
 def carousel_slides(pain: Pain, persona: Persona, script: Script, cfg: Config) -> list[tuple[str, str, str]]:
     return [
-        ("NFCTAP.TECH", pain.carousel_title, "Atril NFC · TAP"),
-        ("EN LA BARRA", pain.carousel_line, "Impreso en España"),
+        ("NFCTAP.TECH", script.carousel_title or pain.carousel_title, "Atril NFC · TAP"),
+        ("EN LA BARRA", script.carousel_line or pain.carousel_line, "Impreso en España"),
         ("ENCARGAR", "Envíos a toda España.", "nfctap.tech"),
     ]
 
@@ -242,38 +243,46 @@ def write_instagram_pack(
     return chosen
 
 
+def _with_guide(body: str, pain: Pain) -> str:
+    url = guide_url(pain)
+    text = body.rstrip()
+    if url not in text:
+        text = f"{text}\n\n{url}"
+    return text
+
+
 def _reel_caption(pain: Pain, script: Script, platform: str) -> str:
-    body = (
-        f"{pain.spoken_hook}\n\n"
-        f"{script.text}\n\n"
-        "Envíos a toda España.\n"
-        "nfctap.tech\n"
-    )
-    if platform == "tiktok":
-        tags = "#NFCTap #Hosteleria #WhatsApp #Instagram #Barra #RestaurantesEspaña"
-    elif platform == "youtube":
-        tags = "Vídeo: atril NFC para WhatsApp, Instagram o Google. Encarga en nfctap.tech"
-    else:
-        tags = (
-            "#NFCTap #AtrilNFC #Hosteleria "
-            "#WhatsApp #Instagram #HechoEnEspaña"
+    body = (script.caption or "").strip()
+    if not body:
+        body = (
+            f"{script.carousel_caption.strip()}\n"
+            if script.carousel_caption.strip()
+            else f"{pain.hook}. Encarga en nfctap.tech"
         )
-    return f"{body}\n{tags}\n"
+    url = guide_url(pain)
+    if platform == "tiktok":
+        tags = "#NFCTap #Hosteleria #AtrilNFC #WhatsApp #Instagram"
+    elif platform == "youtube":
+        tags = "Atril NFC para WhatsApp, Instagram o Google. Encarga en nfctap.tech"
+    else:
+        tags = "#NFCTap #AtrilNFC #Hosteleria #HechoEnEspaña"
+    if platform == "youtube":
+        return f"{url}\n\n{body.strip()}\n\n{tags}\n"
+    return f"{_with_guide(body, pain).strip()}\n\n{tags}\n"
 
 
 def _carousel_caption(pain: Pain, script: Script, platform: str) -> str:
     """Texto del carrusel: copy propio, nunca el locutado ni el hook del Reel."""
-    body = pain.carousel_caption.strip()
+    raw = (script.carousel_caption or pain.carousel_caption).strip()
+    url = guide_url(pain)
     if platform == "tiktok":
         tags = "#NFCTap #Hosteleria #AtrilNFC #WhatsApp #Instagram"
     elif platform == "youtube":
         tags = "Carrusel: atril NFC. Encarga en nfctap.tech"
+        return f"{url}\n\n{raw}\n\n{tags}\n"
     else:
-        tags = (
-            "#NFCTap #AtrilNFC "
-            "#Hosteleria #HechoEnEspaña"
-        )
-    return f"{body}\n\n{tags}\n"
+        tags = "#NFCTap #AtrilNFC #Hosteleria #HechoEnEspaña"
+    return f"{_with_guide(raw, pain)}\n\n{tags}\n"
 
 
 def write_reel_captions(
@@ -301,7 +310,16 @@ def write_publish_guide(
     dest_dir: Path,
     tiempo_dir: str,
     dinero_dir: str,
+    pains: tuple[Pain, ...] = (),
 ) -> Path:
+    urls = []
+    seen: set[str] = set()
+    for pain in pains:
+        url = guide_url(pain)
+        if url not in seen:
+            seen.add(url)
+            urls.append(url)
+    links = "\n".join(f"   {u}" for u in urls) or "   https://nfctap.tech/guia"
     text = f"""PACK DE PRODUCCIÓN · NFCTap
 Instagram · Facebook · TikTok · YouTube
 
@@ -325,6 +343,10 @@ Carpetas (todo 9:16 salvo el carrusel IG/FB 1080×1350):
 El cuerpo del Reel es TU proceso. El hook es la pieza acabada.
 Cierre: la web en uso + «Lo podrás encontrar en la web. Envíos a toda España.»
 Mira el MP4 y las fotos antes de subir.
+
+SEO: pega el caption tal cual (lleva la guía). No crees un artículo nuevo por vídeo.
+YouTube: primer comentario o descripción = esta URL:
+{links}
 """
     path = dest_dir / "COMO_PUBLICAR.txt"
     path.write_text(text, encoding="utf-8")

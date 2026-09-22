@@ -9,7 +9,10 @@ export function Footer() {
   const path = usePathname();
   if (path.startsWith("/dashboard") || path === "/w" || path.startsWith("/w/")) return null;
   const shopBar =
-    path.startsWith("/personalizar") || path.startsWith("/wifi") || path.startsWith("/carrito");
+    path.startsWith("/personalizar") ||
+    path.startsWith("/wifi") ||
+    path.startsWith("/carrito") ||
+    path.startsWith("/guia/");
 
   return (
     <footer

@@ -1,5 +1,6 @@
 import { PRICE } from "./catalog";
 import type { FaqItem } from "./seo";
+import type { CatalogModel, FaceModel, ProductKind } from "./types";
 
 export type GuideSection = { h2: string; body: string[] };
 
@@ -13,6 +14,11 @@ export type Guide = {
   sections: GuideSection[];
   faq: FaqItem[];
   cta: { href: string; label: string };
+  product: {
+    kind: ProductKind;
+    models: CatalogModel[];
+    preview: FaceModel;
+  };
 };
 
 export const GUIDES: Guide[] = [
@@ -26,6 +32,7 @@ export const GUIDES: Guide[] = [
       "Un atril NFC para reseñas de Google es una pieza de pie en la barra: el cliente acerca el móvil y se abre el enlace de opinar en Maps. NFCTap lo imprime en España, programa el chip con tu ficha y lo envía con Correos en 24 h. La primera cuesta 20 €.",
     datePublished: "2026-09-22",
     cta: { href: "/personalizar?models=google", label: "Encargar atril Google" },
+    product: { kind: "generica", models: ["google"], preview: "google" },
     sections: [
       {
         h2: "Por qué Maps te esconde si no pides la reseña",
@@ -71,6 +78,7 @@ export const GUIDES: Guide[] = [
       "En hostelería el NFC gana al QR porque no hay que enfocar un papel. El cliente acerca el móvil al atril y entra. NFCTap es esa pieza de pie, impresa en España, desde 20 €, con envío en 24 h.",
     datePublished: "2026-09-22",
     cta: { href: "/personalizar", label: "Encargar atril NFC" },
+    product: { kind: "generica", models: [], preview: "google" },
     sections: [
       {
         h2: "Qué falla en el QR de la caja",
@@ -115,6 +123,7 @@ export const GUIDES: Guide[] = [
       "Una placa NFC de Wi‑Fi para alquiler vacacional u hotel se pega a la pared. El huésped acerca el móvil: Android se une a la red; iPhone enseña el nombre y la clave. NFCTap la imprime en España a 15 €, con adhesivo, diseño fijo Wi‑Fi + TAP HERE.",
     datePublished: "2026-09-22",
     cta: { href: "/wifi", label: "Ver TAP Wi‑Fi en 3D" },
+    product: { kind: "wifi", models: [], preview: "wifi" },
     sections: [
       {
         h2: "El papelito del cajón no escala",
@@ -159,6 +168,7 @@ export const GUIDES: Guide[] = [
       "Un atril NFC de WhatsApp abre el chat al acercar el móvil, sin dictar el número. El de Instagram abre tu perfil, sin buscar el nombre. NFCTap los imprime en España desde 20 €; las dos piezas, 35 €.",
     datePublished: "2026-09-22",
     cta: { href: "/personalizar", label: "Elegir WhatsApp o Instagram" },
+    product: { kind: "generica", models: ["whatsapp"], preview: "whatsapp" },
     sections: [
       {
         h2: "WhatsApp: la reserva que no llega",
