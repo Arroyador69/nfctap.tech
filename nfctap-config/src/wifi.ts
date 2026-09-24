@@ -127,6 +127,22 @@ export function formatWifiCreds(c: WifiCreds) {
   return `${c.ssid} · ${c.password}`;
 }
 
+export function credsFromWrite(payload: {
+  uri?: string;
+  wifi?: { ssid: string; password: string };
+}): WifiCreds | null {
+  if (payload.wifi?.ssid) {
+    const password = payload.wifi.password || "";
+    const fromUri = payload.uri ? parseWifiLanding(payload.uri) : null;
+    return {
+      ssid: payload.wifi.ssid,
+      password: password || fromUri?.password || "",
+      auth: !password && fromUri?.auth === "open" ? "open" : fromUri?.auth || (password ? "wpa2" : "open"),
+    };
+  }
+  return payload.uri ? parseWifiLanding(payload.uri) : null;
+}
+
 export function encodeWifiWsc(ssid: string, password: string, auth: WifiAuth) {
   const authType = auth === "open" ? 0x0001 : auth === "wpa" ? 0x0002 : 0x0020;
   const encType = auth === "open" ? 0x0001 : 0x0008;

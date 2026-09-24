@@ -14,6 +14,7 @@
     "@types/react": "~19.1.10",
     "babel-preset-expo": "~54.0.12",
     "expo": "~54.0.0",
+    "expo-clipboard": "~8.0.7",
     "expo-constants": "~18.0.14",
     "expo-linking": "~8.0.12",
     "expo-router": "~6.0.24",

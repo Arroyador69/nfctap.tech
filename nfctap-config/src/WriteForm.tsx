@@ -1,9 +1,11 @@
 import { NfcSheet } from "@/src/NfcSheet";
+import { WifiCredsCard } from "@/src/WifiCredsCard";
 import { pushHistory } from "@/src/history";
 import { cancelNfc, nfcMessage, writePayload } from "@/src/nfc";
 import { lookupReviewPlaces, type PlaceHit } from "@/src/places";
 import { TEMPLATES, buildPayload, defaultsFor } from "@/src/templates";
 import { colors } from "@/src/theme";
+import { credsFromWrite, type WifiCreds } from "@/src/wifi";
 import { useMemo, useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -31,6 +33,7 @@ export function WriteForm({ templateId, onBack }: Props) {
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
   const [showSecret, setShowSecret] = useState(true);
+  const [savedWifi, setSavedWifi] = useState<WifiCreds | null>(null);
   const [placeHits, setPlaceHits] = useState<PlaceHit[]>([]);
   const [placeBusy, setPlaceBusy] = useState(false);
   const [placeError, setPlaceError] = useState("");
@@ -120,9 +123,11 @@ export function WriteForm({ templateId, onBack }: Props) {
         label: built.label,
         payload,
       });
+      const wifi = template.id === "wifi" ? credsFromWrite(payload) : null;
+      setSavedWifi(wifi);
       setOk(
-        template.id === "wifi"
-          ? "Escrita. Cierra esta app, bloquea el iPhone y vuelve a acercarlo: tiene que salir Safari con el nombre y la clave. En Android a menudo se une solo."
+        wifi
+          ? "Escrita. Nombre y contraseña abajo: cópialos aquí. Si Safari no abre la web, da igual: esta pantalla ya los tiene."
           : "Escrita. Comprueba con otro móvil, no con este.",
       );
     } catch (e) {
@@ -271,6 +276,8 @@ export function WriteForm({ templateId, onBack }: Props) {
             </Pressable>
           ))}
 
+        {savedWifi ? <WifiCredsCard creds={savedWifi} /> : null}
+
         {!!preview && (
           <View style={{ marginTop: 18, backgroundColor: "#faf6ee", borderRadius: 14, padding: 12 }}>
             <Text style={{ fontSize: 12, color: colors.muted }}>
@@ -309,6 +316,7 @@ export function WriteForm({ templateId, onBack }: Props) {
         busy={busy}
         error={error}
         ok={ok}
+        extra={ok && savedWifi ? <WifiCredsCard creds={savedWifi} /> : null}
         onClose={() => {
           cancelNfc();
           setSheet(false);

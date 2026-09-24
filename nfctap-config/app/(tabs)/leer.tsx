@@ -1,7 +1,9 @@
 import { NfcSheet } from "@/src/NfcSheet";
+import { WifiCredsCard } from "@/src/WifiCredsCard";
 import { cancelNfc, eraseTag, nfcMessage, readTag, type ReadResult } from "@/src/nfc";
 import { colors } from "@/src/theme";
-import { useState } from "react";
+import { parseWifiLanding, parseWifiQrLine, type WifiCreds } from "@/src/wifi";
+import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 export default function LeerScreen() {
@@ -10,6 +12,19 @@ export default function LeerScreen() {
   const [error, setError] = useState("");
   const [result, setResult] = useState<ReadResult | null>(null);
   const [ok, setOk] = useState("");
+  const wifiRead = useMemo(() => {
+    if (!result) return null as WifiCreds | null;
+    for (const r of result.records) {
+      const hit = parseWifiLanding(r.value) || parseWifiQrLine(r.value);
+      if (hit) return hit;
+      const m = r.value.match(/^(.+?)\s·\s(.+)$/);
+      if (r.type.startsWith("Wi") && m) {
+        const password = m[2] === "sin clave" ? "" : m[2];
+        return { ssid: m[1], password, auth: password ? "wpa2" : "open" } as WifiCreds;
+      }
+    }
+    return null;
+  }, [result]);
 
   async function scan() {
     setSheet(true);
@@ -20,6 +35,7 @@ export default function LeerScreen() {
     try {
       setResult(await readTag());
       setOk("Leída");
+      setSheet(false);
     } catch (e) {
       setError(nfcMessage(e, "No se pudo leer"));
     } finally {
@@ -95,6 +111,7 @@ export default function LeerScreen() {
               </View>
             ))
           )}
+          {wifiRead ? <WifiCredsCard creds={wifiRead} /> : null}
         </View>
       )}
 
