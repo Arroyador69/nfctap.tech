@@ -1,0 +1,31 @@
+{
+  "nombre": "lista-nevera",
+  "kind": "lista-nevera",
+  "forma": "circulo",
+  "cuerpo": "negro",
+  "acento": "blanco",
+  "archivos": [
+    "01_cuerpo.stl",
+    "02_acento.stl"
+  ],
+  "placa": [
+    38.0,
+    38.0,
+    2.0
+  ],
+  "relieve": 0.45,
+  "url": "https://nfctap.tech/lista/casa",
+  "nfc": {
+    "sticker": 25.0,
+    "well": 28.0,
+    "seat": 26.0,
+    "pad": 24.0,
+    "y": 0.0,
+    "z_floor": 0.8,
+    "z_pause": 1.4,
+    "layer": 7,
+    "cover": 0.6000000000000001
+  },
+  "uso": "pegar reverso a la nevera",
+  "nota": "Círculo fino 2.0 mm. Icono lista. TAP → lista compartida."
+}

@@ -7,7 +7,13 @@ export function VisitBeacon() {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!pathname || pathname.startsWith("/dashboard") || pathname === "/w" || pathname.startsWith("/w/")) {
+    if (
+      !pathname ||
+      pathname.startsWith("/dashboard") ||
+      pathname === "/w" ||
+      pathname.startsWith("/w/") ||
+      pathname.startsWith("/lista/")
+    ) {
       return;
     }
     const body = JSON.stringify({

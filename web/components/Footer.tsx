@@ -7,7 +7,13 @@ import { usePathname } from "next/navigation";
 
 export function Footer() {
   const path = usePathname();
-  if (path.startsWith("/dashboard") || path === "/w" || path.startsWith("/w/")) return null;
+  if (
+    path.startsWith("/dashboard") ||
+    path === "/w" ||
+    path.startsWith("/w/") ||
+    path.startsWith("/lista/")
+  )
+    return null;
   const shopBar =
     path.startsWith("/personalizar") ||
     path.startsWith("/wifi") ||

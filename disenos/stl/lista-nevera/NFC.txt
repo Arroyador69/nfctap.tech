@@ -1,0 +1,10 @@
+Lista nevera — un NFC (Timeskey Ø25)
+
+En NFC Tools / NFCTap Config → grabar URL:
+  https://nfctap.tech/lista/casa
+
+Cualquier móvil de casa que haga TAP abre la lista compartida.
+Ahí se añade, quita cantidad y se marca lo comprado.
+Botón «Enviar» / WhatsApp para llevarla al súper.
+
+noindex · no es una página pública de la tienda.
