@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 export type ListaItemView = {
@@ -37,6 +38,7 @@ export function ListaLocked({
   const [clave, setClave] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(activateError || "");
+  const router = useRouter();
 
   async function onUnlock(e: React.FormEvent) {
     e.preventDefault();
@@ -50,7 +52,8 @@ export function ListaLocked({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "No se pudo activar");
-      window.location.href = `/lista/${listId}`;
+      router.replace(`/lista/${listId}`);
+      router.refresh();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Error");
       setBusy(false);

@@ -32,7 +32,7 @@ export default async function ListaPage({ params, searchParams }: Props) {
 
   const ip = clientIpFromHeaders(await headers());
   let activateError: string | undefined;
-  let justActivated = sp.ok === "1";
+  const justActivated = sp.ok === "1";
 
   // Activar desde ?activar=… y abrir la lista YA (sin redirect, que perdía la cookie).
   if (sp.activar?.trim()) {
