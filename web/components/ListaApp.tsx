@@ -25,7 +25,13 @@ function shareText(lista: ListaView) {
   ].join("\n");
 }
 
-export function ListaLocked({ reason }: { reason: "fuera_casa" | "sin_activar" }) {
+export function ListaLocked({
+  reason,
+  activateError,
+}: {
+  reason: "fuera_casa" | "sin_activar";
+  activateError?: string;
+}) {
   return (
     <div className="mx-auto flex min-h-[100dvh] max-w-lg flex-col justify-center px-5 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]">
       <p className="text-[0.7rem] uppercase tracking-[0.2em] text-[#b0892c]">Nevera · privada</p>
@@ -34,11 +40,17 @@ export function ListaLocked({ reason }: { reason: "fuera_casa" | "sin_activar" }
       </h1>
       <p className="mt-3 text-base leading-relaxed text-[#5c564c]">
         {reason === "sin_activar"
-          ? "Todavía no está activada. Conéctate a la Wi‑Fi de casa y abre el enlace de activación una vez (está en NFC.txt)."
+          ? "Todavía no está activada. Conéctate a la Wi‑Fi de casa (no datos móviles) y abre el enlace de activación una vez."
           : "La lista no se abre fuera de casa ni con datos móviles. En casa, al TAP del botón, sí."}
       </p>
+      {activateError ? (
+        <p className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {activateError}
+        </p>
+      ) : null}
       <p className="mt-4 text-sm text-[#8a8173]">
-        Para el súper: en casa pulsa «Enviar / WhatsApp» o «Copiar» antes de salir.
+        Vale el móvil o el ordenador, siempre que estén en la Wi‑Fi de casa. Para el súper: Enviar /
+        WhatsApp o Copiar antes de salir.
       </p>
     </div>
   );

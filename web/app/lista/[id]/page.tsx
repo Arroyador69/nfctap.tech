@@ -31,14 +31,18 @@ export default async function ListaPage({ params, searchParams }: Props) {
   if (!listaIdOk(id)) notFound();
 
   const ip = clientIpFromHeaders(await headers());
+  let activateError: string | undefined;
 
   if (sp.activar?.trim()) {
     const result = await registerListaHome(id, ip, sp.activar.trim());
     if (result.ok) redirect(`/lista/${id}?ok=1`);
+    activateError = result.error;
   }
 
   const access = await assertListaHome(id, ip);
-  if (!access.ok) return <ListaLocked reason={access.reason} />;
+  if (!access.ok) {
+    return <ListaLocked reason={access.reason} activateError={activateError} />;
+  }
 
   return (
     <ListaApp listId={id} initial={await getLista(id)} justActivated={sp.ok === "1"} />

@@ -75,13 +75,11 @@ export function clientIpFromHeaders(h: Headers): string {
   return normalizeIp(real);
 }
 
+/** Misma clave que el dashboard (DASHBOARD_PASSWORD o nfctab por defecto). */
 function homeSecretOk(input: string) {
   const expected =
-    process.env.LISTA_HOME_SECRET ||
-    process.env.DASHBOARD_PASSWORD ||
-    (process.env.NODE_ENV === "production" ? "" : "nfctab");
-  if (!expected) return false;
-  return input === expected;
+    process.env.LISTA_HOME_SECRET || process.env.DASHBOARD_PASSWORD || "nfctab";
+  return Boolean(input) && input === expected;
 }
 
 async function readBlob(): Promise<ListaStore | null> {
@@ -187,20 +185,37 @@ export async function registerListaHome(
   secret: string,
 ): Promise<{ ok: true; ip: string } | { ok: false; error: string }> {
   if (!listaIdOk(id)) return { ok: false, error: "id inválido" };
-  if (!homeSecretOk(secret)) return { ok: false, error: "clave incorrecta" };
-  const normalized = normalizeIp(ip);
-  if (!normalized) return { ok: false, error: "no se pudo leer la IP" };
-  if (process.env.NODE_ENV === "production" && isLocalIp(normalized)) {
-    return { ok: false, error: "conecta a la Wi‑Fi de casa (no datos móviles)" };
+  if (!homeSecretOk(secret)) {
+    return { ok: false, error: "Clave incorrecta. Usa la misma que el dashboard." };
   }
-  const data = await load();
-  const now = new Date().toISOString();
-  const prev = data.homes[id]?.ips || [];
-  const ips = [normalized, ...prev.filter((p) => p !== normalized)].slice(0, 5);
-  data.homes[id] = { ips, updatedAt: now };
-  if (!data.lists[id]) data.lists[id] = emptyLista(id);
-  await persist(data);
-  return { ok: true, ip: normalized };
+  const normalized = normalizeIp(ip);
+  if (!normalized) {
+    return {
+      ok: false,
+      error: "No se pudo leer tu IP. Prueba desde el móvil en la Wi‑Fi de casa (no 4G).",
+    };
+  }
+  if (process.env.NODE_ENV === "production" && isLocalIp(normalized)) {
+    return {
+      ok: false,
+      error: "Parece datos móviles o red local. Conéctate a la Wi‑Fi de casa y recarga.",
+    };
+  }
+  try {
+    const data = await load();
+    const now = new Date().toISOString();
+    const prev = data.homes[id]?.ips || [];
+    const ips = [normalized, ...prev.filter((p) => p !== normalized)].slice(0, 5);
+    data.homes[id] = { ips, updatedAt: now };
+    if (!data.lists[id]) data.lists[id] = emptyLista(id);
+    await persist(data);
+    return { ok: true, ip: normalized };
+  } catch {
+    return {
+      ok: false,
+      error: "No se pudo guardar. Revisa que Blob esté configurado en Vercel.",
+    };
+  }
 }
 
 export async function getLista(id: string): Promise<Lista> {
