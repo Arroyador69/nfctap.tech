@@ -314,25 +314,53 @@ export function ListaApp({
         const res = await fetch(item.photoSrc, { cache: "no-store" });
         if (!res.ok) continue;
         const blob = await res.blob();
-        const safe = item.text.replace(/[^\w\-àáäéèëíìïóòöúùüñç ]+/gi, "").slice(0, 40) || "producto";
-        files.push(new File([blob], `${safe}.jpg`, { type: blob.type || "image/jpeg" }));
+        // JPEG limpio para que WhatsApp / compartir muestren la imagen bien
+        const jpeg =
+          blob.type === "image/jpeg"
+            ? blob
+            : new Blob([blob], { type: "image/jpeg" });
+        const safe =
+          item.text
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^\w\- ]+/g, "")
+            .trim()
+            .slice(0, 40) || "producto";
+        files.push(new File([jpeg], `${safe}.jpg`, { type: "image/jpeg" }));
       } catch {
         /* sigue sin esa foto */
       }
     }
     try {
-      if (files.length && navigator.canShare?.({ files })) {
-        await navigator.share({ title: "Lista de la compra", text: body, files });
-        return;
+      if (files.length > 0) {
+        const payload = { title: "Lista de la compra", text: body, files };
+        if (navigator.canShare?.(payload)) {
+          await navigator.share(payload);
+          flash(files.length === 1 ? "Enviado con foto" : `Enviado con ${files.length} fotos`);
+          return;
+        }
+        // Algunos móviles solo aceptan una foto
+        if (files.length > 1 && navigator.canShare?.({ files: [files[0]] })) {
+          await navigator.share({
+            title: "Lista de la compra",
+            text: `${body}\n\n(+${files.length - 1} fotos más en la lista)`,
+            files: [files[0]],
+          });
+          flash("Enviado (1 foto; el resto está en la lista)");
+          return;
+        }
       }
       if (navigator.share) {
         await navigator.share({ title: "Lista de la compra", text: body });
+        if (files.length) flash("Texto enviado; este móvil no adjunta fotos aquí");
         return;
       }
     } catch {
       /* cancelado */
+      return;
     }
     window.open(`https://wa.me/?text=${encodeURIComponent(body)}`, "_blank", "noopener,noreferrer");
+    if (files.length) flash("En el móvil usa Enviar para ir con las fotos");
   }
 
   async function copy() {
@@ -463,20 +491,14 @@ export function ListaApp({
               {pending.map((item) => (
                 <li
                   key={item.id}
-                  className="flex items-center gap-2 rounded-2xl border border-[#e6ddd0] bg-white px-3 py-2.5"
+                  className="flex items-center gap-2.5 rounded-2xl border border-[#e6ddd0] bg-white px-3 py-2.5"
                 >
-                  <button
-                    type="button"
-                    aria-label="Marcar comprado"
-                    onClick={() => toggleDone(item)}
-                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 border-[#1c1915] text-lg"
-                  />
                   {item.photoSrc ? (
                     <button
                       type="button"
-                      aria-label="Ver foto"
+                      aria-label="Ver foto en grande"
                       onClick={() => setViewer(item)}
-                      className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-[#f0ebe3]"
+                      className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-[#f0ebe3] ring-1 ring-[#e6ddd0]"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={item.photoSrc} alt="" className="h-full w-full object-cover" />
@@ -490,14 +512,21 @@ export function ListaApp({
                         setPhotoTargetId(item.id);
                         itemCameraRef.current?.click();
                       }}
-                      className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[#f0ebe3] text-[0.65rem] font-semibold uppercase tracking-wide text-[#5c564c]"
+                      className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-[#f0ebe3] text-[0.65rem] font-semibold uppercase tracking-wide text-[#5c564c]"
                     >
                       Foto
                     </button>
                   )}
-                  <span className="min-w-0 flex-1 text-[1.05rem] font-medium leading-snug text-[#1c1915]">
-                    {item.text}
-                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[1.05rem] font-medium leading-snug text-[#1c1915]">{item.text}</p>
+                    <button
+                      type="button"
+                      onClick={() => toggleDone(item)}
+                      className="mt-0.5 text-xs font-medium text-[#b0892c]"
+                    >
+                      Marcar comprado
+                    </button>
+                  </div>
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
@@ -549,27 +578,28 @@ export function ListaApp({
               {done.map((item) => (
                 <li
                   key={item.id}
-                  className="flex items-center gap-2 rounded-2xl border border-[#ece6dc] bg-[#faf7f2] px-3 py-2.5 opacity-70"
+                  className="flex items-center gap-2.5 rounded-2xl border border-[#ece6dc] bg-[#faf7f2] px-3 py-2.5 opacity-70"
                 >
-                  <button
-                    type="button"
-                    aria-label="Desmarcar"
-                    onClick={() => toggleDone(item)}
-                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#1c1915] text-sm text-[#f6f1e7]"
-                  >
-                    ✓
-                  </button>
                   {item.photoSrc ? (
                     <button type="button" onClick={() => setViewer(item)} className="shrink-0">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={item.photoSrc}
                         alt=""
-                        className="h-10 w-10 rounded-lg object-cover"
+                        className="h-12 w-12 rounded-xl object-cover"
                       />
                     </button>
                   ) : null}
-                  <span className="min-w-0 flex-1 text-base line-through">{item.text}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-base line-through">{item.text}</p>
+                    <button
+                      type="button"
+                      onClick={() => toggleDone(item)}
+                      className="mt-0.5 text-xs font-medium text-[#b0892c]"
+                    >
+                      Desmarcar
+                    </button>
+                  </div>
                   {item.qty > 1 ? (
                     <span className="text-sm tabular-nums text-[#8a8173]">×{item.qty}</span>
                   ) : null}
@@ -589,14 +619,18 @@ export function ListaApp({
       </div>
 
       {viewer?.photoSrc ? (
-        <div className="fixed inset-0 z-50 flex flex-col bg-black/80 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
-          <p className="mb-3 text-center text-sm text-white/80">{viewer.text}</p>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={viewer.photoSrc}
-            alt={viewer.text}
-            className="mx-auto max-h-[60vh] w-full max-w-lg rounded-2xl object-contain"
-          />
+        <div className="fixed inset-0 z-50 flex flex-col bg-[#1c1915] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
+          <p className="mb-3 text-center font-[family-name:var(--font-display)] text-lg text-[#f6f1e7]">
+            {viewer.text}
+          </p>
+          <div className="flex min-h-0 flex-1 items-center justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={viewer.photoSrc}
+              alt={viewer.text}
+              className="max-h-full max-w-full rounded-2xl object-contain"
+            />
+          </div>
           <div className="mx-auto mt-4 flex w-full max-w-lg flex-col gap-2">
             <button
               type="button"
@@ -606,7 +640,7 @@ export function ListaApp({
                 setViewer(null);
                 itemCameraRef.current?.click();
               }}
-              className="rounded-2xl bg-white px-4 py-3 font-semibold text-[#1c1915]"
+              className="rounded-2xl bg-[#f6f1e7] px-4 py-3 font-semibold text-[#1c1915]"
             >
               Cambiar foto
             </button>
@@ -616,14 +650,14 @@ export function ListaApp({
                 setConfirm({ kind: "photo1", item: viewer });
                 setViewer(null);
               }}
-              className="rounded-2xl border border-white/40 px-4 py-3 font-semibold text-white"
+              className="rounded-2xl border border-white/35 px-4 py-3 font-semibold text-white"
             >
               Quitar foto
             </button>
             <button
               type="button"
               onClick={() => setViewer(null)}
-              className="rounded-2xl px-4 py-3 text-white/80"
+              className="rounded-2xl px-4 py-3 text-white/75"
             >
               Cerrar
             </button>
