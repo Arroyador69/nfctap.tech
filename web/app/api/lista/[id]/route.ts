@@ -4,6 +4,9 @@ import {
   clearDoneLista,
   clientIpFromHeaders,
   getLista,
+  listaHomeCookieName,
+  listaHomeCookieOptions,
+  listaHomeCookieValue,
   listaIdOk,
   patchListaItem,
   registerListaHome,
@@ -22,8 +25,8 @@ function badId() {
 function denied(reason: "fuera_casa" | "sin_activar") {
   const msg =
     reason === "sin_activar"
-      ? "Lista no activada. Entra una vez desde la Wi‑Fi de casa con ?activar=CLAVE"
-      : "Solo se abre en la Wi‑Fi de casa";
+      ? "Lista no activada"
+      : "Solo se abre en la Wi‑Fi de casa o con dispositivo ya activado";
   return NextResponse.json({ error: msg, code: reason }, { status: 403 });
 }
 
@@ -59,10 +62,13 @@ export async function POST(req: Request, ctx: Ctx) {
       if (!result.ok) {
         return NextResponse.json({ error: result.error }, { status: 403 });
       }
-      return NextResponse.json({
+      // Cookie en la respuesta HTTP (fiable en el navegador).
+      const res = NextResponse.json({
         ok: true,
-        message: "Wi‑Fi de casa registrada. La lista solo abre desde esta red.",
+        message: "Lista abierta en este dispositivo.",
       });
+      res.cookies.set(listaHomeCookieName(id), listaHomeCookieValue(id), listaHomeCookieOptions());
+      return res;
     }
     const access = await gate(req, id);
     if (!access.ok) return denied(access.reason);

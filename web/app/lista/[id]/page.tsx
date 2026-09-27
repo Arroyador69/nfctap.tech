@@ -8,7 +8,7 @@ import {
 } from "@/lib/lista";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -32,19 +32,25 @@ export default async function ListaPage({ params, searchParams }: Props) {
 
   const ip = clientIpFromHeaders(await headers());
   let activateError: string | undefined;
+  let justActivated = sp.ok === "1";
 
+  // Activar desde ?activar=… y abrir la lista YA (sin redirect, que perdía la cookie).
   if (sp.activar?.trim()) {
     const result = await registerListaHome(id, ip, sp.activar.trim());
-    if (result.ok) redirect(`/lista/${id}?ok=1`);
+    if (result.ok) {
+      return (
+        <ListaApp listId={id} initial={await getLista(id)} justActivated />
+      );
+    }
     activateError = result.error;
   }
 
   const access = await assertListaHome(id, ip);
   if (!access.ok) {
-    return <ListaLocked reason={access.reason} activateError={activateError} />;
+    return (
+      <ListaLocked listId={id} reason={access.reason} activateError={activateError} />
+    );
   }
 
-  return (
-    <ListaApp listId={id} initial={await getLista(id)} justActivated={sp.ok === "1"} />
-  );
+  return <ListaApp listId={id} initial={await getLista(id)} justActivated={justActivated} />;
 }

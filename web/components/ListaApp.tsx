@@ -26,31 +26,78 @@ function shareText(lista: ListaView) {
 }
 
 export function ListaLocked({
+  listId,
   reason,
   activateError,
 }: {
+  listId: string;
   reason: "fuera_casa" | "sin_activar";
   activateError?: string;
 }) {
+  const [clave, setClave] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(activateError || "");
+
+  async function onUnlock(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setErr("");
+    try {
+      const res = await fetch(`/api/lista/${listId}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "registerHome", secret: clave }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "No se pudo activar");
+      window.location.href = `/lista/${listId}`;
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Error");
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="mx-auto flex min-h-[100dvh] max-w-lg flex-col justify-center px-5 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]">
       <p className="text-[0.7rem] uppercase tracking-[0.2em] text-[#b0892c]">Nevera · privada</p>
       <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl leading-tight text-[#1c1915]">
-        Solo en la Wi‑Fi de casa
+        Lista de la compra
       </h1>
       <p className="mt-3 text-base leading-relaxed text-[#5c564c]">
         {reason === "sin_activar"
-          ? "Todavía no está activada. Conéctate a la Wi‑Fi de casa (no datos móviles) y abre el enlace de activación una vez."
-          : "La lista no se abre fuera de casa ni con datos móviles. En casa, al TAP del botón, sí."}
+          ? "Activa la lista una vez con la clave del dashboard (estás en casa)."
+          : "Este dispositivo aún no tiene acceso. En la Wi‑Fi de casa, introduce la clave una vez."}
       </p>
-      {activateError ? (
+
+      <form onSubmit={onUnlock} className="mt-6 flex flex-col gap-3">
+        <label className="text-sm font-medium text-[#5c564c]" htmlFor="clave-casa">
+          Clave (la misma del dashboard)
+        </label>
+        <input
+          id="clave-casa"
+          type="password"
+          autoComplete="current-password"
+          value={clave}
+          onChange={(e) => setClave(e.target.value)}
+          placeholder="Clave"
+          className="rounded-2xl border border-[#e6ddd0] bg-white px-4 py-3.5 text-base text-[#1c1915]"
+        />
+        <button
+          type="submit"
+          disabled={busy || !clave.trim()}
+          className="rounded-2xl bg-[#1c1915] px-5 py-3.5 font-semibold text-[#f6f1e7] disabled:opacity-40"
+        >
+          {busy ? "Abriendo…" : "Abrir lista"}
+        </button>
+      </form>
+
+      {err ? (
         <p className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          {activateError}
+          {err}
         </p>
       ) : null}
       <p className="mt-4 text-sm text-[#8a8173]">
-        Vale el móvil o el ordenador, siempre que estén en la Wi‑Fi de casa. Para el súper: Enviar /
-        WhatsApp o Copiar antes de salir.
+        Solo hace falta una vez por móvil/ordenador. Luego el TAP de la nevera abre la lista directo.
       </p>
     </div>
   );

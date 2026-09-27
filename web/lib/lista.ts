@@ -93,24 +93,34 @@ function homeSecretOk(input: string) {
   return Boolean(input) && input === expected;
 }
 
-function signListaHome(id: string) {
+export const LISTA_HOME_COOKIE_MAX_AGE = 60 * 60 * 24 * 400;
+
+export function listaHomeCookieName(id: string) {
+  return `${COOKIE_PREFIX}${id}`;
+}
+
+export function listaHomeCookieValue(id: string) {
   return createHmac("sha256", homeSecret()).update(`lista:${id}`).digest("hex").slice(0, 32);
+}
+
+export function listaHomeCookieOptions() {
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: LISTA_HOME_COOKIE_MAX_AGE,
+  };
 }
 
 export async function setListaHomeCookie(id: string) {
   const jar = await cookies();
-  jar.set(`${COOKIE_PREFIX}${id}`, signListaHome(id), {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 400,
-  });
+  jar.set(listaHomeCookieName(id), listaHomeCookieValue(id), listaHomeCookieOptions());
 }
 
 export async function hasListaHomeCookie(id: string) {
   const jar = await cookies();
-  return jar.get(`${COOKIE_PREFIX}${id}`)?.value === signListaHome(id);
+  return jar.get(listaHomeCookieName(id))?.value === listaHomeCookieValue(id);
 }
 
 async function readBlob(): Promise<ListaStore | null> {
@@ -209,7 +219,7 @@ function clampQty(n: unknown) {
   return Math.min(99, Math.max(1, Math.round(v)));
 }
 
-/** Casa = cookie de activación o misma IP pública del router. */
+/** Acceso: cookie de este dispositivo, o misma IP pública del router. */
 export async function assertListaHome(id: string, ip: string): Promise<ListaAccess> {
   const normalized = normalizeIp(ip);
   if (await hasListaHomeCookie(id)) {
@@ -220,16 +230,21 @@ export async function assertListaHome(id: string, ip: string): Promise<ListaAcce
   }
   const data = await load();
   const home = data.homes[id];
-  if (!home || home.ips.length === 0) {
+  if (!home) {
     return { ok: false, reason: "sin_activar", ip: normalized };
   }
-  if (home.ips.includes(normalized)) {
+  if (normalized && home.ips.includes(normalized)) {
+    // Misma Wi‑Fi de casa: deja cookie para este navegador también.
+    await setListaHomeCookie(id);
     return { ok: true, ip: normalized };
+  }
+  if (home.ips.length === 0) {
+    return { ok: false, reason: "sin_activar", ip: normalized };
   }
   return { ok: false, reason: "fuera_casa", ip: normalized };
 }
 
-/** Desde la Wi‑Fi de casa + clave del dashboard: registra esta IP como “casa”. */
+/** Activa este dispositivo (cookie) y, si hay IP pública, la guarda como «casa». */
 export async function registerListaHome(
   id: string,
   ip: string,
@@ -239,29 +254,20 @@ export async function registerListaHome(
   if (!homeSecretOk(secret)) {
     return { ok: false, error: "Clave incorrecta. Usa la misma que el dashboard." };
   }
-  const normalized = normalizeIp(ip);
-  if (!normalized) {
-    return {
-      ok: false,
-      error: "No se pudo leer tu IP. Prueba desde el móvil en la Wi‑Fi de casa (no 4G).",
-    };
-  }
-  if (process.env.NODE_ENV === "production" && isLocalIp(normalized)) {
-    return {
-      ok: false,
-      error: "Parece datos móviles o red local. Conéctate a la Wi‑Fi de casa y recarga.",
-    };
-  }
   try {
     const data = await load();
     const now = new Date().toISOString();
+    const normalized = normalizeIp(ip);
     const prev = data.homes[id]?.ips || [];
-    const ips = [normalized, ...prev.filter((p) => p !== normalized)].slice(0, 5);
+    let ips = [...prev];
+    if (normalized && !isLocalIp(normalized)) {
+      ips = [normalized, ...prev.filter((p) => p !== normalized)].slice(0, 5);
+    }
     data.homes[id] = { ips, updatedAt: now };
     if (!data.lists[id]) data.lists[id] = emptyLista(id);
     await persist(data);
     await setListaHomeCookie(id);
-    return { ok: true, ip: normalized };
+    return { ok: true, ip: normalized || "cookie" };
   } catch {
     return {
       ok: false,
