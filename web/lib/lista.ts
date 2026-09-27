@@ -20,10 +20,22 @@ export type Lista = {
   updatedAt: string;
 };
 
-type ListaStore = { lists: Record<string, Lista> };
+type HomeGate = {
+  ips: string[];
+  updatedAt: string;
+};
+
+type ListaStore = {
+  lists: Record<string, Lista>;
+  homes: Record<string, HomeGate>;
+};
+
+export type ListaAccess =
+  | { ok: true; ip: string }
+  | { ok: false; reason: "fuera_casa" | "sin_activar"; ip: string };
 
 function emptyStore(): ListaStore {
-  return { lists: {} };
+  return { lists: {}, homes: {} };
 }
 
 function filePath() {
@@ -40,6 +52,38 @@ export function listaIdOk(id: string) {
   return ID_RE.test(id);
 }
 
+function normalizeIp(raw: string) {
+  let ip = raw.trim().replace(/^\[|\]$/g, "");
+  if (ip.startsWith("::ffff:")) ip = ip.slice(7);
+  return ip;
+}
+
+function isLocalIp(ip: string) {
+  if (!ip) return false;
+  if (ip === "127.0.0.1" || ip === "::1" || ip === "localhost") return true;
+  if (ip.startsWith("192.168.") || ip.startsWith("10.")) return true;
+  if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(ip)) return true;
+  return false;
+}
+
+/** IP pública del visitante (Vercel / proxy). */
+export function clientIpFromHeaders(h: Headers): string {
+  const fwd = h.get("x-forwarded-for") || "";
+  const first = fwd.split(",")[0]?.trim();
+  if (first) return normalizeIp(first);
+  const real = h.get("x-real-ip") || h.get("cf-connecting-ip") || "";
+  return normalizeIp(real);
+}
+
+function homeSecretOk(input: string) {
+  const expected =
+    process.env.LISTA_HOME_SECRET ||
+    process.env.DASHBOARD_PASSWORD ||
+    (process.env.NODE_ENV === "production" ? "" : "nfctab");
+  if (!expected) return false;
+  return input === expected;
+}
+
 async function readBlob(): Promise<ListaStore | null> {
   if (!process.env.BLOB_READ_WRITE_TOKEN) return null;
   try {
@@ -49,7 +93,8 @@ async function readBlob(): Promise<ListaStore | null> {
     if (!hit) return null;
     const res = await fetch(hit.url);
     if (!res.ok) return null;
-    return (await res.json()) as ListaStore;
+    const raw = (await res.json()) as Partial<ListaStore>;
+    return { lists: raw.lists || {}, homes: raw.homes || {} };
   } catch {
     return null;
   }
@@ -68,7 +113,8 @@ function readDisk(): ListaStore | null {
   try {
     const p = filePath();
     if (!existsSync(p)) return null;
-    return JSON.parse(readFileSync(p, "utf8")) as ListaStore;
+    const raw = JSON.parse(readFileSync(p, "utf8")) as Partial<ListaStore>;
+    return { lists: raw.lists || {}, homes: raw.homes || {} };
   } catch {
     return null;
   }
@@ -115,6 +161,46 @@ function clampQty(n: unknown) {
   const v = typeof n === "number" ? n : Number(n);
   if (!Number.isFinite(v)) return 1;
   return Math.min(99, Math.max(1, Math.round(v)));
+}
+
+/** Solo Wi‑Fi de casa (IP pública registrada). En local, localhost pasa. */
+export async function assertListaHome(id: string, ip: string): Promise<ListaAccess> {
+  const normalized = normalizeIp(ip);
+  if (process.env.NODE_ENV !== "production" && isLocalIp(normalized || "127.0.0.1")) {
+    return { ok: true, ip: normalized || "127.0.0.1" };
+  }
+  const data = await load();
+  const home = data.homes[id];
+  if (!home || home.ips.length === 0) {
+    return { ok: false, reason: "sin_activar", ip: normalized };
+  }
+  if (home.ips.includes(normalized)) {
+    return { ok: true, ip: normalized };
+  }
+  return { ok: false, reason: "fuera_casa", ip: normalized };
+}
+
+/** Desde la Wi‑Fi de casa + clave del dashboard: registra esta IP como “casa”. */
+export async function registerListaHome(
+  id: string,
+  ip: string,
+  secret: string,
+): Promise<{ ok: true; ip: string } | { ok: false; error: string }> {
+  if (!listaIdOk(id)) return { ok: false, error: "id inválido" };
+  if (!homeSecretOk(secret)) return { ok: false, error: "clave incorrecta" };
+  const normalized = normalizeIp(ip);
+  if (!normalized) return { ok: false, error: "no se pudo leer la IP" };
+  if (process.env.NODE_ENV === "production" && isLocalIp(normalized)) {
+    return { ok: false, error: "conecta a la Wi‑Fi de casa (no datos móviles)" };
+  }
+  const data = await load();
+  const now = new Date().toISOString();
+  const prev = data.homes[id]?.ips || [];
+  const ips = [normalized, ...prev.filter((p) => p !== normalized)].slice(0, 5);
+  data.homes[id] = { ips, updatedAt: now };
+  if (!data.lists[id]) data.lists[id] = emptyLista(id);
+  await persist(data);
+  return { ok: true, ip: normalized };
 }
 
 export async function getLista(id: string): Promise<Lista> {

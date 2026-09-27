@@ -16,6 +16,8 @@ type Lista = {
   updatedAt: string;
 };
 
+type Gate = "ok" | "fuera_casa" | "sin_activar" | "loading";
+
 function shareText(lista: Lista) {
   const pending = lista.items.filter((it) => !it.done);
   if (!pending.length) return "Lista vacía.";
@@ -25,33 +27,83 @@ function shareText(lista: Lista) {
   ].join("\n");
 }
 
-export function ListaApp({ listId }: { listId: string }) {
+export function ListaApp({
+  listId,
+  activateSecret,
+}: {
+  listId: string;
+  activateSecret?: string;
+}) {
   const [lista, setLista] = useState<Lista | null>(null);
+  const [gate, setGate] = useState<Gate>("loading");
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState("");
   const [err, setErr] = useState("");
+  const [activated, setActivated] = useState(false);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/lista/${listId}`, { cache: "no-store" });
-    if (!res.ok) throw new Error("No se pudo cargar");
-    setLista((await res.json()) as Lista);
+    const data = await res.json();
+    if (res.status === 403) {
+      setLista(null);
+      setGate(data.code === "sin_activar" ? "sin_activar" : "fuera_casa");
+      return;
+    }
+    if (!res.ok) throw new Error(data.error || "No se pudo cargar");
+    setLista(data as Lista);
+    setGate("ok");
   }, [listId]);
 
   useEffect(() => {
-    load().catch((e) => setErr(e instanceof Error ? e.message : "Error"));
+    let cancelled = false;
+    (async () => {
+      try {
+        if (activateSecret) {
+          const res = await fetch(`/api/lista/${listId}`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ action: "registerHome", secret: activateSecret }),
+          });
+          const data = await res.json();
+          if (!cancelled) {
+            if (res.ok) {
+              setActivated(true);
+              setToast(data.message || "Wi‑Fi de casa registrada");
+              if (typeof window !== "undefined") {
+                const url = new URL(window.location.href);
+                url.searchParams.delete("activar");
+                window.history.replaceState({}, "", url.pathname);
+              }
+            } else {
+              setErr(data.error || "No se pudo activar");
+            }
+          }
+        }
+        if (!cancelled) await load();
+      } catch (e) {
+        if (!cancelled) setErr(e instanceof Error ? e.message : "Error");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activateSecret, listId, load]);
+
+  useEffect(() => {
+    if (gate !== "ok") return;
     const t = setInterval(() => {
       load().catch(() => {});
     }, 8000);
     return () => clearInterval(t);
-  }, [load]);
+  }, [gate, load]);
 
   const pending = useMemo(() => lista?.items.filter((i) => !i.done) ?? [], [lista]);
   const done = useMemo(() => lista?.items.filter((i) => i.done) ?? [], [lista]);
 
   function flash(msg: string) {
     setToast(msg);
-    setTimeout(() => setToast(""), 1800);
+    setTimeout(() => setToast(""), 2200);
   }
 
   async function mutate(fn: () => Promise<Response>) {
@@ -60,8 +112,14 @@ export function ListaApp({ listId }: { listId: string }) {
     try {
       const res = await fn();
       const data = await res.json();
+      if (res.status === 403) {
+        setGate(data.code === "sin_activar" ? "sin_activar" : "fuera_casa");
+        setLista(null);
+        return;
+      }
       if (!res.ok) throw new Error(data.error || "Error");
       setLista(data as Lista);
+      setGate("ok");
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Error");
     } finally {
@@ -85,7 +143,9 @@ export function ListaApp({ listId }: { listId: string }) {
 
   async function setQty(item: Item, qty: number) {
     if (qty < 1) {
-      await mutate(() => fetch(`/api/lista/${listId}?itemId=${encodeURIComponent(item.id)}`, { method: "DELETE" }));
+      await mutate(() =>
+        fetch(`/api/lista/${listId}?itemId=${encodeURIComponent(item.id)}`, { method: "DELETE" }),
+      );
       return;
     }
     await mutate(() =>
@@ -126,39 +186,57 @@ export function ListaApp({ listId }: { listId: string }) {
   async function share() {
     if (!lista) return;
     const body = shareText(lista);
-    const url = typeof window !== "undefined" ? window.location.href : "";
     try {
       if (navigator.share) {
-        await navigator.share({ title: "Lista de la compra", text: body, url });
+        await navigator.share({ title: "Lista de la compra", text: body });
         return;
       }
     } catch {
       /* cancelado */
     }
-    const wa = `https://wa.me/?text=${encodeURIComponent(`${body}\n\n${url}`)}`;
+    const wa = `https://wa.me/?text=${encodeURIComponent(body)}`;
     window.open(wa, "_blank", "noopener,noreferrer");
   }
 
   async function copy() {
     if (!lista) return;
-    const body = shareText(lista);
     try {
-      await navigator.clipboard.writeText(body);
+      await navigator.clipboard.writeText(shareText(lista));
       flash("Copiada");
     } catch {
       flash("No se pudo copiar");
     }
   }
 
+  if (gate === "fuera_casa" || gate === "sin_activar") {
+    return (
+      <div className="mx-auto flex min-h-[100dvh] max-w-lg flex-col justify-center px-5 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]">
+        <p className="text-[0.7rem] uppercase tracking-[0.2em] text-[#b0892c]">Nevera · privada</p>
+        <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl leading-tight text-[#1c1915]">
+          Solo en la Wi‑Fi de casa
+        </h1>
+        <p className="mt-3 text-base leading-relaxed text-[#5c564c]">
+          {gate === "sin_activar"
+            ? "Todavía no está activada. Conéctate a la Wi‑Fi de casa y abre el enlace de activación una vez (está en NFC.txt)."
+            : "La lista no se abre fuera de casa ni con datos móviles. En casa, al TAP del botón, sí."}
+        </p>
+        <p className="mt-4 text-sm text-[#8a8173]">
+          Para el súper: en casa pulsa «Enviar / WhatsApp» o «Copiar» antes de salir.
+        </p>
+        {err ? <p className="mt-4 text-sm text-red-700">{err}</p> : null}
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto flex min-h-[100dvh] max-w-lg flex-col px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
       <header className="mb-4">
-        <p className="text-[0.7rem] uppercase tracking-[0.2em] text-[#b0892c]">Nevera · TAP</p>
+        <p className="text-[0.7rem] uppercase tracking-[0.2em] text-[#b0892c]">Nevera · solo Wi‑Fi casa</p>
         <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl leading-tight text-[#1c1915]">
           Lista de la compra
         </h1>
         <p className="mt-1 text-sm text-[#7a7266]">
-          Quien toque el botón en la nevera ve y edita esta misma lista.
+          TAP en la nevera. Fuera de esta Wi‑Fi no se abre.
         </p>
       </header>
 
@@ -199,10 +277,13 @@ export function ListaApp({ listId }: { listId: string }) {
         </button>
       </div>
 
+      {activated ? (
+        <p className="mb-3 text-sm text-[#b0892c]">Wi‑Fi de casa registrada. Ya puedes usar la lista.</p>
+      ) : null}
       {err ? <p className="mb-3 text-sm text-red-700">{err}</p> : null}
-      {toast ? <p className="mb-3 text-sm text-[#b0892c]">{toast}</p> : null}
+      {toast && !activated ? <p className="mb-3 text-sm text-[#b0892c]">{toast}</p> : null}
 
-      {!lista ? (
+      {gate === "loading" || !lista ? (
         <p className="text-sm text-[#7a7266]">Cargando…</p>
       ) : (
         <div className="flex flex-1 flex-col gap-5">
@@ -273,7 +354,11 @@ export function ListaApp({ listId }: { listId: string }) {
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-[#7a7266]">
                   Comprado ({done.length})
                 </h2>
-                <button type="button" onClick={clearDone} className="text-sm text-[#b0892c] underline-offset-2 hover:underline">
+                <button
+                  type="button"
+                  onClick={clearDone}
+                  className="text-sm text-[#b0892c] underline-offset-2 hover:underline"
+                >
                   Limpiar
                 </button>
               </div>

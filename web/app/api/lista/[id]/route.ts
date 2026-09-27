@@ -1,9 +1,12 @@
 import {
   addListaItem,
+  assertListaHome,
   clearDoneLista,
+  clientIpFromHeaders,
   getLista,
   listaIdOk,
   patchListaItem,
+  registerListaHome,
   removeListaItem,
 } from "@/lib/lista";
 import { NextResponse } from "next/server";
@@ -16,9 +19,24 @@ function badId() {
   return NextResponse.json({ error: "id inválido" }, { status: 400 });
 }
 
-export async function GET(_req: Request, ctx: Ctx) {
+function denied(reason: "fuera_casa" | "sin_activar") {
+  const msg =
+    reason === "sin_activar"
+      ? "Lista no activada. Entra una vez desde la Wi‑Fi de casa con ?activar=CLAVE"
+      : "Solo se abre en la Wi‑Fi de casa";
+  return NextResponse.json({ error: msg, code: reason }, { status: 403 });
+}
+
+async function gate(req: Request, id: string) {
+  const ip = clientIpFromHeaders(req.headers);
+  return assertListaHome(id, ip);
+}
+
+export async function GET(req: Request, ctx: Ctx) {
   const { id } = await ctx.params;
   if (!listaIdOk(id)) return badId();
+  const access = await gate(req, id);
+  if (!access.ok) return denied(access.reason);
   return NextResponse.json(await getLista(id), {
     headers: { "cache-control": "no-store" },
   });
@@ -28,7 +46,27 @@ export async function POST(req: Request, ctx: Ctx) {
   const { id } = await ctx.params;
   if (!listaIdOk(id)) return badId();
   try {
-    const body = (await req.json()) as { action?: string; text?: string; qty?: number; itemId?: string };
+    const body = (await req.json()) as {
+      action?: string;
+      text?: string;
+      qty?: number;
+      itemId?: string;
+      secret?: string;
+    };
+    if (body.action === "registerHome") {
+      const ip = clientIpFromHeaders(req.headers);
+      const result = await registerListaHome(id, ip, body.secret || "");
+      if (!result.ok) {
+        return NextResponse.json({ error: result.error }, { status: 403 });
+      }
+      return NextResponse.json({
+        ok: true,
+        ip: result.ip,
+        message: "Wi‑Fi de casa registrada. La lista solo abre desde esta red.",
+      });
+    }
+    const access = await gate(req, id);
+    if (!access.ok) return denied(access.reason);
     if (body.action === "clearDone") {
       return NextResponse.json(await clearDoneLista(id));
     }
@@ -44,6 +82,8 @@ export async function POST(req: Request, ctx: Ctx) {
 export async function PATCH(req: Request, ctx: Ctx) {
   const { id } = await ctx.params;
   if (!listaIdOk(id)) return badId();
+  const access = await gate(req, id);
+  if (!access.ok) return denied(access.reason);
   try {
     const body = (await req.json()) as {
       itemId?: string;
@@ -67,6 +107,8 @@ export async function PATCH(req: Request, ctx: Ctx) {
 export async function DELETE(req: Request, ctx: Ctx) {
   const { id } = await ctx.params;
   if (!listaIdOk(id)) return badId();
+  const access = await gate(req, id);
+  if (!access.ok) return denied(access.reason);
   try {
     const url = new URL(req.url);
     const itemId = url.searchParams.get("itemId") || "";

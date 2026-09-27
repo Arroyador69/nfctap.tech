@@ -15,3 +15,9 @@ REVERSO en la cama. Pegar ese lado a la nevera (cinta 3M).
 
 Colores: cuerpo = negro, acento = blanco.
 URL del chip: https://nfctap.tech/lista/casa
+
+Privacidad
+----------
+La lista SOLO se abre en la Wi‑Fi de casa (IP del router).
+Activar una vez: ver NFC.txt (?activar=CLAVE_DASHBOARD).
+Fuera de casa: Enviar/WhatsApp o Copiar antes de salir.

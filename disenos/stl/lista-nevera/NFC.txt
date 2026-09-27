@@ -3,8 +3,18 @@ Lista nevera — un NFC (Timeskey Ø25)
 En NFC Tools / NFCTap Config → grabar URL:
   https://nfctap.tech/lista/casa
 
-Cualquier móvil de casa que haga TAP abre la lista compartida.
-Ahí se añade, quita cantidad y se marca lo comprado.
-Botón «Enviar» / WhatsApp para llevarla al súper.
+La lista es PRIVADA: solo se abre desde la Wi‑Fi de casa
+(misma IP pública del router). Fuera de casa / datos móviles → bloqueada.
 
-noindex · no es una página pública de la tienda.
+Activar UNA VEZ (conectado a la Wi‑Fi de casa, no 4G):
+  https://nfctap.tech/lista/casa?activar=CLAVE_DEL_DASHBOARD
+
+Usa la misma clave que /dashboard (DASHBOARD_PASSWORD),
+o LISTA_HOME_SECRET si la tienes en Vercel.
+
+Si el router cambia de IP, vuelve a abrir ese enlace de activar.
+
+Para ir al súper: en casa pulsa «Enviar / WhatsApp» o «Copiar»
+(el texto va al móvil; la web no se abre fuera).
+
+Cualquier móvil en la Wi‑Fi de casa que haga TAP abre la lista.
