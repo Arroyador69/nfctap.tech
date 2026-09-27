@@ -325,7 +325,7 @@ export function ListaApp({
     await mutate(() => fetch(`/api/lista/${listId}`, { cache: "no-store" }));
   }
 
-  async function share() {
+  async function shareLista(destino: "whatsapp" | "notas") {
     const vivos = lista.items.filter((it) => !it.done);
     if (!vivos.length) {
       flash("Lista vacía");
@@ -334,6 +334,10 @@ export function ListaApp({
 
     const conFoto = vivos.filter((it) => it.photoSrc);
     const textoJunto = shareTextSinFotos(vivos);
+    const elige =
+      destino === "notas"
+        ? "Elige Notas (iPhone) o Keep / Notas (Android)"
+        : "Elige WhatsApp";
 
     type FotoMsg = { file: File; caption: string };
     const fotos: FotoMsg[] = [];
@@ -352,55 +356,80 @@ export function ListaApp({
       }
     }
 
-    // Sin Web Share: WhatsApp solo texto (ítems sin foto + nombres de los que tienen).
+    // Escritorio / sin compartir nativo
     if (!navigator.share) {
-      const fallback = [
-        textoJunto || "Lista de la compra",
-        ...(fotos.length
-          ? ["", "Con foto (ábrela en la lista):", ...conFoto.map((it) => itemLine(it))]
-          : []),
-      ]
-        .filter(Boolean)
-        .join("\n");
-      window.open(`https://wa.me/?text=${encodeURIComponent(fallback)}`, "_blank", "noopener,noreferrer");
-      if (fotos.length) flash("En el móvil: Enviar manda cada foto con su texto");
+      if (destino === "whatsapp") {
+        const fallback = [
+          textoJunto || "Lista de la compra",
+          ...(fotos.length
+            ? ["", "Con foto (ábrela en la lista):", ...conFoto.map((it) => itemLine(it))]
+            : []),
+        ]
+          .filter(Boolean)
+          .join("\n");
+        window.open(`https://wa.me/?text=${encodeURIComponent(fallback)}`, "_blank", "noopener,noreferrer");
+        if (fotos.length) flash("Fotos: usa el móvil → Notas o WhatsApp");
+        return;
+      }
+      // Notas en escritorio: copiar texto
+      const todo = shareText({ ...lista, items: vivos });
+      try {
+        await navigator.clipboard.writeText(todo);
+        flash("Texto copiado. Pégalo en Notas. Las fotos, desde el móvil.");
+      } catch {
+        flash("Abre la lista en el móvil para guardar en Notas con fotos");
+      }
       return;
     }
 
     setBusy(true);
+    flash(elige);
     try {
-      // 1) Todos los sin foto, juntos
+      // 1) Ítems sin foto, juntos
       if (textoJunto) {
         await navigator.share({ title: "Lista de la compra", text: textoJunto });
       }
 
-      // 2) Cada foto con SOLO el texto de ese producto
+      // 2) Cada foto + su texto (mismo destino: Notas o WhatsApp en la hoja del sistema)
       let enviadas = 0;
       for (let i = 0; i < fotos.length; i++) {
         const { file, caption } = fotos[i];
         const payload = { title: caption, text: caption, files: [file] };
-        if (!navigator.canShare?.(payload)) {
-          // Sin archivos: al menos el nombre
-          await navigator.share({ title: caption, text: `${caption} (foto en la lista)` });
-          continue;
-        }
         if (i > 0 || textoJunto) {
-          flash(`Foto ${i + 1} de ${fotos.length}: ${caption}`);
-          await new Promise((r) => setTimeout(r, 350));
+          flash(
+            destino === "notas"
+              ? `Notas · foto ${i + 1}/${fotos.length}: ${caption}`
+              : `WhatsApp · foto ${i + 1}/${fotos.length}: ${caption}`,
+          );
+          await new Promise((r) => setTimeout(r, 400));
         }
-        await navigator.share(payload);
+        if (navigator.canShare?.(payload)) {
+          await navigator.share(payload);
+        } else {
+          await navigator.share({ title: caption, text: `${caption} (foto en la lista)` });
+        }
         enviadas += 1;
       }
 
-      if (textoJunto && enviadas) {
-        flash("Lista y fotos enviadas");
-      } else if (enviadas) {
-        flash(enviadas === 1 ? "Foto enviada" : `${enviadas} fotos enviadas`);
-      } else if (textoJunto) {
-        flash("Lista enviada");
+      if (destino === "notas") {
+        flash(
+          enviadas
+            ? "Listo. En cada paso elige Notas / Keep"
+            : textoJunto
+              ? "Listo. Elige Notas / Keep"
+              : "Nada que guardar",
+        );
+      } else {
+        flash(
+          enviadas
+            ? "Listo. En cada paso elige WhatsApp"
+            : textoJunto
+              ? "Listo. Elige WhatsApp"
+              : "Nada que enviar",
+        );
       }
     } catch {
-      /* usuario canceló un paso */
+      /* canceló */
     } finally {
       setBusy(false);
     }
@@ -423,7 +452,7 @@ export function ListaApp({
           Lista de la compra
         </h1>
         <p className="mt-1 text-sm text-[#7a7266]">
-          Al enviar: un mensaje con lo que no tiene foto, y cada foto con su texto.
+          WhatsApp o Notas: textos sin foto juntos; cada foto con su nombre. En el móvil eliges la app.
         </p>
       </header>
 
@@ -490,31 +519,43 @@ export function ListaApp({
         }}
       />
 
-      <div className="mb-4 flex gap-2">
-        <button
-          type="button"
-          onClick={share}
-          disabled={pending.length === 0}
-          className="flex-1 rounded-2xl bg-[#e2b43a] px-4 py-3 font-semibold text-[#1c1915] disabled:opacity-40"
-        >
-          Enviar / WhatsApp
-        </button>
-        <button
-          type="button"
-          onClick={copy}
-          disabled={pending.length === 0}
-          className="rounded-2xl border border-[#1c1915] px-4 py-3 font-semibold text-[#1c1915] disabled:opacity-40"
-        >
-          Copiar
-        </button>
-        <button
-          type="button"
-          onClick={refresh}
-          disabled={busy}
-          className="rounded-2xl border border-[#e6ddd0] px-3 py-3 text-sm text-[#5c564c] disabled:opacity-40"
-        >
-          ↻
-        </button>
+      <div className="mb-4 flex flex-col gap-2">
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => void shareLista("whatsapp")}
+            disabled={pending.length === 0 || busy}
+            className="flex-1 rounded-2xl bg-[#e2b43a] px-4 py-3 font-semibold text-[#1c1915] disabled:opacity-40"
+          >
+            WhatsApp
+          </button>
+          <button
+            type="button"
+            onClick={() => void shareLista("notas")}
+            disabled={pending.length === 0 || busy}
+            className="flex-1 rounded-2xl border border-[#1c1915] bg-white px-4 py-3 font-semibold text-[#1c1915] disabled:opacity-40"
+          >
+            Notas
+          </button>
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={copy}
+            disabled={pending.length === 0}
+            className="flex-1 rounded-2xl border border-[#e6ddd0] px-4 py-2.5 text-sm font-semibold text-[#5c564c] disabled:opacity-40"
+          >
+            Copiar texto
+          </button>
+          <button
+            type="button"
+            onClick={refresh}
+            disabled={busy}
+            className="rounded-2xl border border-[#e6ddd0] px-4 py-2.5 text-sm text-[#5c564c] disabled:opacity-40"
+          >
+            ↻
+          </button>
+        </div>
       </div>
 
       {toast ? <p className="mb-3 text-sm text-[#b0892c]">{toast}</p> : null}
