@@ -19,17 +19,37 @@ export type ListaView = {
   updatedAt: string;
 };
 
+function itemLine(it: ListaItemView) {
+  return it.qty > 1 ? `• ${it.text} ×${it.qty}` : `• ${it.text}`;
+}
+
+function itemCaption(it: ListaItemView) {
+  return it.qty > 1 ? `${it.text} ×${it.qty}` : it.text;
+}
+
+/** Solo ítems sin foto (van juntos en un mensaje de texto). */
+function shareTextSinFotos(items: ListaItemView[]) {
+  const sin = items.filter((it) => !it.done && !it.hasPhoto && !it.photoSrc);
+  if (!sin.length) return "";
+  return ["Lista de la compra", ...sin.map(itemLine)].join("\n");
+}
+
+/** Lista completa (copiar). */
 function shareText(lista: ListaView) {
   const pending = lista.items.filter((it) => !it.done);
   if (!pending.length) return "Lista vacía.";
-  return [
-    "Lista de la compra",
-    ...pending.map((it) => {
-      const qty = it.qty > 1 ? ` ×${it.qty}` : "";
-      const foto = it.hasPhoto ? " (foto)" : "";
-      return `• ${it.text}${qty}${foto}`;
-    }),
-  ].join("\n");
+  return ["Lista de la compra", ...pending.map(itemLine)].join("\n");
+}
+
+function fileSafeName(text: string) {
+  return (
+    text
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\w\- ]+/g, "")
+      .trim()
+      .slice(0, 40) || "producto"
+  );
 }
 
 async function compressImage(file: File): Promise<Blob> {
@@ -306,61 +326,85 @@ export function ListaApp({
   }
 
   async function share() {
-    const body = shareText(lista);
-    const files: File[] = [];
-    for (const item of pending) {
-      if (!item.photoSrc) continue;
-      try {
-        const res = await fetch(item.photoSrc, { cache: "no-store" });
-        if (!res.ok) continue;
-        const blob = await res.blob();
-        // JPEG limpio para que WhatsApp / compartir muestren la imagen bien
-        const jpeg =
-          blob.type === "image/jpeg"
-            ? blob
-            : new Blob([blob], { type: "image/jpeg" });
-        const safe =
-          item.text
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .replace(/[^\w\- ]+/g, "")
-            .trim()
-            .slice(0, 40) || "producto";
-        files.push(new File([jpeg], `${safe}.jpg`, { type: "image/jpeg" }));
-      } catch {
-        /* sigue sin esa foto */
-      }
-    }
-    try {
-      if (files.length > 0) {
-        const payload = { title: "Lista de la compra", text: body, files };
-        if (navigator.canShare?.(payload)) {
-          await navigator.share(payload);
-          flash(files.length === 1 ? "Enviado con foto" : `Enviado con ${files.length} fotos`);
-          return;
-        }
-        // Algunos móviles solo aceptan una foto
-        if (files.length > 1 && navigator.canShare?.({ files: [files[0]] })) {
-          await navigator.share({
-            title: "Lista de la compra",
-            text: `${body}\n\n(+${files.length - 1} fotos más en la lista)`,
-            files: [files[0]],
-          });
-          flash("Enviado (1 foto; el resto está en la lista)");
-          return;
-        }
-      }
-      if (navigator.share) {
-        await navigator.share({ title: "Lista de la compra", text: body });
-        if (files.length) flash("Texto enviado; este móvil no adjunta fotos aquí");
-        return;
-      }
-    } catch {
-      /* cancelado */
+    const vivos = lista.items.filter((it) => !it.done);
+    if (!vivos.length) {
+      flash("Lista vacía");
       return;
     }
-    window.open(`https://wa.me/?text=${encodeURIComponent(body)}`, "_blank", "noopener,noreferrer");
-    if (files.length) flash("En el móvil usa Enviar para ir con las fotos");
+
+    const sinFoto = vivos.filter((it) => !it.photoSrc);
+    const conFoto = vivos.filter((it) => it.photoSrc);
+    const textoJunto = shareTextSinFotos(vivos);
+
+    type FotoMsg = { file: File; caption: string };
+    const fotos: FotoMsg[] = [];
+    for (const item of conFoto) {
+      try {
+        const res = await fetch(item.photoSrc!, { cache: "no-store" });
+        if (!res.ok) continue;
+        const blob = await res.blob();
+        const jpeg = blob.type === "image/jpeg" ? blob : new Blob([blob], { type: "image/jpeg" });
+        fotos.push({
+          file: new File([jpeg], `${fileSafeName(item.text)}.jpg`, { type: "image/jpeg" }),
+          caption: itemCaption(item),
+        });
+      } catch {
+        /* sin esa foto */
+      }
+    }
+
+    // Sin Web Share: WhatsApp solo texto (ítems sin foto + nombres de los que tienen).
+    if (!navigator.share) {
+      const fallback = [
+        textoJunto || "Lista de la compra",
+        ...(fotos.length
+          ? ["", "Con foto (ábrela en la lista):", ...conFoto.map((it) => itemLine(it))]
+          : []),
+      ]
+        .filter(Boolean)
+        .join("\n");
+      window.open(`https://wa.me/?text=${encodeURIComponent(fallback)}`, "_blank", "noopener,noreferrer");
+      if (fotos.length) flash("En el móvil: Enviar manda cada foto con su texto");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      // 1) Todos los sin foto, juntos
+      if (textoJunto) {
+        await navigator.share({ title: "Lista de la compra", text: textoJunto });
+      }
+
+      // 2) Cada foto con SOLO el texto de ese producto
+      let enviadas = 0;
+      for (let i = 0; i < fotos.length; i++) {
+        const { file, caption } = fotos[i];
+        const payload = { title: caption, text: caption, files: [file] };
+        if (!navigator.canShare?.(payload)) {
+          // Sin archivos: al menos el nombre
+          await navigator.share({ title: caption, text: `${caption} (foto en la lista)` });
+          continue;
+        }
+        if (i > 0 || textoJunto) {
+          flash(`Foto ${i + 1} de ${fotos.length}: ${caption}`);
+          await new Promise((r) => setTimeout(r, 350));
+        }
+        await navigator.share(payload);
+        enviadas += 1;
+      }
+
+      if (textoJunto && enviadas) {
+        flash("Lista y fotos enviadas");
+      } else if (enviadas) {
+        flash(enviadas === 1 ? "Foto enviada" : `${enviadas} fotos enviadas`);
+      } else if (textoJunto) {
+        flash("Lista enviada");
+      }
+    } catch {
+      /* usuario canceló un paso */
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function copy() {
@@ -380,7 +424,7 @@ export function ListaApp({
           Lista de la compra
         </h1>
         <p className="mt-1 text-sm text-[#7a7266]">
-          Puedes añadir foto del producto. Al enviar, va con la lista si el móvil lo permite.
+          Al enviar: un mensaje con lo que no tiene foto, y cada foto con su texto.
         </p>
       </header>
 
