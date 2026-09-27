@@ -545,7 +545,7 @@ export function ListaApp({
             disabled={pending.length === 0}
             className="flex-1 rounded-2xl border border-[#e6ddd0] px-4 py-2.5 text-sm font-semibold text-[#5c564c] disabled:opacity-40"
           >
-            Copiar texto
+            Copiar lista
           </button>
           <button
             type="button"
