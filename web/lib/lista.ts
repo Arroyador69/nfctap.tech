@@ -14,6 +14,8 @@ export type ListaItem = {
   qty: number;
   done: boolean;
   updatedAt: string;
+  /** URL privada de Vercel Blob (solo servidor). */
+  photoUrl?: string;
 };
 
 export type Lista = {
@@ -281,6 +283,104 @@ export async function getLista(id: string): Promise<Lista> {
   return data.lists[id] ?? emptyLista(id);
 }
 
+/** Vista segura para el cliente: sin URL privada del Blob. */
+export function listaPublicView(lista: Lista) {
+  return {
+    id: lista.id,
+    title: lista.title,
+    updatedAt: lista.updatedAt,
+    items: lista.items.map((it) => ({
+      id: it.id,
+      text: it.text,
+      qty: it.qty,
+      done: it.done,
+      hasPhoto: Boolean(it.photoUrl),
+      photoSrc: it.photoUrl ? `/api/lista/${lista.id}/photo/${it.id}` : undefined,
+    })),
+  };
+}
+
+export async function setListaItemPhoto(
+  id: string,
+  itemId: string,
+  bytes: Buffer,
+  contentType: string,
+): Promise<Lista> {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    throw new Error("Falta Blob en Vercel para guardar fotos");
+  }
+  if (bytes.length > 1_200_000) throw new Error("Foto demasiado grande");
+  const data = await load();
+  const lista = data.lists[id] ?? emptyLista(id);
+  const item = lista.items.find((it) => it.id === itemId);
+  if (!item) throw new Error("ítem no encontrado");
+
+  const { put, del } = await import("@vercel/blob");
+  const pathname = `lista-fotos/${id}/${itemId}.jpg`;
+  if (item.photoUrl) {
+    try {
+      await del(item.photoUrl);
+    } catch {
+      /* ok */
+    }
+  }
+  const blob = await put(pathname, bytes, {
+    access: "private",
+    addRandomSuffix: false,
+    allowOverwrite: true,
+    contentType: contentType.startsWith("image/") ? contentType : "image/jpeg",
+    cacheControlMaxAge: 0,
+  });
+  item.photoUrl = blob.url;
+  item.updatedAt = new Date().toISOString();
+  lista.updatedAt = item.updatedAt;
+  data.lists[id] = lista;
+  await persist(data);
+  return lista;
+}
+
+export async function clearListaItemPhoto(id: string, itemId: string): Promise<Lista> {
+  const data = await load();
+  const lista = data.lists[id] ?? emptyLista(id);
+  const item = lista.items.find((it) => it.id === itemId);
+  if (!item) throw new Error("ítem no encontrado");
+  if (item.photoUrl && process.env.BLOB_READ_WRITE_TOKEN) {
+    try {
+      const { del } = await import("@vercel/blob");
+      await del(item.photoUrl);
+    } catch {
+      /* ok */
+    }
+  }
+  delete item.photoUrl;
+  item.updatedAt = new Date().toISOString();
+  lista.updatedAt = item.updatedAt;
+  data.lists[id] = lista;
+  await persist(data);
+  return lista;
+}
+
+export async function readListaItemPhoto(
+  id: string,
+  itemId: string,
+): Promise<{ body: ArrayBuffer; contentType: string } | null> {
+  const data = await load();
+  const item = data.lists[id]?.items.find((it) => it.id === itemId);
+  if (!item?.photoUrl || !process.env.BLOB_READ_WRITE_TOKEN) return null;
+  try {
+    const { get } = await import("@vercel/blob");
+    const result = await get(item.photoUrl, { access: "private" });
+    if (!result || result.statusCode !== 200 || !result.stream) return null;
+    const res = new Response(result.stream);
+    return {
+      body: await res.arrayBuffer(),
+      contentType: result.blob.contentType || "image/jpeg",
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function addListaItem(id: string, text: string, qty = 1): Promise<Lista> {
   const t = cleanText(text);
   if (!t) throw new Error("texto vacío");
@@ -335,6 +435,15 @@ export async function patchListaItem(
 export async function removeListaItem(id: string, itemId: string): Promise<Lista> {
   const data = await load();
   const lista = data.lists[id] ?? emptyLista(id);
+  const item = lista.items.find((it) => it.id === itemId);
+  if (item?.photoUrl && process.env.BLOB_READ_WRITE_TOKEN) {
+    try {
+      const { del } = await import("@vercel/blob");
+      await del(item.photoUrl);
+    } catch {
+      /* ok */
+    }
+  }
   lista.items = lista.items.filter((it) => it.id !== itemId);
   lista.updatedAt = new Date().toISOString();
   data.lists[id] = lista;

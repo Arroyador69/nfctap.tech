@@ -4,6 +4,7 @@ import {
   clientIpFromHeaders,
   getLista,
   listaIdOk,
+  listaPublicView,
   registerListaHome,
 } from "@/lib/lista";
 import type { Metadata } from "next";
@@ -39,7 +40,11 @@ export default async function ListaPage({ params, searchParams }: Props) {
     const result = await registerListaHome(id, ip, sp.activar.trim());
     if (result.ok) {
       return (
-        <ListaApp listId={id} initial={await getLista(id)} justActivated />
+        <ListaApp
+          listId={id}
+          initial={listaPublicView(await getLista(id))}
+          justActivated
+        />
       );
     }
     activateError = result.error;
@@ -52,5 +57,11 @@ export default async function ListaPage({ params, searchParams }: Props) {
     );
   }
 
-  return <ListaApp listId={id} initial={await getLista(id)} justActivated={justActivated} />;
+  return (
+    <ListaApp
+      listId={id}
+      initial={listaPublicView(await getLista(id))}
+      justActivated={justActivated}
+    />
+  );
 }

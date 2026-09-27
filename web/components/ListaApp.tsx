@@ -1,13 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 export type ListaItemView = {
   id: string;
   text: string;
   qty: number;
   done: boolean;
+  hasPhoto?: boolean;
+  photoSrc?: string;
 };
 
 export type ListaView = {
@@ -22,8 +24,34 @@ function shareText(lista: ListaView) {
   if (!pending.length) return "Lista vacía.";
   return [
     "Lista de la compra",
-    ...pending.map((it) => (it.qty > 1 ? `• ${it.text} ×${it.qty}` : `• ${it.text}`)),
+    ...pending.map((it) => {
+      const qty = it.qty > 1 ? ` ×${it.qty}` : "";
+      const foto = it.hasPhoto ? " (foto)" : "";
+      return `• ${it.text}${qty}${foto}`;
+    }),
   ].join("\n");
+}
+
+async function compressImage(file: File): Promise<Blob> {
+  const bmp = await createImageBitmap(file);
+  const max = 720;
+  const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const w = Math.max(1, Math.round(bmp.width * scale));
+  const h = Math.max(1, Math.round(bmp.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("No se pudo procesar la foto");
+  ctx.drawImage(bmp, 0, 0, w, h);
+  bmp.close();
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error("No se pudo comprimir"))),
+      "image/jpeg",
+      0.72,
+    );
+  });
 }
 
 export function ListaLocked({
@@ -117,9 +145,13 @@ export function ListaApp({
 }) {
   const [lista, setLista] = useState(initial);
   const [text, setText] = useState("");
+  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState(justActivated ? "Wi‑Fi de casa registrada" : "");
   const [err, setErr] = useState("");
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const itemCameraRef = useRef<HTMLInputElement>(null);
+  const [photoTargetId, setPhotoTargetId] = useState<string | null>(null);
 
   const pending = useMemo(() => lista.items.filter((i) => !i.done), [lista]);
   const done = useMemo(() => lista.items.filter((i) => i.done), [lista]);
@@ -137,10 +169,32 @@ export function ListaApp({
       const data = await res.json();
       if (res.status === 403) {
         setErr(data.error || "Solo en la Wi‑Fi de casa");
-        return;
+        return null;
       }
       if (!res.ok) throw new Error(data.error || "Error");
       setLista(data as ListaView);
+      return data as ListaView;
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Error");
+      return null;
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function uploadPhoto(itemId: string, file: File) {
+    setBusy(true);
+    setErr("");
+    try {
+      const jpeg = await compressImage(file);
+      const form = new FormData();
+      form.set("itemId", itemId);
+      form.set("photo", new File([jpeg], "foto.jpg", { type: "image/jpeg" }));
+      const res = await fetch(`/api/lista/${listId}`, { method: "POST", body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "No se pudo subir la foto");
+      setLista(data as ListaView);
+      flash("Foto añadida");
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Error");
     } finally {
@@ -153,13 +207,21 @@ export function ListaApp({
     const t = text.trim();
     if (!t) return;
     setText("");
-    await mutate(() =>
+    const photo = pendingPhoto;
+    setPendingPhoto(null);
+    const next = await mutate(() =>
       fetch(`/api/lista/${listId}`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action: "add", text: t, qty: 1 }),
       }),
     );
+    if (photo && next) {
+      const item = next.items.find(
+        (it) => !it.done && it.text.toLocaleLowerCase("es") === t.toLocaleLowerCase("es"),
+      );
+      if (item) await uploadPhoto(item.id, photo);
+    }
   }
 
   async function setQty(item: ListaItemView, qty: number) {
@@ -204,13 +266,40 @@ export function ListaApp({
     );
   }
 
+  async function clearPhoto(item: ListaItemView) {
+    await mutate(() =>
+      fetch(`/api/lista/${listId}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "clearPhoto", itemId: item.id }),
+      }),
+    );
+  }
+
   async function refresh() {
     await mutate(() => fetch(`/api/lista/${listId}`, { cache: "no-store" }));
   }
 
   async function share() {
     const body = shareText(lista);
+    const files: File[] = [];
+    for (const item of pending) {
+      if (!item.photoSrc) continue;
+      try {
+        const res = await fetch(item.photoSrc, { cache: "no-store" });
+        if (!res.ok) continue;
+        const blob = await res.blob();
+        const safe = item.text.replace(/[^\w\-àáäéèëíìïóòöúùüñç ]+/gi, "").slice(0, 40) || "producto";
+        files.push(new File([blob], `${safe}.jpg`, { type: blob.type || "image/jpeg" }));
+      } catch {
+        /* sigue sin esa foto */
+      }
+    }
     try {
+      if (files.length && navigator.canShare?.({ files })) {
+        await navigator.share({ title: "Lista de la compra", text: body, files });
+        return;
+      }
       if (navigator.share) {
         await navigator.share({ title: "Lista de la compra", text: body });
         return;
@@ -238,27 +327,72 @@ export function ListaApp({
           Lista de la compra
         </h1>
         <p className="mt-1 text-sm text-[#7a7266]">
-          TAP en la nevera. Fuera de esta Wi‑Fi no se abre.
+          Puedes añadir foto del producto. Al enviar, va con la lista si el móvil lo permite.
         </p>
       </header>
 
-      <form onSubmit={onAdd} className="mb-4 flex gap-2">
+      <form onSubmit={onAdd} className="mb-4 flex flex-col gap-2">
+        <div className="flex gap-2">
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="¿Qué falta?"
+            enterKeyHint="done"
+            autoComplete="off"
+            className="min-w-0 flex-1 rounded-2xl border border-[#e6ddd0] bg-white px-4 py-3.5 text-base text-[#1c1915] placeholder:text-[#b0a89c]"
+          />
+          <button
+            type="button"
+            aria-label="Foto"
+            onClick={() => cameraRef.current?.click()}
+            className="shrink-0 rounded-2xl border border-[#e6ddd0] bg-white px-3 py-3 text-sm font-semibold text-[#5c564c]"
+          >
+            Foto
+          </button>
+          <button
+            type="submit"
+            disabled={busy || !text.trim()}
+            className="shrink-0 rounded-2xl bg-[#1c1915] px-5 py-3.5 font-semibold text-[#f6f1e7] disabled:opacity-40"
+          >
+            Añadir
+          </button>
+        </div>
         <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="¿Qué falta?"
-          enterKeyHint="done"
-          autoComplete="off"
-          className="min-w-0 flex-1 rounded-2xl border border-[#e6ddd0] bg-white px-4 py-3.5 text-base text-[#1c1915] placeholder:text-[#b0a89c]"
+          ref={cameraRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0] || null;
+            setPendingPhoto(f);
+            e.target.value = "";
+          }}
         />
-        <button
-          type="submit"
-          disabled={busy || !text.trim()}
-          className="shrink-0 rounded-2xl bg-[#1c1915] px-5 py-3.5 font-semibold text-[#f6f1e7] disabled:opacity-40"
-        >
-          Añadir
-        </button>
+        {pendingPhoto ? (
+          <p className="text-sm text-[#b0892c]">
+            Foto lista: {pendingPhoto.name || "captura"}{" "}
+            <button type="button" className="underline" onClick={() => setPendingPhoto(null)}>
+              quitar
+            </button>
+          </p>
+        ) : null}
       </form>
+
+      <input
+        ref={itemCameraRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          const id = photoTargetId;
+          e.target.value = "";
+          setPhotoTargetId(null);
+          if (f && id) void uploadPhoto(id, f);
+        }}
+      />
 
       <div className="mb-4 flex gap-2">
         <button
@@ -312,6 +446,30 @@ export function ListaApp({
                     onClick={() => toggleDone(item)}
                     className="grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 border-[#1c1915] text-lg"
                   />
+                  {item.photoSrc ? (
+                    <button
+                      type="button"
+                      aria-label="Quitar foto"
+                      onClick={() => clearPhoto(item)}
+                      className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-[#f0ebe3]"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={item.photoSrc} alt="" className="h-full w-full object-cover" />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      aria-label="Añadir foto"
+                      disabled={busy}
+                      onClick={() => {
+                        setPhotoTargetId(item.id);
+                        itemCameraRef.current?.click();
+                      }}
+                      className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[#f0ebe3] text-[0.65rem] font-semibold uppercase tracking-wide text-[#5c564c]"
+                    >
+                      Foto
+                    </button>
+                  )}
                   <span className="min-w-0 flex-1 text-[1.05rem] font-medium leading-snug text-[#1c1915]">
                     {item.text}
                   </span>
@@ -376,6 +534,14 @@ export function ListaApp({
                   >
                     ✓
                   </button>
+                  {item.photoSrc ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={item.photoSrc}
+                      alt=""
+                      className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                    />
+                  ) : null}
                   <span className="min-w-0 flex-1 text-base line-through">{item.text}</span>
                   {item.qty > 1 ? (
                     <span className="text-sm tabular-nums text-[#8a8173]">×{item.qty}</span>
