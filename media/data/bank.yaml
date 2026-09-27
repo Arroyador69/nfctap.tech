@@ -14,10 +14,17 @@ proceso:
     mi_logo: personalizada
     whatsapp_no_entra: tap
     instagram_no_siguen: tap
+    papel_mojado: tap
+    no_piden: tap
+    ficha_vacia: generica
+    factura_ads: generica
+    flyer_suelo: tap
+    una_en_caja: dos
+    mes_vs_atril: generica
+    pack_mixto: dos
 
 web:
   folder: web
 
 carrusel:
   folder: imagenes
-

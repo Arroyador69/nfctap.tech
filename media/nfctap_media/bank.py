@@ -179,24 +179,42 @@ def match_clip(videos: list[Path], wanted: str) -> Path | None:
     return ranked[0][1]
 
 
-def _pick_from(pool: list[Path], *, exclude: set[str] | None = None) -> Path | None:
+def _pick_from(
+    pool: list[Path],
+    *,
+    exclude: set[str] | None = None,
+    forbid: set[str] | None = None,
+) -> Path | None:
+    """El más reciente. exclude = ya publicados (se reciclan si no queda otro).
+    forbid = el otro Reel de este pack: no se reutiliza mientras haya 2 clips."""
     if not pool:
         return None
     skip = exclude or set()
-    fresh = [p for p in pool if p.name not in skip]
-    return random.choice(fresh or pool)
+    hard = forbid or set()
+    unused = [p for p in pool if p.name not in skip and p.name not in hard]
+    recycled = [p for p in pool if p.name not in hard]
+    source = unused or recycled or list(pool)
+    source.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    return source[0]
 
 
-def pick_hook(*, exclude: set[str] | None = None, hook_file: str | None = None) -> Path:
-    """Pieza acabada. Si aún no hay resultado, usa cualquier proceso."""
+def pick_hook(
+    *,
+    exclude: set[str] | None = None,
+    forbid: set[str] | None = None,
+    hook_file: str | None = None,
+) -> Path:
+    """Pieza acabada. Si aún no hay resultado, usa cualquier proceso.
+    Los dos Reels del pack no pueden abrir con el mismo archivo."""
     ensure_dirs()
+    hard = forbid or set()
     if hook_file:
         for folder in (RESULTADO, PROCESO):
             candidate = folder / hook_file
-            if candidate.exists():
+            if candidate.exists() and candidate.name not in hard:
                 return candidate
     pool = list_videos(RESULTADO) or list_videos(PROCESO)
-    hit = _pick_from(pool, exclude=exclude)
+    hit = _pick_from(pool, exclude=exclude, forbid=hard)
     if hit is None:
         raise RuntimeError(
             "Falta un vídeo tuyo para el hook. Pégalo en "
@@ -225,10 +243,34 @@ def pick_print_clip(pain_id: str) -> Path | None:
     return pick_process_clip(pain_id)
 
 
+def video_duration(path: Path) -> float:
+    try:
+        out = subprocess.check_output(
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-show_entries",
+                "format=duration",
+                "-of",
+                "default=noprint_wrappers=1:nokey=1",
+                str(path),
+            ],
+            text=True,
+        )
+        return float(out.strip())
+    except (ValueError, subprocess.CalledProcessError, OSError):
+        return 0.0
+
+
 def pick_web_clip() -> Path | None:
+    """La grabación más larga (la nueva de nfctap.tech). Si hay una sola, esa."""
     ensure_dirs()
     clips = list_videos(WEB)
-    return clips[0] if clips else None
+    if not clips:
+        return None
+    clips.sort(key=lambda p: (p.stat().st_size, p.stat().st_mtime), reverse=True)
+    return clips[0]
 
 
 def pick_rooms(n: int = 3) -> list[Path]:

@@ -6,7 +6,10 @@ from datetime import datetime
 from pathlib import Path
 
 from nfctap_media.bank import (
+    PROCESO,
+    RESULTADO,
     ensure_dirs,
+    list_videos,
     pick_carousel_photos,
     pick_hook,
     pick_music,
@@ -16,7 +19,7 @@ from nfctap_media.bank import (
 from nfctap_media.captions import write_ass
 from nfctap_media.config import Config
 from nfctap_media.endcard import make_endcard
-from nfctap_media.history import load_published, mark_published, pick_unused_variant
+from nfctap_media.history import load_published, mark_published, pick_unused_variant, take_web_start
 from nfctap_media.posts import write_instagram_pack, write_publish_guide, write_reel_captions
 from nfctap_media.render import render_reel
 from nfctap_media.script import (
@@ -48,6 +51,7 @@ def generate_one(
     reel_name: str | None = None,
     hook_file: str | None = None,
     exclude_hooks: set[str] | None = None,
+    forbid_hooks: set[str] | None = None,
     variant: Variant | None = None,
     exclude_process: set[str] | None = None,
 ) -> Path:
@@ -93,9 +97,16 @@ def generate_one(
 
     ensure_dirs()
     skip = set(exclude_hooks or [])
-    hook_src = pick_hook(exclude=skip, hook_file=hook_file)
+    hard = set(forbid_hooks or [])
+    hook_src = pick_hook(exclude=skip, forbid=hard, hook_file=hook_file)
+    if hook_src.name in hard:
+        print("  aviso: solo hay un vídeo de resultado; los dos Reels abren igual.")
+    elif hard:
+        print(f"  hook distinto del otro Reel del pack (no {', '.join(sorted(hard))})")
     if exclude_hooks is not None:
         exclude_hooks.add(hook_src.name)
+    if forbid_hooks is not None:
+        forbid_hooks.add(hook_src.name)
     skip_process = set(exclude_process or []) | {hook_src.name}
     app_src = pick_process_clip(pain.id, exclude=skip_process)
     if app_src is None:
@@ -122,11 +133,16 @@ def generate_one(
         close_lines=close_caption_lines(close_text),
     )
     web_src = pick_web_clip()
+    web_start = 0.0
     if web_src is not None:
         endcard = web_src
+        web_start = take_web_start(web_src, close_v)
+        from nfctap_media.bank import video_duration
+
+        web_dur = video_duration(web_src)
         print(
-            f"  cierre: {web_src.name} desde {cfg.web_start_seconds:.0f}s "
-            f"(web en uso, {close_v:.1f}s)"
+            f"  cierre: {web_src.name} {web_start:.1f}s–{web_start + close_v:.1f}s "
+            f"de {web_dur:.0f}s (trozo distinto cada Reel)"
         )
     else:
         endcard = make_endcard(cfg, work / "endcard.png")
@@ -145,7 +161,7 @@ def generate_one(
         cfg,
         music=music,
         close_seconds=close_v,
-        web_start=cfg.web_start_seconds,
+        web_start=web_start,
     )
 
     meta = {
@@ -167,6 +183,8 @@ def generate_one(
         "app": app_src.name if app_src else None,
         "cta": cfg.cta_url,
         "created_at": datetime.now().isoformat(timespec="seconds"),
+        "web_file": web_src.name if web_src else None,
+        "web_start_s": round(web_start, 2),
     }
     (out_dir / "meta.json").write_text(
         json.dumps(meta, ensure_ascii=False, indent=2),
@@ -233,14 +251,22 @@ def generate_day(
     maria_hook: str | None = None,
     andres_hook: str | None = None,
 ) -> Path:
-    """Pack: Reel mujer + Reel hombre + 1 carrusel (3 fotos) + 2 stories."""
+    """Pack: Reel mujer + Reel hombre + 1 carrusel (3 fotos) + 2 stories.
+
+    Norma: los dos Reels no abren con el mismo clip de resultado.
+    """
     maria_p, maria_var = pick_unused_variant(money=False, pain_id=maria_pain)
     andres_p, andres_var = pick_unused_variant(money=True, pain_id=andres_pain)
     published = load_published()
     used_photos = set(published.get("photos") or [])
     used_hooks_hist = set(published.get("hooks") or [])
-    used_process = set(published.get("process") or [])
+    used_process_hist = set(published.get("process") or [])
     used_stories = set(published.get("stories") or [])
+    unused_hook_files = [p.name for p in list_videos(RESULTADO) if p.name not in used_hooks_hist]
+    unused_process_files = [p.name for p in list_videos(PROCESO) if p.name not in used_process_hist]
+    used_hooks: set[str] = set(used_hooks_hist) if unused_hook_files else set()
+    used_process: set[str] = set(used_process_hist) if unused_process_files else set()
+    same_pack_openers: set[str] = set()
 
     pack_n = int(published.get("last_pack") or 0) + 1
     dest_root = cfg.ready_dir / f"{pack_n:02d}_pack"
@@ -259,9 +285,13 @@ def generate_day(
     print("  01 Reel mujer · 02 Reel hombre · 03 carrusel (3 fotos) · 04 stories")
     print(f"  dolor mujer: {maria_p.id} · {maria_var.spoken_hook}")
     print(f"  dolor hombre: {andres_p.id} · {andres_var.spoken_hook}")
-    print(f"  fotos carrusel: {', '.join(p.name for p in photos)}\n")
+    print(f"  fotos carrusel: {', '.join(p.name for p in photos)}")
+    print("  norma: María y Andrés no abren con el mismo vídeo de resultado\n")
 
-    used_hooks: set[str] = set(used_hooks_hist)
+    if maria_hook and andres_hook and Path(maria_hook).name == Path(andres_hook).name:
+        print("  aviso: --andres-hook igual que María; elijo otro clip para Andrés.")
+        andres_hook = None
+
     generate_one(
         cfg,
         pain_id=maria_p.id,
@@ -271,6 +301,7 @@ def generate_day(
         use_llm=use_llm,
         hook_file=maria_hook,
         exclude_hooks=used_hooks,
+        forbid_hooks=same_pack_openers,
         variant=maria_var,
         exclude_process=used_process,
     )
@@ -283,6 +314,7 @@ def generate_day(
         use_llm=use_llm,
         hook_file=andres_hook,
         exclude_hooks=used_hooks,
+        forbid_hooks=same_pack_openers,
         variant=andres_var,
         exclude_process=used_process,
     )

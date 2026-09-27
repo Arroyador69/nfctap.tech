@@ -44,16 +44,37 @@ def _voice_settings(persona: Persona, cfg: Config) -> tuple[str, str, str]:
     return cfg.voice_male, cfg.voice_male_rate, cfg.voice_male_pitch
 
 
+def _rate_for(persona: Persona, cfg: Config) -> str:
+    return _voice_settings(persona, cfg)[1]
+
+
+def _fit_words(words: list[Word], duration: float) -> list[Word]:
+    """Los subtítulos siguen el MP3 real (voz más rápida, sweeten, recorte)."""
+    if not words or duration <= 0.05:
+        return words
+    last = max(w.end for w in words)
+    if last <= 0.05:
+        return words
+    target = max(duration - 0.03, 0.12)
+    if abs(target - last) < 0.05:
+        return words
+    scale = target / last
+    return [
+        Word(text=w.text, start=max(0.0, w.start * scale), end=max(0.08, w.end * scale))
+        for w in words
+    ]
+
+
 def _fallbacks(persona: Persona, cfg: Config) -> list[tuple[str, str, str]]:
     primary = _voice_settings(persona, cfg)
     extras = (
         [
-            ("es-ES-XimenaNeural", "-3%", "+0Hz"),
-            ("es-ES-ElviraNeural", "-4%", "+0Hz"),
+            ("es-ES-XimenaNeural", cfg.voice_female_rate, "+0Hz"),
+            ("es-ES-ElviraNeural", cfg.voice_female_rate, "+0Hz"),
         ]
         if persona.voice == "female"
         else [
-            ("es-ES-AlvaroNeural", "-2%", "+0Hz"),
+            ("es-ES-AlvaroNeural", cfg.voice_male_rate, "+0Hz"),
         ]
     )
     seen = {primary[0]}
@@ -313,10 +334,11 @@ def speak_pocket(text: str, persona: Persona, dest: Path, cfg: Config) -> Voiceo
         duration = _probe_duration(piece)
         pieces.append(Voiceover(path=piece, duration=duration, words=words))
     raw = dest.with_name(dest.stem + "_raw.mp3")
-    combined = _concat_audio(pieces, raw, pause=0.18 if len(pieces) > 1 else 0.0)
+    combined = _concat_audio(pieces, raw, pause=0.10 if len(pieces) > 1 else 0.0)
     _sweeten(combined.path, dest)
     duration = _probe_duration(dest)
-    return Voiceover(path=dest, duration=duration + 0.12, words=combined.words)
+    words = _fit_words(combined.words, duration)
+    return Voiceover(path=dest, duration=duration + 0.08, words=words)
 
 
 def _sweeten(src: Path, dest: Path) -> None:
@@ -358,10 +380,11 @@ def speak_edge(text: str, persona: Persona, dest: Path, cfg: Config) -> Voiceove
 
     pieces = asyncio.run(_all())
     raw = dest.with_name(dest.stem + "_raw.mp3")
-    combined = _concat_audio(pieces, raw, pause=0.18 if len(pieces) > 1 else 0.0)
+    combined = _concat_audio(pieces, raw, pause=0.10 if len(pieces) > 1 else 0.0)
     _sweeten(combined.path, dest)
     duration = _probe_duration(dest)
-    return Voiceover(path=dest, duration=duration + 0.12, words=combined.words)
+    words = _fit_words(combined.words, duration)
+    return Voiceover(path=dest, duration=duration + 0.08, words=words)
 
 
 def speak_azure(text: str, persona: Persona, dest: Path, cfg: Config) -> Voiceover:
@@ -395,12 +418,14 @@ def speak_azure(text: str, persona: Persona, dest: Path, cfg: Config) -> Voiceov
         collected.append((token, start))
 
     synthesizer.synthesis_word_boundary.connect(on_boundary)
+    rate = html.escape(_rate_for(persona, cfg), quote=True)
     ssml = (
         "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' "
         "xml:lang='es-ES'>"
         f"<voice name='{html.escape(voice, quote=True)}'>"
+        f"<prosody rate='{rate}'>"
         f"{html.escape(text)}"
-        "</voice></speak>"
+        "</prosody></voice></speak>"
     )
     result = synthesizer.speak_ssml_async(ssml).get()
     if result.reason != speechsdk.ResultReason.SynthesizingAudioCompleted:
@@ -414,12 +439,13 @@ def speak_azure(text: str, persona: Persona, dest: Path, cfg: Config) -> Voiceov
     duration = _probe_duration(dest)
     words: list[Word] = []
     for i, (token, start) in enumerate(collected):
-        end = collected[i + 1][1] if i + 1 < len(collected) else min(start + 0.4, duration)
-        words.append(Word(text=token, start=start, end=max(end, start + 0.12)))
+        end = collected[i + 1][1] if i + 1 < len(collected) else min(start + 0.32, duration)
+        words.append(Word(text=token, start=start, end=max(end, start + 0.10)))
     if not words:
         words = _fallback_words(text, duration)
-    print(f"  voz Azure HD: {voice}")
-    return Voiceover(path=dest, duration=duration + 0.12, words=words)
+    words = _fit_words(words, duration)
+    print(f"  voz Azure HD: {voice} · ritmo {_rate_for(persona, cfg)}")
+    return Voiceover(path=dest, duration=duration + 0.08, words=words)
 
 
 def speak(text: str, persona: Persona, dest: Path, cfg: Config) -> Voiceover:

@@ -1,0 +1,12 @@
+---
+description: Pack diario NFCTap — los dos Reels no abren con el mismo clip
+alwaysApply: true
+---
+
+# Pack de contenido NFCTap
+
+Un pack = 2 Reels (María + Andrés) + carrusel + stories. `python -m nfctap_media day`.
+
+**Los dos Reels del mismo día no pueden empezar con el mismo vídeo** de `assets/bank/resultado/`. Si el banco se recicla, el segundo Reel toma el siguiente clip más reciente, no el mismo. Solo coinciden si hay un único archivo.
+
+No regenerar ni borrar un pack que Alberto ya está subiendo (p. ej. `09_pack`). El cambio vale para el siguiente (`10_pack` en adelante).

@@ -82,7 +82,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         style = "Hook" if start < hook_until else "Default"
         lines.append(
             f"Dialogue: 0,{_ass_time(start)},{_ass_time(end)},{style},,0,0,0,,"
-            f"{{\\fad(80,80){_YELLOW}}}{text}\n"
+            f"{{\\fad(40,60){_YELLOW}}}{text}\n"
         )
     if close_from is not None:
         if close_lines:
@@ -102,7 +102,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             end = max(end, start + 0.8)
             lines.append(
                 f"Dialogue: 0,{_ass_time(start)},{_ass_time(end)},Close,,0,0,0,,"
-                f"{{\\fad(100,120){_YELLOW}}}{text}\n"
+                f"{{\\fad(60,80){_YELLOW}}}{text}\n"
             )
     dest.write_text("".join(lines), encoding="utf-8")
     return dest

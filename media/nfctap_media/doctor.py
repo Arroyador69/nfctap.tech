@@ -7,7 +7,7 @@ from pathlib import Path
 
 from nfctap_media.config import Config
 from nfctap_media.paths import ROOT
-from nfctap_media.script import load_pains, load_personas, validate_carousel_copy, validate_script
+from nfctap_media.script import load_pains, load_personas, validate_variant
 
 
 def _ram_gb() -> float | None:
@@ -20,16 +20,38 @@ def _ram_gb() -> float | None:
 
 def check_scripts(cfg: Config) -> int:
     bad = 0
+    from nfctap_media.history import fingerprint
+
+    seen_body: set[str] = set()
+    seen_hook: set[str] = set()
+    seen_cap: set[str] = set()
+    seen_car: set[str] = set()
     for pain in load_pains():
-        copy_errors = validate_carousel_copy(pain)
-        if copy_errors:
-            bad += 1
-            print(f"  ERROR carrusel {pain.id}: {copy_errors}")
-        for script in pain.scripts:
-            errors = validate_script(script, cfg, spoken_hook=pain.spoken_hook)
+        for variant in pain.variants:
+            errors = validate_variant(pain, variant, cfg)
             if errors:
                 bad += 1
-                print(f"  ERROR guion {pain.id}: {errors}")
+                print(f"  ERROR {pain.id} / {variant.spoken_hook!r}: {errors}")
+            body_fp = fingerprint(variant.text)
+            hook_fp = fingerprint(variant.spoken_hook)
+            cap_fp = fingerprint(variant.caption)
+            car_fp = fingerprint(variant.carousel_caption)
+            if body_fp in seen_body:
+                bad += 1
+                print(f"  ERROR guion duplicado en {pain.id}: {variant.text[:60]}")
+            if hook_fp in seen_hook:
+                bad += 1
+                print(f"  ERROR hook duplicado en {pain.id}: {variant.spoken_hook}")
+            if cap_fp in seen_cap:
+                bad += 1
+                print(f"  ERROR caption duplicado en {pain.id}: {variant.caption[:60]}")
+            if car_fp in seen_car:
+                bad += 1
+                print(f"  ERROR carrusel duplicado en {pain.id}: {variant.carousel_caption[:60]}")
+            seen_body.add(body_fp)
+            seen_hook.add(hook_fp)
+            seen_cap.add(cap_fp)
+            seen_car.add(car_fp)
     personas = load_personas()
     if len(personas) < 2:
         print("  ERROR: hacen falta al menos 2 personas")
@@ -133,6 +155,15 @@ def run_doctor(cfg: Config, ci: bool = False) -> int:
     script_errors = check_scripts(cfg)
     print(f"  guiones: {'ok' if script_errors == 0 else script_errors}")
     if script_errors:
+        ok = False
+    from nfctap_media.history import leftover_unique_reels
+    from nfctap_media.script import load_pains as _lp
+
+    total = sum(len(p.variants) for p in _lp())
+    left = leftover_unique_reels()
+    print(f"  variantes únicas: {total} · libres: {left} (objetivo 60 vídeos sin copiar)")
+    if total < 60:
+        print("  ERROR: hacen falta 60 guiones distintos en data/pains.yaml")
         ok = False
 
     cfg.ready_dir.mkdir(parents=True, exist_ok=True)

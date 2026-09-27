@@ -49,21 +49,26 @@ def load_stories() -> list[dict]:
     return list(load_yaml("stories.yaml")["stories"])
 
 
-def pick_daily_stories(n: int = 2) -> list[dict]:
+def pick_daily_stories(n: int = 2, exclude: set[str] | None = None) -> list[dict]:
     items = load_stories()
-    recuerda = [s for s in items if s.get("kind") == "recuerda"]
-    registro = [s for s in items if s.get("kind") == "registro"]
+    skip = set(exclude or [])
+    fresh = [s for s in items if s.get("id") not in skip]
+    pool = fresh or items
+    recuerda = [s for s in pool if s.get("kind") == "recuerda"]
+    registro = [s for s in pool if s.get("kind") == "registro"]
     chosen: list[dict] = []
     if recuerda:
         chosen.append(random.choice(recuerda))
-    if registro and len(chosen) < n:
-        chosen.append(random.choice(registro))
-    while len(chosen) < n and items:
-        extra = random.choice(items)
-        if extra not in chosen:
-            chosen.append(extra)
-        else:
+    if registro:
+        pick = random.choice(registro)
+        if pick not in chosen:
+            chosen.append(pick)
+    leftovers = [s for s in pool if s not in chosen]
+    random.shuffle(leftovers)
+    for extra in leftovers:
+        if len(chosen) >= n:
             break
+        chosen.append(extra)
     return chosen[:n]
 
 
@@ -124,12 +129,14 @@ def make_story_card(cfg: Config, story: dict, photo: Path | None = None) -> Imag
     return img
 
 
-def write_stories_pack(cfg: Config, dest_dir: Path, n: int = 2) -> Path:
+def write_stories_pack(
+    cfg: Config, dest_dir: Path, n: int = 2, exclude: set[str] | None = None
+) -> list[str]:
     dest_dir.mkdir(parents=True, exist_ok=True)
     for old in dest_dir.iterdir():
         if old.is_file():
             old.unlink()
-    picked = pick_daily_stories(n)
+    picked = pick_daily_stories(n, exclude=exclude)
     stills = grab_own_stills(max(n, 2), dest_dir / "_stills")
     lines = [
         "STORIES · Instagram, Facebook, TikTok, YouTube",
@@ -156,4 +163,4 @@ def write_stories_pack(cfg: Config, dest_dir: Path, n: int = 2) -> Path:
     stills_dir = dest_dir / "_stills"
     if stills_dir.exists():
         shutil.rmtree(stills_dir)
-    return dest_dir
+    return [str(s["id"]) for s in picked]

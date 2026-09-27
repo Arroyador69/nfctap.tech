@@ -1,11 +1,236 @@
-last_pack: 1
+last_pack: 13
 pains:
 - maps_abajo
 - veinte_vs_anuncio
+- ficha_vacia
+- dos_en_barra
+- whatsapp_no_entra
+- factura_ads
+- instagram_no_siguen
+- pack_mixto
+- se_van_sin_opinar
+- mes_vs_atril
+- qr_sucio
+- flyer_suelo
+- no_piden
+- mi_logo
+- papel_mojado
+- una_en_caja
 hooks:
 - IMG_0505.MOV
 - IMG_3797.MOV
+- IMG_0501.MOV
+- IMG_3802.MOV
+- IMG_3801.mov
+- 5e66934d-53f6-4b7e-8ebb-67badf4cd4aa.MP4
+- IMG_3794.MOV
+- IMG_0540.MOV
+- IMG_0539.MOV
+- IMG_0562.MOV
+- resultado wifi pared.mov
+- resultado wifi.MOV
 photos:
 - IMG_0496.jpg
 - IMG_0503.jpg
 - IMG_0537.jpg
+- still-01-5e66934d-53f6-4b7e-8ebb-67badf4cd4aa.jpg
+- still-02-IMG_0501.jpg
+- still-03-IMG_0539.jpg
+- still-02-IMG_0539.jpg
+- still-03-IMG_0540.jpg
+- still-01-IMG_3794.jpg
+- still-02-IMG_3802.jpg
+- still-03-IMG_0505.jpg
+- still-01-IMG_0539.jpg
+- still-02-IMG_0540.jpg
+- still-01-IMG_0562.jpg
+- still-02-IMG_0562.jpg
+- still-03-IMG_0562.jpg
+- still-01-resultado wifi pared.jpg
+- still-02-resultado wifi.jpg
+- still-03-resultado wifi pared.jpg
+process:
+- IMG_0516.MOV
+- IMG_3799.MOV
+- IMG_0515.MOV
+- IMG_0489.MOV
+- IMG_0510.MOV
+- IMG_0523.MOV
+- IMG_0518.MOV
+- IMG_3800.MOV
+- IMG_0506.MOV
+- IMG_0491.MOV
+- IMG_0513.MOV
+- IMG_0521.MOV
+- IMG_0547.MOV
+- IMG_3817.MOV
+- IMG_3806.MOV
+- IMG_0528.MOV
+- IMG_0517.MOV
+- proceso wifi 1.mov
+- proceso wifi.MOV
+scripts:
+- sin reseñas nuevas, maps te esconde. un atril nfctap en la barra abre tu ficha al
+  toque. genérica 20 €. envíos a toda españa. nfctap.tech
+- gastas en anuncios y se acaban. un atril nfctap de 20 € se queda en la barra todo
+  el mes pidiendo reseñas. lo imprimimos aquí. encarga en nfctap.tech. envíos a toda
+  españa.
+- el sábado hay cola y google parece cerrado. nfctap pide la opinión a quien ya está
+  dentro. encarga en nfctap.tech. envíos a toda españa. lo imprimimos en españa.
+- entrada y barra son dos gestos. pack nfctap 35 €. lo fabricamos aquí. encarga en
+  nfctap.tech. envíos a toda españa. lo imprimimos en españa. pieza de pie, tap en
+  la barra.
+- 'quieren reservar y no encuentran el número. nfctap de whatsapp está en la barra:
+  acercas el móvil y se abre el chat. lo imprimimos aquí. encarga en nfctap.tech.
+  envíos a toda españa.'
+- ellos mueven el precio. nfctap sigue en 20 €. lo ves en 3d. encarga en nfctap.tech.
+  envíos a toda españa. lo imprimimos en españa.
+- 'el plato queda bien y nadie te sigue. nfctap de instagram en la mesa: acercas el
+  móvil y se abre tu perfil. lo fabricamos aquí. encarga en nfctap.tech. envíos a
+  toda españa.'
+- reseña y reserva, 35 € las dos. nfctap. lo ves en 3d. encarga en nfctap.tech. envíos
+  a toda españa. lo imprimimos en españa. pieza de pie, tap en la barra.
+- el adiós es en la puerta y google no se entera. con nfctap el toque es antes, en
+  la barra. lo ves en 3d. encarga en nfctap.tech. envíos a toda españa.
+- una vez, 20 €. pack 35 €. nfctap. encarga en nfctap.tech. envíos a toda españa.
+  lo imprimimos en españa. pieza de pie, tap en la barra.
+- 'enseñar un qr a dos palmos no funciona. nfctap se acerca al móvil solo: tap y entra.
+  negro y amarillo. encarga en nfctap.tech. envíos a toda españa.'
+- imprimes cien y duran un día. nfctap es una pieza, 20 €, todo el mes. encarga en
+  nfctap.tech. envíos a toda españa. lo imprimimos en españa.
+- cada semana entra gente. nfctap no necesita formación. lo fabricamos aquí. encarga
+  en nfctap.tech. envíos a toda españa. lo imprimimos en españa. pieza de pie, tap
+  en la barra.
+- la de stock vale 20 €. si quieres tu logo en la barra, nfctap con marca son 30 €.
+  dos, 55 €. lo ves en 3d y lo encargas en nfctap.tech. envíos a toda españa.
+- una ronda y el papel se va. nfctap es pieza, no servilleta. el chip va dentro. lo
+  imprimimos aquí. encarga en nfctap.tech. envíos a toda españa.
+- la terraza no camina hasta el ticket. segunda nfctap, pack 35 €. encarga en nfctap.tech.
+  envíos a toda españa. lo imprimimos en españa.
+- la caja suena y el qr se ignora. nfctap se ve sin explicaciones. impreso en españa.
+  encarga en nfctap.tech. envíos a toda españa. lo imprimimos en españa.
+- gente en terraza, pieza en terraza. o pack de dos, 35 €. encarga en nfctap.tech.
+  envíos a toda españa. lo imprimimos en españa. pieza de pie, tap en la barra.
+- 'caña, trapo, otra ronda: el qr muere. nfctap lleva el chip dentro, no encima del
+  mostrador. lo fabricamos aquí. encarga en nfctap.tech. envíos a toda españa.'
+- una pieza se queda en caja. pon otra en terraza. dos nfctap son 35 €. whatsapp e
+  instagram, o google. impreso en españa. nfctap.tech. envíos a toda españa.
+- 'se borra con el gel y el sol. nfctap no es un papel: es una pieza que se ve desde
+  el taburete. lo imprimimos aquí. encarga en nfctap.tech. envíos a toda españa.'
+- apagas la campaña y se acaba el ruido. nfctap sigue cada servicio. 20 €. dos, 35
+  €. encarga en nfctap.tech. envíos a toda españa.
+- el nombre del local no se acierta. nfctap abre el perfil exacto, sin buscar. lo
+  ves en 3d. encarga en nfctap.tech. envíos a toda españa.
+- el mes se acaba. nfctap sigue. 20 €. lo fabricamos aquí. encarga en nfctap.tech.
+  envíos a toda españa. lo imprimimos en españa. pieza de pie, tap en la barra.
+- el buscador pasa. nfctap calienta la ficha desde la barra. impreso en españa. encarga
+  en nfctap.tech. envíos a toda españa. lo imprimimos en españa. pieza de pie, tap
+  en la barra.
+- perfil y chat. pack nfctap 35 €. lo imprimimos aquí. encarga en nfctap.tech. envíos
+  a toda españa. lo imprimimos en españa. pieza de pie, tap en la barra.
+spoken_hooks:
+- en maps sales el cuarto. el de al lado te come.
+- el anuncio se acaba. el atril se queda en la barra.
+- tres reseñas. dos años. barra llena.
+- dos puertas. un solo atril no llega.
+- te escriben. y el whatsapp no aparece.
+- suben el coste por clic. el atril no sube.
+- comen rico. y no te siguen.
+- google en barra. whatsapp al lado. pack.
+- se despiden. tu ficha no se mueve.
+- renuevas ads o encargas de una vez.
+- apuntas al papel. nadie enfoca.
+- los flyers acaban en el suelo. otra vez.
+- el turno nuevo no se acuerda de pedirla.
+- ¿tu logo en la barra, o el de todos?
+- la servilleta con el código ya está rota.
+- la única pieza se queda en caja. nadie llega.
+- en hora punta no hay tiempo de explicarlo.
+- si solo hay una, elige donde hay gente.
+- el código mojado no abre nada.
+- una en barra. otra en terraza. dos toques.
+- el pegatinas de la caja ya no se lee.
+- el anuncio caduca un viernes. el atril no.
+- te etiquetan mal. o no te etiquetan.
+- un mes de ads. o un atril de veinte.
+- nadie ve un local con ficha helada.
+- instagram y whatsapp, treinta y cinco.
+captions:
+- en maps sales el cuarto. el de al lado te come.
+- si no pides la reseña en el local, maps te entierra. nfctap lo deja en la barra
+  todo el día. genérica 20 €, dos 35 €. nfctap.tech
+- la cola del sábado puede opinar. nfctap 20 €. impreso en españa.
+- hay gente. faltan reseñas. nfctap las pide dentro. 20 €. nfctap.tech
+- dos puertas, dos piezas. nfctap 35 €. con logo 55 €.
+- un atril no cubre dos puertas. pack 35 €. nfctap.tech
+- el chat se abre en la barra, sin copiar el número. nfctap whatsapp 20 €. pack 35
+  €.
+- el papel con el número se pierde. el atril nfctap de whatsapp abre el chat. 20 €.
+  pack con instagram o google, 35 €. nfctap.tech
+- el clic sube. nfctap sigue en 20 €. pack 35 €.
+- la subasta no manda aquí. nfctap 20 €. nfctap.tech
+- el perfil se abre en la mesa, sin buscarte. nfctap instagram 20 €. pack 35 €.
+- el qr del bio no se ve. el atril nfctap de instagram abre el perfil. 20 €. pack
+  con whatsapp o google, 35 €. nfctap.tech
+- reseña y reserva, 35 €. nfctap. envíos a toda españa.
+- no tienen que ser iguales. pack 35 €. nfctap.tech
+- el toque es en la barra, no en la calle. nfctap desde 20 €. envíos a toda españa.
+- cuando ya están en la calle, no opinan. nfctap lo pide dentro. 20 €. nfctap.tech
+- 'de una vez: 20 € o pack 35 €. nfctap.'
+- renovar o encargar. nfctap 20 €. nfctap.tech
+- nadie enfoca un papel sucio. nfctap, un toque. 20 €. lo ves en 3d.
+- deja de señalar la caja. el atril nfctap hace el gesto. 20 €. nfctap.tech
+- una pieza, no cien papeles. nfctap 20 €. impreso en españa.
+- el flyer dura un día. nfctap, el mes. 20 €. nfctap.tech
+- sin formar al turno. el atril ya está. nfctap 20 €.
+- el equipo rota. nfctap no. 20 €. nfctap.tech
+- tu marca, tap y estrellas. personalizada nfctap 30 €. pack 55 €.
+- la de stock es google, whatsapp o instagram. la de logo lleva tu marca. 30 € una,
+  55 € el pack. nfctap.tech
+- nada de servilletas. atril nfctap de pie, 20 €. impreso en españa.
+- el papel no aguanta un servicio. nfctap sí. 20 €. nfctap.tech
+- la terraza no camina hasta el ticket. pack nfctap 35 €.
+- caja al fondo, terraza llena. pack 35 €. nfctap.tech
+- 'hora punta: se ve, se toca, listo. nfctap 20 €. pack 35 €.'
+- en la hora brava no hay charla. hay tap. nfctap 20 €. nfctap.tech
+- ponla donde hay gente. o dos, 35 €. nfctap.
+- una pieza, el sitio con gente. dos, 35 €. nfctap.tech
+- el chip va dentro de la pieza, no en un papel. nfctap 20 €. pack 35 €.
+- el papel se moja. nfctap no. 20 € la pieza. nfctap.tech
+- barra y terraza no se cubren con una. pack nfctap 35 €. con logo, 55 €.
+- un solo atril se queda en caja. dos cubren barra y terraza. 35 € el pack. con tu
+  logo, 55 €. nfctap.tech
+- una pieza de pie no se borra como el qr. nfctap 20 €. impreso en españa.
+- el qr se gasta. el atril nfctap sigue ahí. 20 €. envíos a toda españa. nfctap.tech
+- sin fecha de caducidad. nfctap 20 €. lo ves en 3d.
+- la campaña se apaga. el atril no. nfctap 20 €. nfctap.tech
+- sin buscar el nombre. un toque y tu instagram. nfctap 20 €.
+- el nombre se escribe mal. el atril no. nfctap 20 €. nfctap.tech
+- el mes se acaba. nfctap sigue. 20 €. envíos a toda españa.
+- un mes tiene fecha. nfctap no. 20 €. nfctap.tech
+- calienta la ficha desde la barra. nfctap 20 €. envíos a toda españa.
+- ficha helada, local invisible. nfctap 20 €. nfctap.tech
+- perfil y chat, 35 €. nfctap. impreso en españa.
+- dos redes, un pack. 35 €. nfctap.tech
+stories:
+- anuncio
+- contacto
+- terraza
+- encarga
+- mixto
+- envios
+- pack
+- bizum
+- se_van
+- veinticuatro
+- logo
+- tresd
+- maps
+- instagram
+- barra
+- speech
+- ficha
+- whatsapp
+- papel
+- clic
+web_cursor: 6.5

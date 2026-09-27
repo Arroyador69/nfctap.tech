@@ -1,185 +1,595 @@
-# Dolores de dueños de local en España. Cuerpo del Reel = impresión real.
-# spoken_hook ~3 s. carousel_* distinto del locutado.
+# 64 variantes únicas. Hook, locutado, caption y carrusel no se copian.
+# El cierre oral del Reel es siempre: Lo podrás encontrar en la web. Envíos a toda España.
 
 pains:
-  - id: se_van_sin_opinar
-    theme: reseñas
-    money_angle: false
-    hook: Se van y no opinan
-    spoken_hook: Se van. Y no dejan reseña. ¿Otra vez?
+- id: se_van_sin_opinar
+  theme: reseñas
+  money_angle: false
+  hook: Se van y no opinan
+  scene: Barra de barrio, cliente de espaldas, dueña mira el móvil sin reseñas.
+  image_extra: empty neighbourhood bar, phone on the counter, Tuesday afternoon
+  variants:
+  - spoken_hook: Se van. Y no dejan reseña. ¿Otra vez?
+    body: 'Pagan, se van y nadie opina. El atril NFCTap está en la barra: acercas el móvil
+      y se abre tu reseña, el chat o el perfil. Lo imprimimos aquí. Encarga en nfctap.tech.
+      Envíos a toda España.'
+    caption: En la barra el toque abre Google, WhatsApp o Instagram. Atril NFCTap desde 20
+      €. Impreso en España.
     carousel_title: El cliente se va y nadie se entera
     carousel_line: El atril está en la barra. Un toque, se abre tu enlace.
-    carousel_caption: >
-      El QR de la caja se ignora. Un atril NFCTap en la barra abre Google,
-      WhatsApp o Instagram al acercar el móvil. 20 €. Envíos a toda España.
+    carousel_caption: El QR de la caja se ignora. Un atril NFCTap en la barra abre Google,
+      WhatsApp o Instagram. 20 €. Envíos a toda España. nfctap.tech
+  - spoken_hook: Cuentan la comida. Google no se entera.
+    body: El servicio acaba y tu ficha sigue igual. NFCTap pide la opinión en caliente, en
+      la barra. Lo fabricamos aquí, negro y amarillo. Encarga en nfctap.tech. Envíos a toda
+      España.
+    caption: Pide la reseña cuando el plato aún está caliente. Pieza NFCTap 20 €. Lo ves en
+      3D en la web.
+    carousel_title: La opinión se pide en caliente
+    carousel_line: Pieza de pie. NFC dentro. Enlace al instante.
+    carousel_caption: Si no pides la reseña en el local, se olvida. NFCTap se queda en la
+      barra todo el servicio. 20 €. nfctap.tech
+  - spoken_hook: Buen servicio. Cero toques en el móvil.
+    body: Nadie saca el teléfono si no hay un gesto claro. NFCTap se ve, se toca y abre tu
+      enlace. Impreso en España. Encarga en nfctap.tech. Envíos a toda España.
+    caption: Un gesto en la barra vale más que un papel. Atril NFCTap, 20 €. Pack de dos,
+      35 €.
+    carousel_title: Un gesto claro en la barra
+    carousel_line: Se ve. Se toca. Se abre el enlace.
+    carousel_caption: El papel se ignora. El atril NFCTap se queda de pie. Google, WhatsApp
+      o Instagram. 20 €. nfctap.tech
+  - spoken_hook: Se despiden. Tu ficha no se mueve.
+    body: El adiós es en la puerta y Google no se entera. Con NFCTap el toque es antes, en
+      la barra. Lo ves en 3D. Encarga en nfctap.tech. Envíos a toda España.
+    caption: El toque es en la barra, no en la calle. NFCTap desde 20 €. Envíos a toda España.
+    carousel_title: El toque es antes de salir
+    carousel_line: Barra, no puerta. NFC y TAP.
+    carousel_caption: Cuando ya están en la calle, no opinan. NFCTap lo pide dentro. 20 €.
       nfctap.tech
-    scene: Barra de barrio, cliente de espaldas, dueña mira el móvil sin reseñas.
-    image_extra: empty neighbourhood bar, phone on the counter, Tuesday afternoon
-    scripts:
-      - >
-        Pagan, se van y nadie opina. El atril NFCTap está en la barra:
-        acercas el móvil y se abre tu reseña, el chat o el perfil. Lo
-        imprimimos aquí. Encarga en nfctap.tech. Envíos a toda España.
-      - >
-        El cliente sale y no toca nada. Con NFCTap el toque es en la barra,
-        no un papel sucio. Google, WhatsApp o Instagram, a tu enlace. Lo
-        ves en 3D en nfctap.tech. Envíos a toda España.
-
-  - id: qr_sucio
-    theme: reseñas
-    money_angle: false
-    hook: El QR de la caja no lo pilla nadie
-    spoken_hook: ¿Otro QR sucio en la caja? Nadie lo pilla.
+- id: qr_sucio
+  theme: reseñas
+  money_angle: false
+  hook: El QR de la caja no lo pilla nadie
+  scene: Caja con QR borroso, camarero señala, nadie saca el móvil.
+  image_extra: dirty QR sticker on till, Spanish bar
+  variants:
+  - spoken_hook: ¿Otro QR sucio en la caja? Nadie lo pilla.
+    body: 'El código de la caja está sucio y nadie lo abre. NFCTap es un atril de pie: el
+      cliente acerca el móvil y entra en tu enlace. Impreso en España. Encarga en nfctap.tech.
+      Envíos a toda España.'
+    caption: Olvida el pegatinas de la caja. Atril NFCTap de pie, 20 €. WhatsApp, Instagram
+      o Google.
     carousel_title: Un toque en la barra, no un papel en la caja
     carousel_line: Pieza de pie, NFC dentro, enlace al instante.
-    carousel_caption: >
-      El código de la caja se ve mal y nadie lo abre. El atril NFCTap se
-      queda de pie en la barra. Un toque y WhatsApp, Instagram o Google.
-      20 €. nfctap.tech
-    scene: Caja con QR borroso, camarero señala, nadie saca el móvil.
-    image_extra: dirty QR sticker on till, Spanish bar
-    scripts:
-      - >
-        El QR de la caja está sucio y nadie lo abre. NFCTap es un atril de
-        pie: el cliente acerca el móvil y entra en tu enlace. Impreso en
-        España. Encarga en nfctap.tech. Envíos a toda España.
-      - >
-        Nadie escanea el papel de la caja. El atril NFCTap se ve, se toca y
-        abre WhatsApp, Instagram o Google. Lo fabricamos aquí, negro y
-        amarillo. nfctap.tech. Envíos a toda España.
-
-  - id: maps_abajo
-    theme: reseñas
-    money_angle: false
-    hook: En Maps sales el cuarto
-    spoken_hook: En Maps sales el cuarto. El de al lado te come.
+    carousel_caption: El código de la caja se ve mal. El atril NFCTap se queda de pie. Un
+      toque y WhatsApp, Instagram o Google. 20 €. nfctap.tech
+  - spoken_hook: El pegatinas de la caja ya no se lee.
+    body: 'Se borra con el gel y el sol. NFCTap no es un papel: es una pieza que se ve desde
+      el taburete. Lo imprimimos aquí. Encarga en nfctap.tech. Envíos a toda España.'
+    caption: Una pieza de pie no se borra como el QR. NFCTap 20 €. Impreso en España.
+    carousel_title: La pieza no se borra con el gel
+    carousel_line: Atril de pie. Se ve desde el taburete.
+    carousel_caption: El QR se gasta. El atril NFCTap sigue ahí. 20 €. Envíos a toda España.
+      nfctap.tech
+  - spoken_hook: Apuntas al papel. Nadie enfoca.
+    body: 'Enseñar un QR a dos palmos no funciona. NFCTap se acerca al móvil solo: TAP y entra.
+      Negro y amarillo. Encarga en nfctap.tech. Envíos a toda España.'
+    caption: Nadie enfoca un papel sucio. NFCTap, un toque. 20 €. Lo ves en 3D.
+    carousel_title: Nadie enfoca un papel a dos palmos
+    carousel_line: TAP. El móvil entra solo.
+    carousel_caption: Deja de señalar la caja. El atril NFCTap hace el gesto. 20 €. nfctap.tech
+  - spoken_hook: El código mojado no abre nada.
+    body: 'Caña, trapo, otra ronda: el QR muere. NFCTap lleva el chip dentro, no encima del
+      mostrador. Lo fabricamos aquí. Encarga en nfctap.tech. Envíos a toda España.'
+    caption: El chip va dentro de la pieza, no en un papel. NFCTap 20 €. Pack 35 €.
+    carousel_title: El chip va dentro, no en el mostrador
+    carousel_line: Caña y trapo. El atril sigue.
+    carousel_caption: El papel se moja. NFCTap no. 20 € la pieza. nfctap.tech
+- id: maps_abajo
+  theme: reseñas
+  money_angle: false
+  hook: En Maps sales el cuarto
+  scene: Dueño compara su ficha de Maps con el restaurante de al lado.
+  image_extra: ' Lo imprimimos en España.'
+  variants:
+  - spoken_hook: En Maps sales el cuarto. El de al lado te come.
+    body: En Maps sales abajo y el de al lado, con reseñas, te come. NFCTap pide la opinión
+      en la barra, cuando el plato está caliente. Lo imprimes y lo encargas en nfctap.tech.
+      Envíos a toda España.
+    caption: Quien pide la reseña en el local sale antes. Atril NFCTap de Google, 20 €. Dos,
+      35 €.
     carousel_title: Quien pide la reseña sale antes en Maps
     carousel_line: El atril pide la opinión en el momento, en la barra.
-    carousel_caption: >
-      Si no pides la reseña en el local, Maps te entierra. NFCTap lo deja
+    carousel_caption: Si no pides la reseña en el local, Maps te entierra. NFCTap lo deja
       en la barra todo el día. Google 20 €, dos 35 €. nfctap.tech
-    scene: Dueño compara su ficha de Maps con el restaurante de al lado.
-    image_extra: Google Maps list, restaurant buried, phone in kitchen
-    scripts:
-      - >
-        En Maps sales abajo y el de al lado, con reseñas, te come. NFCTap
-        pide la opinión en la barra, cuando el plato está caliente. Lo
-        imprimes y lo encargas en nfctap.tech. Envíos a toda España.
-      - >
-        Sin reseñas nuevas, Maps te esconde. Un atril NFCTap de Google en
-        la barra abre tu ficha al toque. 20 €. Envíos a toda España.
-        nfctap.tech
-
-  - id: veinte_vs_anuncio
-    theme: precio
-    money_angle: true
-    hook: El anuncio se acaba. El atril se queda
-    spoken_hook: El anuncio se acaba. El atril se queda en la barra.
-    carousel_title: Veinte euros, todo el mes en la barra
-    carousel_line: Una 20 €. Dos, 35 €. Sin campaña que caduca.
-    carousel_caption: >
-      Un anuncio dura el presupuesto. El atril NFCTap se queda. Google,
-      WhatsApp o Instagram, 20 €. Pack de dos 35 €. Con logo 30 €. Envíos
-      a toda España. nfctap.tech
-    scene: Restaurador mira factura de anuncios, mesas vacías, atril en barra.
-    image_extra: ads invoice, empty tables, NFC stand on bar
-    scripts:
-      - >
-        Gastas en anuncios y se acaban. Un atril NFCTap de 20 € se queda
-        en la barra todo el mes. WhatsApp, Instagram o Google. Lo
-        imprimimos aquí. Encarga en nfctap.tech. Envíos a toda España.
-      - >
-        El anuncio caduca. La pieza NFCTap cuesta 20 € y trabaja cada
-        servicio. Dos, 35 €. Lo ves en 3D en nfctap.tech. Envíos a
-        toda España.
-
-  - id: dos_en_barra
-    theme: precio
-    money_angle: true
-    hook: Barra y terraza, dos toques
-    spoken_hook: Una en barra. Otra en terraza. Dos toques.
-    carousel_title: Dos atriles, barra y terraza
-    carousel_line: Dos piezas 35 €. Dos con logo, 55 €.
-    carousel_caption: >
-      Un solo atril se queda en caja. Dos cubren barra y terraza. Google y
-      WhatsApp, o dos iguales. 35 € el pack. Con tu logo, 55 €. Envíos a
-      toda España. nfctap.tech
-    scene: Barra y terraza, dos piezas, clientes tocando.
-    image_extra: bar and terrace, two NFC stands
-    scripts:
-      - >
-        Una pieza se queda en caja. Pon otra en terraza. Dos NFCTap son
-        35 €. WhatsApp e Instagram, o Google. Impreso en España.
-        nfctap.tech. Envíos a toda España.
-      - >
-        Barra y terraza, dos toques. El pack de dos son 35 €. Lo
-        fabricamos aquí y lo enviamos a toda España. Encarga en
-        nfctap.tech.
-
-  - id: mi_logo
-    theme: marca
-    money_angle: true
-    hook: Tu logo en la barra, no el de catálogo
-    spoken_hook: ¿Tu logo en la barra, o el de todos?
-    carousel_title: La de barra lleva tu marca
-    carousel_line: Con logo 30 €. Dos, 55 €. Mismo TAP.
-    carousel_caption: >
-      La de stock es Google, WhatsApp o Instagram. La de logo lleva tu
-      marca, TAP y estrellas. 30 € una, 55 € el pack. Envíos a toda
-      España. nfctap.tech
-    scene: Atril con logo del local, camarero, barra llena.
-    image_extra: custom logo NFC stand on Spanish bar
-    scripts:
-      - >
-        La de stock vale 20 €. Si quieres tu logo en la barra, NFCTap
-        con marca son 30 €. Dos, 55 €. Lo ves en 3D y lo encargas en
-        nfctap.tech. Envíos a toda España.
-      - >
-        Tu marca, TAP y estrellas. No un icono de catálogo. Personalizada
-        NFCTap, 30 €. La imprimimos aquí y la ves en 3D. Envíos a toda
-        España. nfctap.tech
-
-  - id: whatsapp_no_entra
-    theme: reservas
-    money_angle: false
-    hook: Te escriben y el WhatsApp no aparece
-    spoken_hook: Te escriben. Y el WhatsApp no aparece.
+  - spoken_hook: Sin reseñas nuevas, Maps te esconde.
+    body: La ficha se enfría si nadie opina esta semana. Un atril NFCTap de Google en la barra
+      abre tu enlace al toque. 20 €. Encarga en nfctap.tech. Envíos a toda España.
+    caption: La ficha se mueve si pides la reseña hoy. NFCTap 20 €. Impreso en España.
+    carousel_title: La ficha se enfría sin opiniones nuevas
+    carousel_line: Google en la barra. Un toque, tu enlace.
+    carousel_caption: Maps ordena por reseñas recientes. NFCTap las pide en el local. 20 €.
+      nfctap.tech
+  - spoken_hook: El de enfrente tiene veinte más.
+    body: 'No es magia: pidió la reseña en mesa. NFCTap hace ese gesto por ti, todo el servicio.
+      Lo fabricamos aquí. Encarga en nfctap.tech. Envíos a toda España.'
+    caption: El gesto de pedir la reseña, en un atril. NFCTap 20 €. Lo ves en 3D.
+    carousel_title: El gesto de pedirla, todo el servicio
+    carousel_line: Mesa o barra. El toque es el mismo.
+    carousel_caption: No compitas a ciegas. NFCTap pide Google en el local. 20 €. nfctap.tech
+  - spoken_hook: Buscan cena y pasas de largo.
+    body: En el listado sales tarde y eligen otro. NFCTap trabaja mientras tú cierras la caja.
+      Impreso en España. Encarga en nfctap.tech. Envíos a toda España. Lo imprimimos en España.
+    caption: Mientras cierras, el atril sigue pidiendo Google. NFCTap 20 €. Envíos a toda
+      España.
+    carousel_title: El listado no espera a mañana
+    carousel_line: Cierra caja. El atril sigue.
+    carousel_caption: Maps se mira ahora. NFCTap pide la reseña ahora. 20 €. nfctap.tech
+- id: whatsapp_no_entra
+  theme: reservas
+  money_angle: false
+  hook: Te escriben y el WhatsApp no aparece
+  scene: Barra, móvil del local sin chats nuevos, cliente ya en la calle.
+  image_extra: Spanish bar, phone with empty WhatsApp, customer leaving
+  variants:
+  - spoken_hook: Te escriben. Y el WhatsApp no aparece.
+    body: 'Quieren reservar y no encuentran el número. NFCTap de WhatsApp está en la barra:
+      acercas el móvil y se abre el chat. Lo imprimimos aquí. Encarga en nfctap.tech. Envíos
+      a toda España.'
+    caption: El chat se abre en la barra, sin copiar el número. NFCTap WhatsApp 20 €. Pack
+      35 €.
     carousel_title: El chat se abre en la barra
     carousel_line: Un toque y WhatsApp. Sin buscar el número.
-    carousel_caption: >
-      El papel con el número se pierde. El atril NFCTap de WhatsApp abre
-      el chat al acercar el móvil. 20 €. Pack con Instagram o Google, 35 €.
-      nfctap.tech
-    scene: Barra, móvil del local sin chats nuevos, cliente ya en la calle.
-    image_extra: Spanish bar, phone with empty WhatsApp, customer leaving
-    scripts:
-      - >
-        Quieren reservar y no encuentran el número. NFCTap de WhatsApp
-        está en la barra: acercas el móvil y se abre el chat. Lo
-        imprimimos aquí. Encarga en nfctap.tech. Envíos a toda España.
-      - >
-        Nadie copia el nueve mil. Un toque y WhatsApp. Pieza NFCTap,
-        20 €. Dos con Instagram, 35 €. Lo ves en 3D en nfctap.tech.
-        Envíos a toda España.
-
-  - id: instagram_no_siguen
-    theme: marca
-    money_angle: false
-    hook: Comen rico y no te siguen
-    spoken_hook: Comen rico. Y no te siguen.
+    carousel_caption: El papel con el número se pierde. El atril NFCTap de WhatsApp abre el
+      chat. 20 €. Pack con Instagram o Google, 35 €. nfctap.tech
+  - spoken_hook: Preguntan el nueve mil. Nadie lo apunta.
+    body: Dictar el número en voz alta se pierde. Un toque y WhatsApp. Pieza NFCTap, 20 €.
+      Dos con Instagram, 35 €. Encarga en nfctap.tech. Envíos a toda España.
+    caption: Deja de dictar el número. NFCTap abre el chat. 20 €. Lo ves en 3D.
+    carousel_title: Deja de dictar el número en voz alta
+    carousel_line: TAP. Se abre el chat. Listo.
+    carousel_caption: El nueve mil se olvida. El atril no. NFCTap WhatsApp 20 €. nfctap.tech
+  - spoken_hook: El bio de Instagram no es un chat.
+    body: Te siguen y no te escriben. NFCTap de WhatsApp abre la conversación, no el perfil.
+      Lo fabricamos aquí. Encarga en nfctap.tech. Envíos a toda España.
+    caption: Perfil y chat no son lo mismo. NFCTap WhatsApp 20 €. O pack de dos, 35 €.
+    carousel_title: El perfil no reserva mesas
+    carousel_line: WhatsApp en la barra. Reserva al toque.
+    carousel_caption: Instagram enseña. WhatsApp reserva. NFCTap abre el chat. 20 €. nfctap.tech
+  - spoken_hook: La reserva se queda en el aire.
+    body: Quedamos en escribirte y no llega nada. NFCTap pone el chat en la barra, a la vista.
+      Impreso en España. Encarga en nfctap.tech. Envíos a toda España.
+    caption: La reserva empieza con un toque. NFCTap WhatsApp 20 €. Envíos a toda España.
+    carousel_title: La reserva empieza en la barra
+    carousel_line: A la vista. Chat abierto. Sin buscar.
+    carousel_caption: No dejes la reserva a un ‘ya te escribo’. NFCTap 20 €. nfctap.tech
+- id: instagram_no_siguen
+  theme: marca
+  money_angle: false
+  hook: Comen rico y no te siguen
+  scene: Mesa servida, plato bonito, nadie abre Instagram.
+  image_extra: ' Lo imprimimos en España.'
+  variants:
+  - spoken_hook: Comen rico. Y no te siguen.
+    body: 'El plato queda bien y nadie te sigue. NFCTap de Instagram en la mesa: acercas el
+      móvil y se abre tu perfil. Lo fabricamos aquí. Encarga en nfctap.tech. Envíos a toda
+      España.'
+    caption: El perfil se abre en la mesa, sin buscarte. NFCTap Instagram 20 €. Pack 35 €.
     carousel_title: El perfil se abre en la mesa
     carousel_line: Un toque y tu Instagram. Sin buscarte.
-    carousel_caption: >
-      El QR del bio no se ve. El atril NFCTap de Instagram abre el perfil
-      al toque. 20 €. Pack con WhatsApp o Google, 35 €. nfctap.tech
-    scene: Mesa servida, plato bonito, nadie abre Instagram.
-    image_extra: plated dish on Spanish restaurant table, phone face down
-    scripts:
-      - >
-        El plato queda bien y nadie te sigue. NFCTap de Instagram en la
-        mesa: acercas el móvil y se abre tu perfil. Lo fabricamos aquí.
-        Encarga en nfctap.tech. Envíos a toda España.
-      - >
-        No van a buscarte en la app. Un toque y Instagram. Pieza NFCTap,
-        20 €. Dos, 35 €. Lo ves en 3D en nfctap.tech. Envíos a toda
-        España.
+    carousel_caption: El QR del bio no se ve. El atril NFCTap de Instagram abre el perfil.
+      20 €. Pack con WhatsApp o Google, 35 €. nfctap.tech
+  - spoken_hook: La foto del plato no llega a tu cuenta.
+    body: Hacen la foto y publican en la suya. NFCTap abre tu perfil antes de que guarden
+      el móvil. 20 €. Encarga en nfctap.tech. Envíos a toda España.
+    caption: Que la foto del plato acabe en tu perfil. NFCTap 20 €. Impreso en España.
+    carousel_title: La foto del plato, en tu perfil
+    carousel_line: Antes de guardar el móvil, TAP.
+    carousel_caption: La foto se va a su historia. NFCTap abre la tuya. 20 €. nfctap.tech
+  - spoken_hook: Te etiquetan mal. O no te etiquetan.
+    body: El nombre del local no se acierta. NFCTap abre el perfil exacto, sin buscar. Lo
+      ves en 3D. Encarga en nfctap.tech. Envíos a toda España.
+    caption: Sin buscar el nombre. Un toque y tu Instagram. NFCTap 20 €.
+    carousel_title: El perfil exacto, sin buscar el nombre
+    carousel_line: Un toque. Tu cuenta. Ni una letra mal.
+    carousel_caption: El nombre se escribe mal. El atril no. NFCTap 20 €. nfctap.tech
+  - spoken_hook: El story del cliente no eres tú.
+    body: Salen ellos, no el local. NFCTap pone tu Instagram donde se ve el plato. Impreso
+      en España. Encarga en nfctap.tech. Envíos a toda España. Lo imprimimos en España.
+    caption: Tu cuenta, junto al plato. NFCTap Instagram 20 €. Dos piezas 35 €.
+    carousel_title: Tu cuenta, junto al plato
+    carousel_line: Donde se ve el plato, TAP.
+    carousel_caption: El story es suyo. El toque es tuyo. NFCTap 20 €. nfctap.tech
+- id: papel_mojado
+  theme: reseñas
+  money_angle: false
+  hook: El papel de la barra se empapa
+  scene: Servilleta con QR mojada junto a dos cañas.
+  image_extra: ' Lo imprimimos en España.'
+  variants:
+  - spoken_hook: La servilleta con el código ya está rota.
+    body: Una ronda y el papel se va. NFCTap es pieza, no servilleta. El chip va dentro. Lo
+      imprimimos aquí. Encarga en nfctap.tech. Envíos a toda España.
+    caption: Nada de servilletas. Atril NFCTap de pie, 20 €. Impreso en España.
+    carousel_title: Nada de servilletas en la barra
+    carousel_line: Pieza. Chip dentro. Aguanta el servicio.
+    carousel_caption: El papel no aguanta un servicio. NFCTap sí. 20 €. nfctap.tech
+  - spoken_hook: El cartelito se cae detrás de la máquina.
+    body: Lo pegas, se cae, lo buscas. NFCTap se queda de pie donde lo pones. Negro y amarillo.
+      Encarga en nfctap.tech. Envíos a toda España.
+    caption: De pie, donde lo dejas. NFCTap 20 €. Lo ves en 3D.
+    carousel_title: De pie, donde lo dejas
+    carousel_line: No se cae detrás de la máquina.
+    carousel_caption: El cartelito desaparece. El atril NFCTap no. 20 €. nfctap.tech
+  - spoken_hook: El folio de la entrada ya no está.
+    body: Alguien lo tira o el aire lo lleva. NFCTap pesa y se ve. Lo fabricamos aquí. Encarga
+      en nfctap.tech. Envíos a toda España. Lo imprimimos en España.
+    caption: Una pieza con peso, no un folio. NFCTap 20 €. Pack 35 €.
+    carousel_title: Una pieza con peso, no un folio
+    carousel_line: Se ve en la entrada. TAP.
+    carousel_caption: El folio vuela. NFCTap se queda. 20 €. nfctap.tech
+  - spoken_hook: El imán de la nevera nadie lo mira.
+    body: Está detrás del camarero. NFCTap va a la barra, a la vista del cliente. Impreso
+      en España. Encarga en nfctap.tech. Envíos a toda España.
+    caption: A la vista del cliente, no de la nevera. NFCTap 20 €.
+    carousel_title: A la vista del cliente
+    carousel_line: Barra. No nevera. TAP.
+    carousel_caption: La nevera no pide reseñas. El atril sí. NFCTap 20 €. nfctap.tech
+- id: no_piden
+  theme: reseñas
+  money_angle: false
+  hook: El equipo no pide la reseña
+  scene: Camarero con bandeja, servicio a tope, nadie menciona Google.
+  image_extra: ' Lo imprimimos en España.'
+  variants:
+  - spoken_hook: El equipo no pide la reseña. Nunca.
+    body: Hay prisa y se olvida. NFCTap lo pide solo, todo el turno, en la barra. Lo imprimimos
+      aquí. Encarga en nfctap.tech. Envíos a toda España.
+    caption: El atril pide cuando el equipo no puede. NFCTap 20 €. Impreso en España.
+    carousel_title: El atril pide cuando hay prisa
+    carousel_line: Todo el turno. Sin discurso.
+    carousel_caption: No hace falta el speech. NFCTap está en la barra. 20 €. nfctap.tech
+  - spoken_hook: Nadie quiere hacer el speech de Google.
+    body: 'Da corte. NFCTap no habla: se toca. Pieza de pie, enlace listo. Encarga en nfctap.tech.
+      Envíos a toda España. Lo imprimimos en España. Pieza de pie, TAP en la barra.'
+    caption: Sin speech. Un toque. NFCTap 20 €. Lo ves en 3D.
+    carousel_title: Sin speech. Un toque.
+    carousel_line: La pieza habla por el equipo.
+    carousel_caption: El corte se quita con un atril. NFCTap 20 €. nfctap.tech
+  - spoken_hook: El turno nuevo no se acuerda de pedirla.
+    body: Cada semana entra gente. NFCTap no necesita formación. Lo fabricamos aquí. Encarga
+      en nfctap.tech. Envíos a toda España. Lo imprimimos en España. Pieza de pie, TAP en
+      la barra.
+    caption: Sin formar al turno. El atril ya está. NFCTap 20 €.
+    carousel_title: Sin formar al turno nuevo
+    carousel_line: La pieza ya sabe qué hacer.
+    carousel_caption: El equipo rota. NFCTap no. 20 €. nfctap.tech
+  - spoken_hook: En hora punta no hay tiempo de explicarlo.
+    body: La caja suena y el QR se ignora. NFCTap se ve sin explicaciones. Impreso en España.
+      Encarga en nfctap.tech. Envíos a toda España. Lo imprimimos en España.
+    caption: 'Hora punta: se ve, se toca, listo. NFCTap 20 €. Pack 35 €.'
+    carousel_title: Hora punta, sin explicaciones
+    carousel_line: Se ve. Se toca. Listo.
+    carousel_caption: En la hora brava no hay charla. Hay TAP. NFCTap 20 €. nfctap.tech
+- id: ficha_vacia
+  theme: reseñas
+  money_angle: false
+  hook: Tres reseñas en dos años
+  scene: Móvil con ficha de Google casi vacía, barra llena el sábado.
+  image_extra: ' Pieza de pie, TAP en la barra.'
+  variants:
+  - spoken_hook: Tres reseñas. Dos años. Barra llena.
+    body: El sábado hay cola y Google parece cerrado. NFCTap pide la opinión a quien ya está
+      dentro. Encarga en nfctap.tech. Envíos a toda España. Lo imprimimos en España.
+    caption: La cola del sábado puede opinar. NFCTap 20 €. Impreso en España.
+    carousel_title: La cola del sábado puede opinar
+    carousel_line: Quien ya está dentro, TAP.
+    carousel_caption: Hay gente. Faltan reseñas. NFCTap las pide dentro. 20 €. nfctap.tech
+  - spoken_hook: La ficha parece de un local vacío.
+    body: Entras y hay mesas. En Maps, silencio. NFCTap enseña Google en la barra. Lo imprimimos
+      aquí. Encarga en nfctap.tech. Envíos a toda España. Lo imprimimos en España.
+    caption: Que Maps se parezca a tu sábado. NFCTap 20 €. Lo ves en 3D.
+    carousel_title: Que Maps se parezca a tu sábado
+    carousel_line: Barra llena. Ficha viva.
+    carousel_caption: El local vive. La ficha no. NFCTap 20 €. nfctap.tech
+  - spoken_hook: Las tres opiniones son de la familia.
+    body: Hace falta gente de verdad, el mismo día. NFCTap lo deja a mano. Negro y amarillo.
+      Encarga en nfctap.tech. Envíos a toda España. Lo imprimimos en España.
+    caption: Opiniones del servicio de hoy, no del primo. NFCTap 20 €.
+    carousel_title: Opiniones del servicio de hoy
+    carousel_line: A mano. El mismo día. TAP.
+    carousel_caption: Familia no basta. NFCTap pide al cliente. 20 €. nfctap.tech
+  - spoken_hook: Nadie ve un local con ficha helada.
+    body: El buscador pasa. NFCTap calienta la ficha desde la barra. Impreso en España. Encarga
+      en nfctap.tech. Envíos a toda España. Lo imprimimos en España. Pieza de pie, TAP en
+      la barra.
+    caption: Calienta la ficha desde la barra. NFCTap 20 €. Envíos a toda España.
+    carousel_title: Calienta la ficha desde la barra
+    carousel_line: El buscador pasa. El atril no.
+    carousel_caption: Ficha helada, local invisible. NFCTap 20 €. nfctap.tech
+- id: veinte_vs_anuncio
+  theme: precio
+  money_angle: true
+  hook: El anuncio se acaba. El atril se queda
+  scene: Restaurador mira factura de anuncios, mesas vacías, atril en barra.
+  image_extra: ' Pieza de pie, TAP en la barra.'
+  variants:
+  - spoken_hook: El anuncio se acaba. El atril se queda en la barra.
+    body: Gastas en anuncios y se acaban. Un atril NFCTap de 20 € se queda en la barra todo
+      el mes. WhatsApp, Instagram o Google. Lo imprimimos aquí. Encarga en nfctap.tech. Envíos
+      a toda España.
+    caption: El presupuesto se gasta. El atril no. NFCTap 20 €. Pack 35 €. Con logo 30 €.
+    carousel_title: Veinte euros, todo el mes en la barra
+    carousel_line: Una 20 €. Dos, 35 €. Sin campaña que caduca.
+    carousel_caption: Un anuncio dura el presupuesto. El atril NFCTap se queda. Google, WhatsApp
+      o Instagram, 20 €. Pack de dos 35 €. nfctap.tech
+  - spoken_hook: El anuncio caduca un viernes. El atril no.
+    body: Apagas la campaña y se acaba el ruido. NFCTap sigue cada servicio. 20 €. Dos, 35
+      €. Encarga en nfctap.tech. Envíos a toda España.
+    caption: Sin fecha de caducidad. NFCTap 20 €. Lo ves en 3D.
+    carousel_title: Sin fecha de caducidad en la barra
+    carousel_line: Cada servicio. Sin apagar nada.
+    carousel_caption: La campaña se apaga. El atril no. NFCTap 20 €. nfctap.tech
+  - spoken_hook: Pagas por clic. Aquí pagas una vez.
+    body: El clic se esfuma. NFCTap es pieza física, tuya. Lo fabricamos aquí. Encarga en
+      nfctap.tech. Envíos a toda España. Lo imprimimos en España. Pieza de pie, TAP en la
+      barra.
+    caption: Una vez, 20 €. La pieza es tuya. NFCTap. Envíos a toda España.
+    carousel_title: Una vez. La pieza es tuya.
+    carousel_line: No hay clic. Hay TAP.
+    carousel_caption: El clic se esfuma. NFCTap se queda. 20 €. nfctap.tech
+  - spoken_hook: La factura de ads llega. El atril ya está.
+    body: Otra factura. O una pieza de 20 € que no se renueva. NFCTap. Impreso en España.
+      Encarga en nfctap.tech. Envíos a toda España.
+    caption: Sin renovar cada mes. NFCTap 20 €. Pack de dos 35 €.
+    carousel_title: Sin renovar cada mes
+    carousel_line: Una pieza. Sin factura de ads.
+    carousel_caption: Otra factura, o un atril. NFCTap 20 €. nfctap.tech
+- id: dos_en_barra
+  theme: precio
+  money_angle: true
+  hook: Barra y terraza, dos toques
+  scene: Barra y terraza, dos piezas, clientes tocando.
+  image_extra: ' Pieza de pie, TAP en la barra.'
+  variants:
+  - spoken_hook: Una en barra. Otra en terraza. Dos toques.
+    body: Una pieza se queda en caja. Pon otra en terraza. Dos NFCTap son 35 €. WhatsApp e
+      Instagram, o Google. Impreso en España. nfctap.tech. Envíos a toda España.
+    caption: Barra y terraza no se cubren con una. Pack NFCTap 35 €. Con logo, 55 €.
+    carousel_title: Dos atriles, barra y terraza
+    carousel_line: Dos piezas 35 €. Dos con logo, 55 €.
+    carousel_caption: Un solo atril se queda en caja. Dos cubren barra y terraza. 35 € el
+      pack. Con tu logo, 55 €. nfctap.tech
+  - spoken_hook: La terraza no ve lo que hay en caja.
+    body: El de fuera no se acerca a la registradora. Segunda pieza NFCTap, pack 35 €. Encarga
+      en nfctap.tech. Envíos a toda España. Lo imprimimos en España.
+    caption: Lo de fuera necesita su toque. Pack NFCTap 35 €. Impreso en España.
+    carousel_title: Lo de fuera necesita su toque
+    carousel_line: Terraza. Su pieza. Su TAP.
+    carousel_caption: La caja no se ve desde la terraza. Pack 35 €. nfctap.tech
+  - spoken_hook: Google en barra. WhatsApp en terraza.
+    body: Una de cada. Mismo pack, 35 €. Lo ves en 3D y lo encargas en nfctap.tech. Envíos
+      a toda España. Lo imprimimos en España. Pieza de pie, TAP en la barra.
+    caption: Una de cada red, 35 €. NFCTap. Envíos a toda España.
+    carousel_title: Una de cada red, un pack
+    carousel_line: Google y WhatsApp. O dos iguales.
+    carousel_caption: No tienen que ser iguales. Pack NFCTap 35 €. nfctap.tech
+  - spoken_hook: Dos puertas. Un solo atril no llega.
+    body: Entrada y barra son dos gestos. Pack NFCTap 35 €. Lo fabricamos aquí. Encarga en
+      nfctap.tech. Envíos a toda España. Lo imprimimos en España. Pieza de pie, TAP en la
+      barra.
+    caption: Dos puertas, dos piezas. NFCTap 35 €. Con logo 55 €.
+    carousel_title: Dos puertas, dos piezas
+    carousel_line: Entrada y barra. Dos TAP.
+    carousel_caption: Un atril no cubre dos puertas. Pack 35 €. nfctap.tech
+- id: mi_logo
+  theme: marca
+  money_angle: true
+  hook: Tu logo en la barra, no el de catálogo
+  scene: Atril con logo del local, camarero, barra llena.
+  image_extra: ' Lo imprimimos en España.'
+  variants:
+  - spoken_hook: ¿Tu logo en la barra, o el de todos?
+    body: La de stock vale 20 €. Si quieres tu logo en la barra, NFCTap con marca son 30 €.
+      Dos, 55 €. Lo ves en 3D y lo encargas en nfctap.tech. Envíos a toda España.
+    caption: Tu marca, TAP y estrellas. Personalizada NFCTap 30 €. Pack 55 €.
+    carousel_title: La de barra lleva tu marca
+    carousel_line: Con logo 30 €. Dos, 55 €. Mismo TAP.
+    carousel_caption: La de stock es Google, WhatsApp o Instagram. La de logo lleva tu marca.
+      30 € una, 55 € el pack. nfctap.tech
+  - spoken_hook: El icono de catálogo no es tu local.
+    body: Tu marca, TAP y estrellas. Personalizada NFCTap, 30 €. La imprimimos aquí y la ves
+      en 3D. Envíos a toda España. nfctap.tech. Lo imprimimos en España.
+    caption: No un icono de catálogo. Tu logo. NFCTap 30 €. Impreso en España.
+    carousel_title: No un icono de catálogo
+    carousel_line: Tu logo. TAP. Estrellas.
+    carousel_caption: El catálogo es de todos. El logo es tuyo. 30 €. nfctap.tech
+  - spoken_hook: En la barra se tiene que leer tu nombre.
+    body: La pieza habla de ti, no de una G genérica. NFCTap personalizada 30 €. Encarga en
+      nfctap.tech. Envíos a toda España. Lo imprimimos en España.
+    caption: Que se lea tu nombre, no el de catálogo. NFCTap 30 €.
+    carousel_title: Que se lea tu nombre
+    carousel_line: La pieza habla de ti.
+    carousel_caption: La G es de todos. Tu nombre, 30 €. nfctap.tech
+  - spoken_hook: Dos con logo cubren barra y terraza.
+    body: Mismo TAP, tu marca en las dos. Pack NFCTap 55 €. Lo ves en 3D. Encarga en nfctap.tech.
+      Envíos a toda España. Lo imprimimos en España.
+    caption: Dos con tu logo, 55 €. NFCTap. Envíos a toda España.
+    carousel_title: Dos con tu logo, barra y terraza
+    carousel_line: Mismo TAP. Tu marca en las dos.
+    carousel_caption: Pack con logo 55 €. Stock 35 €. nfctap.tech
+- id: factura_ads
+  theme: precio
+  money_angle: true
+  hook: La factura de anuncios ya llegó
+  scene: Cocina, factura impresa, dueño con la mano en la cabeza.
+  image_extra: ' Lo imprimimos en España.'
+  variants:
+  - spoken_hook: La factura de anuncios ya llegó. Otra vez.
+    body: Mismo gasto, mismo mes. NFCTap son 20 € y no se renueva. Lo imprimimos aquí. Encarga
+      en nfctap.tech. Envíos a toda España. Lo imprimimos en España.
+    caption: 20 € una vez, no cada mes. NFCTap. Impreso en España.
+    carousel_title: Veinte euros, una vez
+    carousel_line: Sin renovar. Sin factura de ads.
+    carousel_caption: La factura vuelve. El atril no. NFCTap 20 €. nfctap.tech
+  - spoken_hook: El anuncio te come el margen del café.
+    body: Un café no paga tres campañas. Un atril NFCTap sí cabe en 20 €. Encarga en nfctap.tech.
+      Envíos a toda España. Lo imprimimos en España.
+    caption: Cabe en 20 €, no en tres campañas. NFCTap. Envíos a toda España.
+    carousel_title: Cabe en 20 €, no en tres campañas
+    carousel_line: El café no paga el anuncio. TAP sí.
+    carousel_caption: El margen del café no es una campaña. NFCTap 20 €. nfctap.tech
+  - spoken_hook: Suben el coste por clic. El atril no sube.
+    body: Ellos mueven el precio. NFCTap sigue en 20 €. Lo ves en 3D. Encarga en nfctap.tech.
+      Envíos a toda España. Lo imprimimos en España.
+    caption: El clic sube. NFCTap sigue en 20 €. Pack 35 €.
+    carousel_title: El clic sube. El atril no.
+    carousel_line: Precio de pieza. No de subasta.
+    carousel_caption: La subasta no manda aquí. NFCTap 20 €. nfctap.tech
+  - spoken_hook: Pausas la campaña y te quedas a oscuras.
+    body: El atril no se pausa. NFCTap está encendido cada servicio. Impreso en España. Encarga
+      en nfctap.tech. Envíos a toda España. Lo imprimimos en España.
+    caption: Sin botón de pausa. NFCTap 20 €. Cada servicio.
+    carousel_title: Sin botón de pausa
+    carousel_line: Cada servicio. Encendido.
+    carousel_caption: Pausar ads te apaga. NFCTap no. 20 €. nfctap.tech
+- id: flyer_suelo
+  theme: precio
+  money_angle: true
+  hook: Los flyers acaban en el suelo
+  scene: Acera con papeles de oferta, nadie los recoge.
+  image_extra: ' Pieza de pie, TAP en la barra.'
+  variants:
+  - spoken_hook: Los flyers acaban en el suelo. Otra vez.
+    body: Imprimes cien y duran un día. NFCTap es una pieza, 20 €, todo el mes. Encarga en
+      nfctap.tech. Envíos a toda España. Lo imprimimos en España.
+    caption: Una pieza, no cien papeles. NFCTap 20 €. Impreso en España.
+    carousel_title: Una pieza, no cien papeles
+    carousel_line: Todo el mes. Sin suelo.
+    carousel_caption: El flyer dura un día. NFCTap, el mes. 20 €. nfctap.tech
+  - spoken_hook: Nadie recoge un papel de la acera.
+    body: El gesto está dentro, en la barra. NFCTap. Lo fabricamos aquí. Encarga en nfctap.tech.
+      Envíos a toda España. Lo imprimimos en España. Pieza de pie, TAP en la barra.
+    caption: El gesto es dentro, no en la acera. NFCTap 20 €.
+    carousel_title: El gesto es dentro, no en la acera
+    carousel_line: Barra. TAP. Sin acera.
+    carousel_caption: La acera no reserva. La barra sí. NFCTap 20 €. nfctap.tech
+  - spoken_hook: La oferta impresa ya está mojada.
+    body: El papel no aguanta. NFCTap sí. 20 €. Dos, 35 €. Encarga en nfctap.tech. Envíos
+      a toda España. Lo imprimimos en España. Pieza de pie, TAP en la barra.
+    caption: El papel se moja. La pieza no. NFCTap 20 €. Pack 35 €.
+    carousel_title: El papel se moja. La pieza no.
+    carousel_line: 20 € una. 35 € dos.
+    carousel_caption: Oferta mojada, gesto perdido. NFCTap 20 €. nfctap.tech
+  - spoken_hook: Repartes y no entra nadie al chat.
+    body: El papel no abre WhatsApp. NFCTap sí. Lo ves en 3D. Encarga en nfctap.tech. Envíos
+      a toda España. Lo imprimimos en España. Pieza de pie, TAP en la barra.
+    caption: El papel no abre el chat. NFCTap sí. 20 €.
+    carousel_title: El papel no abre el chat
+    carousel_line: WhatsApp al toque. Sin reparte.
+    carousel_caption: Repartir no es TAP. NFCTap 20 €. nfctap.tech
+- id: una_en_caja
+  theme: precio
+  money_angle: true
+  hook: La única pieza se queda en caja
+  scene: Caja al fondo, terraza llena, nadie se acerca.
+  image_extra: ' Pieza de pie, TAP en la barra.'
+  variants:
+  - spoken_hook: La única pieza se queda en caja. Nadie llega.
+    body: La terraza no camina hasta el ticket. Segunda NFCTap, pack 35 €. Encarga en nfctap.tech.
+      Envíos a toda España. Lo imprimimos en España.
+    caption: La terraza no camina hasta el ticket. Pack NFCTap 35 €.
+    carousel_title: La terraza no camina hasta el ticket
+    carousel_line: Segunda pieza. Pack 35 €.
+    carousel_caption: Caja al fondo, terraza llena. Pack 35 €. nfctap.tech
+  - spoken_hook: El ticket se da de espaldas al cliente.
+    body: El gesto hay que ponerlo donde miran. NFCTap de pie, 20 €, o pack 35 €. Encarga
+      en nfctap.tech. Envíos a toda España. Lo imprimimos en España.
+    caption: Donde miran, no de espaldas. NFCTap 20 € o pack 35 €.
+    carousel_title: Donde miran, no de espaldas
+    carousel_line: De pie. A la vista. TAP.
+    carousel_caption: El ticket de espaldas no se toca. NFCTap sí. nfctap.tech
+  - spoken_hook: La caja es para cobrar, no para el toque.
+    body: El TAP va en la barra. NFCTap 20 €. Lo imprimimos aquí. Encarga en nfctap.tech.
+      Envíos a toda España. Lo imprimimos en España.
+    caption: El TAP no es el TPV. NFCTap 20 €. Impreso en España.
+    carousel_title: El TAP no es el TPV
+    carousel_line: Barra. No caja. TAP.
+    carousel_caption: Cobrar es una cosa. Pedir el toque, otra. NFCTap 20 €. nfctap.tech
+  - spoken_hook: Si solo hay una, elige donde hay gente.
+    body: Gente en terraza, pieza en terraza. O pack de dos, 35 €. Encarga en nfctap.tech.
+      Envíos a toda España. Lo imprimimos en España. Pieza de pie, TAP en la barra.
+    caption: Ponla donde hay gente. O dos, 35 €. NFCTap.
+    carousel_title: Ponla donde hay gente
+    carousel_line: Terraza llena. Pieza ahí. O pack.
+    carousel_caption: Una pieza, el sitio con gente. Dos, 35 €. nfctap.tech
+- id: mes_vs_atril
+  theme: precio
+  money_angle: true
+  hook: Un mes de ads o un atril
+  scene: Calendario en la pared, anuncio tachado, atril en barra.
+  image_extra: ' Pieza de pie, TAP en la barra.'
+  variants:
+  - spoken_hook: Un mes de ads. O un atril de veinte.
+    body: El mes se acaba. NFCTap sigue. 20 €. Lo fabricamos aquí. Encarga en nfctap.tech.
+      Envíos a toda España. Lo imprimimos en España. Pieza de pie, TAP en la barra.
+    caption: El mes se acaba. NFCTap sigue. 20 €. Envíos a toda España.
+    carousel_title: El mes se acaba. El atril sigue.
+    carousel_line: 20 €. Sin mes que vencer.
+    carousel_caption: Un mes tiene fecha. NFCTap no. 20 €. nfctap.tech
+  - spoken_hook: Treinta días de ruido. O una pieza.
+    body: El ruido para. La pieza no. NFCTap 20 €. Lo ves en 3D. Encarga en nfctap.tech. Envíos
+      a toda España. Lo imprimimos en España. Pieza de pie, TAP en la barra.
+    caption: El ruido para. La pieza no. NFCTap 20 €.
+    carousel_title: El ruido para. La pieza no.
+    carousel_line: Una pieza. Sin treinta días.
+    carousel_caption: Treinta días y silencio. O TAP. NFCTap 20 €. nfctap.tech
+  - spoken_hook: El calendario no pide reseñas.
+    body: El atril sí, cada servicio. NFCTap. Impreso en España. Encarga en nfctap.tech. Envíos
+      a toda España. Lo imprimimos en España. Pieza de pie, TAP en la barra.
+    caption: Cada servicio, no cada mes. NFCTap 20 €.
+    carousel_title: Cada servicio, no cada mes
+    carousel_line: El calendario no TAP. El atril sí.
+    carousel_caption: El mes no pide Google. NFCTap sí. 20 €. nfctap.tech
+  - spoken_hook: Renuevas ads o encargas de una vez.
+    body: Una vez, 20 €. Pack 35 €. NFCTap. Encarga en nfctap.tech. Envíos a toda España.
+      Lo imprimimos en España. Pieza de pie, TAP en la barra.
+    caption: 'De una vez: 20 € o pack 35 €. NFCTap.'
+    carousel_title: De una vez, no cada renovación
+    carousel_line: 20 €. 35 € el pack. TAP.
+    carousel_caption: Renovar o encargar. NFCTap 20 €. nfctap.tech
+- id: pack_mixto
+  theme: precio
+  money_angle: true
+  hook: Google y WhatsApp en el mismo pack
+  scene: Dos atriles distintos en barra, uno G y otro chat.
+  image_extra: ' Pieza de pie, TAP en la barra.'
+  variants:
+  - spoken_hook: Google en barra. WhatsApp al lado. Pack.
+    body: Reseña y reserva, 35 € las dos. NFCTap. Lo ves en 3D. Encarga en nfctap.tech. Envíos
+      a toda España. Lo imprimimos en España. Pieza de pie, TAP en la barra.
+    caption: Reseña y reserva, 35 €. NFCTap. Envíos a toda España.
+    carousel_title: Reseña y reserva, un pack
+    carousel_line: Google y WhatsApp. 35 €.
+    carousel_caption: No tienen que ser iguales. Pack 35 €. nfctap.tech
+  - spoken_hook: Instagram y WhatsApp, treinta y cinco.
+    body: Perfil y chat. Pack NFCTap 35 €. Lo imprimimos aquí. Encarga en nfctap.tech. Envíos
+      a toda España. Lo imprimimos en España. Pieza de pie, TAP en la barra.
+    caption: Perfil y chat, 35 €. NFCTap. Impreso en España.
+    carousel_title: Perfil y chat, un pack
+    carousel_line: Instagram y WhatsApp. 35 €.
+    carousel_caption: Dos redes, un pack. 35 €. nfctap.tech
+  - spoken_hook: Una para Maps. Otra para el chat.
+    body: Quien opina y quien reserva no es el mismo gesto. Pack 35 €. Encarga en nfctap.tech.
+      Envíos a toda España. Lo imprimimos en España. Pieza de pie, TAP en la barra.
+    caption: Dos gestos, 35 €. NFCTap. Lo ves en 3D.
+    carousel_title: Dos gestos, un pack
+    carousel_line: Maps y chat. No es el mismo TAP.
+    carousel_caption: Opinar y reservar. Pack 35 €. nfctap.tech
+  - spoken_hook: Con logo las dos, cincuenta y cinco.
+    body: Tu marca en barra y terraza. Pack NFCTap 55 €. Encarga en nfctap.tech. Envíos a
+      toda España. Lo imprimimos en España. Pieza de pie, TAP en la barra.
+    caption: Tu marca en las dos. Pack 55 €. NFCTap.
+    carousel_title: Tu marca en barra y terraza
+    carousel_line: Pack con logo. 55 €.
+    carousel_caption: Stock 35 €. Con logo 55 €. nfctap.tech

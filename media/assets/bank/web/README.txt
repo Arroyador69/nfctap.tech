@@ -1,6 +1,10 @@
-CIERRE · grabación de nfctap.tech.
+CIERRE · grabación LARGA de nfctap.tech en uso.
 
-Ya está: web nfctap.tech.mov
+Carpeta:
+  /Users/albertogarciaarroyo/impresora 3d/media/assets/bank/web/
 
-Si grabas otra, sustituye el archivo de esta carpeta.
-Se usan los primeros 5 segundos, a 1080×1920, sin recortar la web.
+Pega aquí el MOV/MP4 nuevo (puede durar lo que quiera). Si dejas el viejo,
+el pack usa el más pesado (el largo).
+
+Cada Reel corta un trozo distinto (~6 s) y va recorriendo el vídeo.
+Entre todos los Reels se ve casi entero. No recorta siempre el mismo segundo 8.

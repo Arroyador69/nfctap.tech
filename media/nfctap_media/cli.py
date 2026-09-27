@@ -95,8 +95,12 @@ def main(argv: list[str] | None = None) -> int:
         ensure_dirs()
         print(f"1) Pieza acabada (hook): {RESULTADO}")
         print(f"2) Proceso impresión (cuerpo): {PROCESO}")
-        print(f"3) Web nfctap.tech (cierre): {WEB}")
+        print(f"3) Web nfctap.tech larga (cierre a trozos): {WEB}")
         print(f"4) Fotos del carrusel (3 JPG/PNG): {IMAGENES}")
+        subprocess.run(
+            ["open", str(RESULTADO), str(PROCESO), str(WEB)],
+            check=False,
+        )
         return 0
 
     if args.cmd == "clean":

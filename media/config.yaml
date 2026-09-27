@@ -15,10 +15,10 @@ voice_pocket_male: jean
 voice_azure_female: es-ES-Ximena:DragonHDLatestNeural
 voice_azure_male: es-ES-Tristan:DragonHDLatestNeural
 voice_female: es-ES-XimenaNeural
-voice_female_rate: "-3%"
+voice_female_rate: "+8%"
 voice_female_pitch: "+0Hz"
 voice_male: es-ES-AlvaroNeural
-voice_male_rate: "-2%"
+voice_male_rate: "+8%"
 voice_male_pitch: "+0Hz"
 voice_volume: "+0%"
 story_seconds: 5.5

@@ -46,6 +46,56 @@ stories:
     kicker: Encarga
     phrase: Envíos a toda España.
     cta: nfctap.tech
+  - id: papel
+    kind: recuerda
+    kicker: Recuerda
+    phrase: El papel se moja. El atril no.
+    cta: Un atril NFC · TAP
+  - id: speech
+    kind: recuerda
+    kicker: Recuerda
+    phrase: El equipo no tiene que hacer el speech.
+    cta: El atril pide por ti
+  - id: ficha
+    kind: recuerda
+    kicker: Recuerda
+    phrase: Barra llena. Ficha vacía. Así no.
+    cta: Pide la reseña en el local
+  - id: clic
+    kind: recuerda
+    kicker: Recuerda
+    phrase: Pagas por clic. El atril se paga una vez.
+    cta: 20 € · nfctap.tech
+  - id: terraza
+    kind: recuerda
+    kicker: Recuerda
+    phrase: La terraza no ve la caja.
+    cta: Pack 35 €
+  - id: logo
+    kind: recuerda
+    kicker: Recuerda
+    phrase: En la barra, tu logo.
+    cta: Personalizada 30 €
+  - id: mixto
+    kind: recuerda
+    kicker: Recuerda
+    phrase: Google y WhatsApp. Un pack.
+    cta: 35 € · nfctap.tech
+  - id: tresd
+    kind: registro
+    kicker: Encarga
+    phrase: Lo ves en 3D. Negro y amarillo.
+    cta: nfctap.tech
+  - id: veinticuatro
+    kind: registro
+    kicker: Encarga
+    phrase: Sale en 24 h. España.
+    cta: nfctap.tech
+  - id: bizum
+    kind: registro
+    kicker: Encarga
+    phrase: Pagas con tarjeta, Apple Pay o Bizum.
+    cta: nfctap.tech
   - id: contacto
     kind: registro
     kicker: Encarga

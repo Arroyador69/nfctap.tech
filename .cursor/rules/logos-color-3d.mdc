@@ -1,0 +1,14 @@
+---
+description: Logos y zonas de color en diseños 3D NFCTap — nunca huecos vacíos
+alwaysApply: true
+---
+
+# Logos y color en piezas 3D
+
+En copas, placas y caras planas con filamento de varios colores:
+
+1. **Cada zona de color del mockup/JPG debe ser sólido en el STL** del color correspondiente. Prohibido dejar el área “amarilla/blanca” como hueco del otro color: en la impresora parece vacío.
+2. **Logos (Wi‑Fi, menú, flecha, tipografía)** van en relieve o incrustados en esa zona sólida, no solo en el render JPG.
+3. Si hay dos bandas (p. ej. vaso arriba amarillo / abajo blanco), cada banda es malla llena; los iconos restan del amarillo y suman en el blanco (o al revés), y se **agrupan** al imprimir.
+4. En bases con NFC, los logos TAP van en **una sola cara** de la placa base (la de arriba), junto a cada pozo — no en el encaje cruz.
+5. Colores de stock AD5X a recordar: **negro, blanco, amarillo**.

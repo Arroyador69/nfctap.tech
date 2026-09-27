@@ -9,18 +9,44 @@ from nfctap_media.paths import ROOT
 
 
 @dataclass(frozen=True)
+class Variant:
+    spoken_hook: str
+    text: str
+    caption: str
+    carousel_title: str
+    carousel_line: str
+    carousel_caption: str
+
+
+@dataclass(frozen=True)
 class Pain:
     id: str
     theme: str
     money_angle: bool
     hook: str
-    spoken_hook: str
-    carousel_title: str
-    carousel_line: str
-    carousel_caption: str
     scene: str
     image_extra: str
-    scripts: list[str]
+    variants: tuple[Variant, ...]
+
+    @property
+    def spoken_hook(self) -> str:
+        return self.variants[0].spoken_hook
+
+    @property
+    def scripts(self) -> list[str]:
+        return [v.text for v in self.variants]
+
+    @property
+    def carousel_title(self) -> str:
+        return self.variants[0].carousel_title
+
+    @property
+    def carousel_line(self) -> str:
+        return self.variants[0].carousel_line
+
+    @property
+    def carousel_caption(self) -> str:
+        return self.variants[0].carousel_caption
 
 
 @dataclass(frozen=True)
@@ -45,6 +71,10 @@ class Script:
     spoken_hook: str
     text: str
     source: str
+    caption: str
+    carousel_title: str
+    carousel_line: str
+    carousel_caption: str
 
 
 def _clean(text: str) -> str:
@@ -78,8 +108,7 @@ def split_body_and_close(text: str, close: str | None = None) -> tuple[str, str]
     """El cuerpo acaba en el producto. La web se locuta en el cierre."""
     spoken_close = _clean(close or CLOSE_SPOKEN)
     parts = [p.strip() for p in re.split(r"(?<=[.!?])\s+", _clean(text)) if p.strip()]
-    while len(parts) > 1 and _is_cta_sentence(parts[-1]):
-        parts.pop()
+    parts = [p for p in parts if not _is_cta_sentence(p)]
     if parts:
         last = parts[-1]
         last = re.sub(
@@ -111,24 +140,74 @@ def for_speech(text: str, cfg: Config) -> str:
     return out
 
 
+def _variant_from_raw(
+    raw: dict,
+    *,
+    fallback_hook: str,
+    fallback_title: str,
+    fallback_line: str,
+    fallback_caption: str,
+    fallback_body: str,
+) -> Variant:
+    body = _clean(raw.get("body") or raw.get("text") or fallback_body)
+    return Variant(
+        spoken_hook=_clean(raw.get("spoken_hook") or fallback_hook),
+        text=body,
+        caption=_clean(raw.get("caption") or ""),
+        carousel_title=_clean(raw.get("carousel_title") or fallback_title),
+        carousel_line=_clean(raw.get("carousel_line") or fallback_line),
+        carousel_caption=_clean(raw.get("carousel_caption") or fallback_caption),
+    )
+
+
 def load_pains() -> list[Pain]:
     raw = load_yaml("pains.yaml")["pains"]
-    return [
-        Pain(
-            id=item["id"],
-            theme=item["theme"],
-            money_angle=bool(item["money_angle"]),
-            hook=item["hook"],
-            spoken_hook=_clean(item.get("spoken_hook") or item["hook"]),
-            carousel_title=_clean(item.get("carousel_title") or ""),
-            carousel_line=_clean(item.get("carousel_line") or ""),
-            carousel_caption=_clean(item.get("carousel_caption") or ""),
-            scene=item["scene"],
-            image_extra=item["image_extra"],
-            scripts=[_clean(s) for s in item["scripts"]],
+    pains: list[Pain] = []
+    for item in raw:
+        hook = _clean(item["hook"])
+        spoken = _clean(item.get("spoken_hook") or hook)
+        title = _clean(item.get("carousel_title") or "")
+        line = _clean(item.get("carousel_line") or "")
+        cap = _clean(item.get("carousel_caption") or "")
+        variants_raw = list(item.get("variants") or [])
+        if variants_raw:
+            variants = tuple(
+                _variant_from_raw(
+                    v,
+                    fallback_hook=spoken,
+                    fallback_title=title,
+                    fallback_line=line,
+                    fallback_caption=cap,
+                    fallback_body="",
+                )
+                for v in variants_raw
+            )
+        else:
+            variants = tuple(
+                Variant(
+                    spoken_hook=spoken,
+                    text=_clean(script),
+                    caption=_clean(item.get("reel_caption") or ""),
+                    carousel_title=title,
+                    carousel_line=line,
+                    carousel_caption=cap,
+                )
+                for script in item.get("scripts") or []
+            )
+        if not variants:
+            raise RuntimeError(f"Dolor {item.get('id')} sin variantes ni scripts")
+        pains.append(
+            Pain(
+                id=item["id"],
+                theme=item["theme"],
+                money_angle=bool(item["money_angle"]),
+                hook=hook,
+                scene=item["scene"],
+                image_extra=item["image_extra"],
+                variants=variants,
+            )
         )
-        for item in raw
-    ]
+    return pains
 
 
 def load_personas() -> list[Persona]:
@@ -158,14 +237,16 @@ def _fold(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip().lower()
 
 
-def validate_carousel_copy(pain: Pain) -> list[str]:
+def validate_carousel_copy(pain: Pain, variant: Variant | None = None) -> list[str]:
     """El carrusel no puede reciclar el hook ni el locutado del Reel."""
+    item = variant or pain.variants[0]
     errors: list[str] = []
-    title = _fold(pain.carousel_title)
-    line = _fold(pain.carousel_line)
-    caption = _fold(pain.carousel_caption)
-    hook = _fold(pain.spoken_hook)
+    title = _fold(item.carousel_title)
+    line = _fold(item.carousel_line)
+    caption = _fold(item.carousel_caption)
+    hook = _fold(item.spoken_hook)
     written = _fold(pain.hook)
+    body = _fold(item.text)
     if not title:
         errors.append("falta carousel_title")
     if not line:
@@ -181,13 +262,25 @@ def validate_carousel_copy(pain: Pain) -> list[str]:
         errors.append("el carrusel arranca como el hook del Reel")
     if hook and hook in caption:
         errors.append("el caption del carrusel copia el hook oral")
-    for script in pain.scripts:
-        body = _fold(script)
-        if line and (line in body or body in line):
-            errors.append("carousel_line copia el guion del Reel")
-        head = " ".join(body.split()[:12])
-        if head and (head in caption or head in line):
-            errors.append("el carrusel copia el arranque del locutado")
+    if line and (line in body or body in line):
+        errors.append("carousel_line copia el guion del Reel")
+    head = " ".join(body.split()[:12])
+    if head and (head in caption or head in line):
+        errors.append("el carrusel copia el arranque del locutado")
+    return errors
+
+
+def validate_variant(pain: Pain, variant: Variant, cfg: Config) -> list[str]:
+    errors = validate_script(variant.text, cfg, spoken_hook=variant.spoken_hook)
+    errors.extend(validate_carousel_copy(pain, variant))
+    cap = _fold(variant.caption)
+    if not cap:
+        errors.append("falta caption de publicación")
+    if cap and cap in {_fold(variant.text), _fold(variant.spoken_hook)}:
+        errors.append("el caption copia el locutado o el hook")
+    hook_head = " ".join(_fold(variant.spoken_hook).split()[:8])
+    if hook_head and hook_head in cap:
+        errors.append("el caption arranca como el hook oral")
     return errors
 
 
@@ -236,21 +329,29 @@ def pick_persona(persona_id: str | None = None) -> Persona:
     return random.choice(personas)
 
 
-def template_script(pain: Pain, persona: Persona, cfg: Config) -> Script:
-    copy_errors = validate_carousel_copy(pain)
-    if copy_errors:
-        raise RuntimeError(f"Carrusel inválido {pain.id}: {copy_errors}")
-    text = random.choice(pain.scripts)
-    errors = validate_script(text, cfg, spoken_hook=pain.spoken_hook)
+def template_script(
+    pain: Pain, persona: Persona, cfg: Config, variant: Variant | None = None
+) -> Script:
+    chosen = variant
+    if chosen is None:
+        from nfctap_media.history import variant_is_used
+
+        unused = [v for v in pain.variants if not variant_is_used(v)]
+        chosen = (unused or list(pain.variants))[0]
+    errors = validate_variant(pain, chosen, cfg)
     if errors:
         raise RuntimeError(f"Plantilla inválida {pain.id}: {errors}")
     return Script(
         pain_id=pain.id,
         persona_id=persona.id,
         hook=pain.hook,
-        spoken_hook=pain.spoken_hook,
-        text=text,
+        spoken_hook=chosen.spoken_hook,
+        text=chosen.text,
         source="template",
+        caption=chosen.caption,
+        carousel_title=chosen.carousel_title,
+        carousel_line=chosen.carousel_line,
+        carousel_caption=chosen.carousel_caption,
     )
 
 
@@ -299,6 +400,10 @@ def llm_script(pain: Pain, persona: Persona, cfg: Config) -> Script | None:
             spoken_hook=pain.spoken_hook,
             text=text,
             source="ollama",
+            caption=pain.variants[0].caption,
+            carousel_title=pain.carousel_title,
+            carousel_line=pain.carousel_line,
+            carousel_caption=pain.carousel_caption,
         )
     except Exception:
         return None
@@ -310,10 +415,17 @@ def build_script(
     persona_id: str | None = None,
     money_only: bool = False,
     use_llm: bool = False,
+    variant: Variant | None = None,
 ) -> tuple[Pain, Persona, Script]:
-    pain = pick_pain(pain_id, money_only=money_only)
     persona = pick_persona(persona_id)
+    if variant is None:
+        from nfctap_media.history import pick_unused_variant
+
+        money = money_only or (persona.id == "andres")
+        pain, variant = pick_unused_variant(money=money, pain_id=pain_id)
+    else:
+        pain = pick_pain(pain_id, money_only=money_only)
     script = llm_script(pain, persona, cfg) if use_llm else None
     if script is None:
-        script = template_script(pain, persona, cfg)
+        script = template_script(pain, persona, cfg, variant=variant)
     return pain, persona, script
