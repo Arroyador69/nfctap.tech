@@ -128,14 +128,23 @@ export async function hasListaHomeCookie(id: string) {
 async function readBlob(): Promise<ListaStore | null> {
   if (!process.env.BLOB_READ_WRITE_TOKEN) return null;
   try {
-    const { list } = await import("@vercel/blob");
+    const { get, list } = await import("@vercel/blob");
+
+    // Lectura fiable de Blob privado (fetch sin token fallaba → lista vacía al recargar).
+    const byPath = await get(BLOB_KEY, { access: "private" });
+    if (byPath?.statusCode === 200 && byPath.stream) {
+      const text = await new Response(byPath.stream).text();
+      const raw = JSON.parse(text) as Partial<ListaStore>;
+      return { lists: raw.lists || {}, homes: raw.homes || {} };
+    }
+
     const { blobs } = await list({ prefix: BLOB_KEY, limit: 5 });
     const hit = blobs.find((b) => b.pathname === BLOB_KEY || b.pathname.endsWith(BLOB_KEY));
     if (!hit) return null;
-    const bust = hit.url.includes("?") ? `&_=${Date.now()}` : `?_=${Date.now()}`;
-    const res = await fetch(`${hit.url}${bust}`, { cache: "no-store" });
-    if (!res.ok) return null;
-    const raw = (await res.json()) as Partial<ListaStore>;
+    const byUrl = await get(hit.url, { access: "private" });
+    if (!byUrl || byUrl.statusCode !== 200 || !byUrl.stream) return null;
+    const text = await new Response(byUrl.stream).text();
+    const raw = JSON.parse(text) as Partial<ListaStore>;
     return { lists: raw.lists || {}, homes: raw.homes || {} };
   } catch {
     return null;
@@ -148,6 +157,7 @@ async function writeBlob(data: ListaStore) {
     access: "private",
     addRandomSuffix: false,
     allowOverwrite: true,
+    contentType: "application/json",
     cacheControlMaxAge: 0,
   });
 }
@@ -180,9 +190,8 @@ declare global {
 async function load(): Promise<ListaStore> {
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     const fromBlob = await readBlob();
+    const mem = globalThis.__nfctab_listas;
     if (fromBlob) {
-      const mem = globalThis.__nfctab_listas;
-      // Si la memoria de esta instancia tiene casas y el blob aún no, no las pierdas.
       if (mem?.homes) {
         for (const [k, v] of Object.entries(mem.homes)) {
           const blobHome = fromBlob.homes[k];
@@ -191,10 +200,18 @@ async function load(): Promise<ListaStore> {
           }
         }
       }
+      if (mem?.lists) {
+        for (const [k, v] of Object.entries(mem.lists)) {
+          const blobList = fromBlob.lists[k];
+          if (!blobList || v.updatedAt > (blobList.updatedAt || "")) {
+            fromBlob.lists[k] = v;
+          }
+        }
+      }
       globalThis.__nfctab_listas = fromBlob;
       return fromBlob;
     }
-    return globalThis.__nfctab_listas ?? emptyStore();
+    return mem ?? emptyStore();
   }
   if (!globalThis.__nfctab_listas) {
     globalThis.__nfctab_listas = readDisk() ?? emptyStore();
@@ -206,7 +223,13 @@ async function persist(data: ListaStore) {
   globalThis.__nfctab_listas = data;
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     await writeBlob(data);
+    // Releer no hace falta: memoria + Blob ya tienen lo mismo.
     return;
+  }
+  if (process.env.VERCEL) {
+    throw new Error(
+      "Falta BLOB_READ_WRITE_TOKEN en Vercel. Sin Blob la lista no se guarda al recargar.",
+    );
   }
   writeDisk(data);
 }
