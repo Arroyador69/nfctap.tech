@@ -61,7 +61,6 @@ export async function POST(req: Request, ctx: Ctx) {
       }
       return NextResponse.json({
         ok: true,
-        ip: result.ip,
         message: "Wi‑Fi de casa registrada. La lista solo abre desde esta red.",
       });
     }
