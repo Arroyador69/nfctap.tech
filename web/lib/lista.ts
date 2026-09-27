@@ -1,9 +1,12 @@
+import { createHmac } from "crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { cookies } from "next/headers";
 import { tmpdir } from "os";
 import path from "path";
 
 const BLOB_KEY = "nfctab-listas.json";
 const ID_RE = /^[a-z0-9-]{3,32}$/;
+const COOKIE_PREFIX = "lista_home_";
 
 export type ListaItem = {
   id: string;
@@ -75,11 +78,39 @@ export function clientIpFromHeaders(h: Headers): string {
   return normalizeIp(real);
 }
 
+function homeSecret() {
+  return (
+    process.env.LISTA_HOME_SECRET ||
+    process.env.DASHBOARD_SECRET ||
+    process.env.DASHBOARD_PASSWORD ||
+    "nfctab"
+  );
+}
+
 /** Misma clave que el dashboard (DASHBOARD_PASSWORD o nfctab por defecto). */
 function homeSecretOk(input: string) {
-  const expected =
-    process.env.LISTA_HOME_SECRET || process.env.DASHBOARD_PASSWORD || "nfctab";
+  const expected = process.env.LISTA_HOME_SECRET || process.env.DASHBOARD_PASSWORD || "nfctab";
   return Boolean(input) && input === expected;
+}
+
+function signListaHome(id: string) {
+  return createHmac("sha256", homeSecret()).update(`lista:${id}`).digest("hex").slice(0, 32);
+}
+
+export async function setListaHomeCookie(id: string) {
+  const jar = await cookies();
+  jar.set(`${COOKIE_PREFIX}${id}`, signListaHome(id), {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 400,
+  });
+}
+
+export async function hasListaHomeCookie(id: string) {
+  const jar = await cookies();
+  return jar.get(`${COOKIE_PREFIX}${id}`)?.value === signListaHome(id);
 }
 
 async function readBlob(): Promise<ListaStore | null> {
@@ -89,7 +120,8 @@ async function readBlob(): Promise<ListaStore | null> {
     const { blobs } = await list({ prefix: BLOB_KEY, limit: 5 });
     const hit = blobs.find((b) => b.pathname === BLOB_KEY || b.pathname.endsWith(BLOB_KEY));
     if (!hit) return null;
-    const res = await fetch(hit.url);
+    const bust = hit.url.includes("?") ? `&_=${Date.now()}` : `?_=${Date.now()}`;
+    const res = await fetch(`${hit.url}${bust}`, { cache: "no-store" });
     if (!res.ok) return null;
     const raw = (await res.json()) as Partial<ListaStore>;
     return { lists: raw.lists || {}, homes: raw.homes || {} };
@@ -104,6 +136,7 @@ async function writeBlob(data: ListaStore) {
     access: "private",
     addRandomSuffix: false,
     allowOverwrite: true,
+    cacheControlMaxAge: 0,
   });
 }
 
@@ -134,7 +167,22 @@ declare global {
 
 async function load(): Promise<ListaStore> {
   if (process.env.BLOB_READ_WRITE_TOKEN) {
-    return (await readBlob()) ?? emptyStore();
+    const fromBlob = await readBlob();
+    if (fromBlob) {
+      const mem = globalThis.__nfctab_listas;
+      // Si la memoria de esta instancia tiene casas y el blob aún no, no las pierdas.
+      if (mem?.homes) {
+        for (const [k, v] of Object.entries(mem.homes)) {
+          const blobHome = fromBlob.homes[k];
+          if (!blobHome || blobHome.ips.length < v.ips.length) {
+            fromBlob.homes[k] = v;
+          }
+        }
+      }
+      globalThis.__nfctab_listas = fromBlob;
+      return fromBlob;
+    }
+    return globalThis.__nfctab_listas ?? emptyStore();
   }
   if (!globalThis.__nfctab_listas) {
     globalThis.__nfctab_listas = readDisk() ?? emptyStore();
@@ -161,9 +209,12 @@ function clampQty(n: unknown) {
   return Math.min(99, Math.max(1, Math.round(v)));
 }
 
-/** Solo Wi‑Fi de casa (IP pública registrada). En local, localhost pasa. */
+/** Casa = cookie de activación o misma IP pública del router. */
 export async function assertListaHome(id: string, ip: string): Promise<ListaAccess> {
   const normalized = normalizeIp(ip);
+  if (await hasListaHomeCookie(id)) {
+    return { ok: true, ip: normalized || "cookie" };
+  }
   if (process.env.NODE_ENV !== "production" && isLocalIp(normalized || "127.0.0.1")) {
     return { ok: true, ip: normalized || "127.0.0.1" };
   }
@@ -209,6 +260,7 @@ export async function registerListaHome(
     data.homes[id] = { ips, updatedAt: now };
     if (!data.lists[id]) data.lists[id] = emptyLista(id);
     await persist(data);
+    await setListaHomeCookie(id);
     return { ok: true, ip: normalized };
   } catch {
     return {
