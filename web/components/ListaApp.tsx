@@ -152,6 +152,11 @@ export function ListaApp({
   const cameraRef = useRef<HTMLInputElement>(null);
   const itemCameraRef = useRef<HTMLInputElement>(null);
   const [photoTargetId, setPhotoTargetId] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<null | {
+    kind: "item" | "photo1" | "photo2" | "clearDone";
+    item?: ListaItemView;
+  }>(null);
+  const [viewer, setViewer] = useState<ListaItemView | null>(null);
 
   const pending = useMemo(() => lista.items.filter((i) => !i.done), [lista]);
   const done = useMemo(() => lista.items.filter((i) => i.done), [lista]);
@@ -226,9 +231,7 @@ export function ListaApp({
 
   async function setQty(item: ListaItemView, qty: number) {
     if (qty < 1) {
-      await mutate(() =>
-        fetch(`/api/lista/${listId}?itemId=${encodeURIComponent(item.id)}`, { method: "DELETE" }),
-      );
+      setConfirm({ kind: "item", item });
       return;
     }
     await mutate(() =>
@@ -250,13 +253,13 @@ export function ListaApp({
     );
   }
 
-  async function remove(item: ListaItemView) {
+  async function doRemove(item: ListaItemView) {
     await mutate(() =>
       fetch(`/api/lista/${listId}?itemId=${encodeURIComponent(item.id)}`, { method: "DELETE" }),
     );
   }
 
-  async function clearDone() {
+  async function doClearDone() {
     await mutate(() =>
       fetch(`/api/lista/${listId}`, {
         method: "POST",
@@ -266,7 +269,7 @@ export function ListaApp({
     );
   }
 
-  async function clearPhoto(item: ListaItemView) {
+  async function doClearPhoto(item: ListaItemView) {
     await mutate(() =>
       fetch(`/api/lista/${listId}`, {
         method: "POST",
@@ -274,6 +277,28 @@ export function ListaApp({
         body: JSON.stringify({ action: "clearPhoto", itemId: item.id }),
       }),
     );
+    setViewer(null);
+  }
+
+  async function onConfirmYes() {
+    if (!confirm) return;
+    const c = confirm;
+    setConfirm(null);
+    if (c.kind === "item" && c.item) {
+      await doRemove(c.item);
+      return;
+    }
+    if (c.kind === "clearDone") {
+      await doClearDone();
+      return;
+    }
+    if (c.kind === "photo1" && c.item) {
+      setConfirm({ kind: "photo2", item: c.item });
+      return;
+    }
+    if (c.kind === "photo2" && c.item) {
+      await doClearPhoto(c.item);
+    }
   }
 
   async function refresh() {
@@ -449,8 +474,8 @@ export function ListaApp({
                   {item.photoSrc ? (
                     <button
                       type="button"
-                      aria-label="Quitar foto"
-                      onClick={() => clearPhoto(item)}
+                      aria-label="Ver foto"
+                      onClick={() => setViewer(item)}
                       className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-[#f0ebe3]"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -495,7 +520,7 @@ export function ListaApp({
                   <button
                     type="button"
                     aria-label="Quitar"
-                    onClick={() => remove(item)}
+                    onClick={() => setConfirm({ kind: "item", item })}
                     className="grid h-9 w-9 place-items-center rounded-xl text-[#8a8173]"
                   >
                     ×
@@ -514,7 +539,7 @@ export function ListaApp({
               </h2>
               <button
                 type="button"
-                onClick={clearDone}
+                onClick={() => setConfirm({ kind: "clearDone" })}
                 className="text-sm text-[#b0892c] underline-offset-2 hover:underline"
               >
                 Limpiar
@@ -535,12 +560,14 @@ export function ListaApp({
                     ✓
                   </button>
                   {item.photoSrc ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={item.photoSrc}
-                      alt=""
-                      className="h-10 w-10 shrink-0 rounded-lg object-cover"
-                    />
+                    <button type="button" onClick={() => setViewer(item)} className="shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={item.photoSrc}
+                        alt=""
+                        className="h-10 w-10 rounded-lg object-cover"
+                      />
+                    </button>
                   ) : null}
                   <span className="min-w-0 flex-1 text-base line-through">{item.text}</span>
                   {item.qty > 1 ? (
@@ -549,7 +576,7 @@ export function ListaApp({
                   <button
                     type="button"
                     aria-label="Quitar"
-                    onClick={() => remove(item)}
+                    onClick={() => setConfirm({ kind: "item", item })}
                     className="grid h-9 w-9 place-items-center text-[#8a8173]"
                   >
                     ×
@@ -560,6 +587,90 @@ export function ListaApp({
           </section>
         ) : null}
       </div>
+
+      {viewer?.photoSrc ? (
+        <div className="fixed inset-0 z-50 flex flex-col bg-black/80 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
+          <p className="mb-3 text-center text-sm text-white/80">{viewer.text}</p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={viewer.photoSrc}
+            alt={viewer.text}
+            className="mx-auto max-h-[60vh] w-full max-w-lg rounded-2xl object-contain"
+          />
+          <div className="mx-auto mt-4 flex w-full max-w-lg flex-col gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                setPhotoTargetId(viewer.id);
+                setViewer(null);
+                itemCameraRef.current?.click();
+              }}
+              className="rounded-2xl bg-white px-4 py-3 font-semibold text-[#1c1915]"
+            >
+              Cambiar foto
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setConfirm({ kind: "photo1", item: viewer });
+                setViewer(null);
+              }}
+              className="rounded-2xl border border-white/40 px-4 py-3 font-semibold text-white"
+            >
+              Quitar foto
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewer(null)}
+              className="rounded-2xl px-4 py-3 text-white/80"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {confirm ? (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/45 p-4 sm:items-center">
+          <div className="w-full max-w-sm rounded-3xl bg-[#f6f1e8] p-5 shadow-xl">
+            <p className="font-[family-name:var(--font-display)] text-xl text-[#1c1915]">
+              {confirm.kind === "item"
+                ? "¿Eliminar de la lista?"
+                : confirm.kind === "photo1"
+                  ? "¿Quitar la foto?"
+                  : confirm.kind === "photo2"
+                    ? "¿Seguro del todo?"
+                    : "¿Limpiar comprados?"}
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-[#5c564c]">
+              {confirm.kind === "item"
+                ? `Se borrará «${confirm.item?.text || ""}»${confirm.item?.hasPhoto ? " y su foto" : ""}.`
+                : confirm.kind === "photo1"
+                  ? `Se quitará la foto de «${confirm.item?.text || ""}». El producto sigue en la lista.`
+                  : confirm.kind === "photo2"
+                    ? "Última confirmación: la foto no se podrá recuperar."
+                    : "Se borrarán todos los ítems marcados como comprados."}
+            </p>
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirm(null)}
+                className="flex-1 rounded-2xl border border-[#1c1915] px-4 py-3 font-semibold text-[#1c1915]"
+              >
+                No
+              </button>
+              <button
+                type="button"
+                onClick={() => void onConfirmYes()}
+                className="flex-1 rounded-2xl bg-[#1c1915] px-4 py-3 font-semibold text-[#f6f1e7]"
+              >
+                Sí
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
