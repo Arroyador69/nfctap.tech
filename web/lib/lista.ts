@@ -259,8 +259,8 @@ export async function assertListaHome(id: string, ip: string): Promise<ListaAcce
     return { ok: false, reason: "sin_activar", ip: normalized };
   }
   if (normalized && home.ips.includes(normalized)) {
-    // Misma Wi‑Fi de casa: deja cookie para este navegador también.
-    await setListaHomeCookie(id);
+    // Misma Wi‑Fi de casa. La cookie la pone la API al activar (no aquí:
+    // en el render de la página Next no deja escribir cookies → 500).
     return { ok: true, ip: normalized };
   }
   if (home.ips.length === 0) {
@@ -291,7 +291,7 @@ export async function registerListaHome(
     data.homes[id] = { ips, updatedAt: now };
     if (!data.lists[id]) data.lists[id] = emptyLista(id);
     await persist(data);
-    await setListaHomeCookie(id);
+    // Cookie: solo desde Route Handler (Set-Cookie). No en Server Component.
     return { ok: true, ip: normalized || "cookie" };
   } catch {
     return {

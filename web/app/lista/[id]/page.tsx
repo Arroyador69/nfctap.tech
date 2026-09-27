@@ -5,17 +5,16 @@ import {
   getLista,
   listaIdOk,
   listaPublicView,
-  registerListaHome,
 } from "@/lib/lista";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ activar?: string; ok?: string }>;
+  searchParams: Promise<{ activar?: string; ok?: string; err?: string }>;
 };
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -31,29 +30,22 @@ export default async function ListaPage({ params, searchParams }: Props) {
   const sp = await searchParams;
   if (!listaIdOk(id)) notFound();
 
-  const ip = clientIpFromHeaders(await headers());
-  let activateError: string | undefined;
-  const justActivated = sp.ok === "1";
-
-  // Activar desde ?activar=… y abrir la lista YA (sin redirect, que perdía la cookie).
+  // La cookie solo se puede escribir en un Route Handler, no en este render.
   if (sp.activar?.trim()) {
-    const result = await registerListaHome(id, ip, sp.activar.trim());
-    if (result.ok) {
-      return (
-        <ListaApp
-          listId={id}
-          initial={listaPublicView(await getLista(id))}
-          justActivated
-        />
-      );
-    }
-    activateError = result.error;
+    redirect(
+      `/api/lista/${id}/activar?secret=${encodeURIComponent(sp.activar.trim())}`,
+    );
   }
 
+  const ip = clientIpFromHeaders(await headers());
   const access = await assertListaHome(id, ip);
   if (!access.ok) {
     return (
-      <ListaLocked listId={id} reason={access.reason} activateError={activateError} />
+      <ListaLocked
+        listId={id}
+        reason={access.reason}
+        activateError={sp.err || undefined}
+      />
     );
   }
 
@@ -61,7 +53,7 @@ export default async function ListaPage({ params, searchParams }: Props) {
     <ListaApp
       listId={id}
       initial={listaPublicView(await getLista(id))}
-      justActivated={justActivated}
+      justActivated={sp.ok === "1"}
     />
   );
 }
