@@ -332,7 +332,6 @@ export function ListaApp({
       return;
     }
 
-    const sinFoto = vivos.filter((it) => !it.photoSrc);
     const conFoto = vivos.filter((it) => it.photoSrc);
     const textoJunto = shareTextSinFotos(vivos);
 
