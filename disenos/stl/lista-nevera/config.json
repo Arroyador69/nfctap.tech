@@ -4,9 +4,11 @@
   "forma": "circulo",
   "cuerpo": "negro",
   "acento": "blanco",
+  "aro": "amarillo",
   "archivos": [
     "01_cuerpo.stl",
-    "02_acento.stl"
+    "02_acento.stl",
+    "03_aro.stl"
   ],
   "placa": [
     38.0,
@@ -14,6 +16,10 @@
     2.0
   ],
   "relieve": 0.45,
+  "aro_mm": [
+    33.6,
+    36.8
+  ],
   "url": "https://nfctap.tech/lista/casa",
   "nfc": {
     "sticker": 25.0,
@@ -27,5 +33,5 @@
     "cover": 0.6000000000000001
   },
   "uso": "pegar reverso a la nevera",
-  "nota": "Círculo fino 2.0 mm. Icono lista. TAP → lista compartida."
+  "nota": "Lista minimal + aro amarillo. 3 STL. Solo Wi‑Fi casa."
 }

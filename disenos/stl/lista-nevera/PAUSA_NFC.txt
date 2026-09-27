@@ -3,13 +3,14 @@ Pausa NFC — lista nevera (círculo fino)
 Altura: 1.40 mm · capa 7 (primera 0,25 + 0,20 mm)
 Centro del pozo = centro del círculo.
 Pozo Ø28 · asiento Ø26 · mira Ø24 · pegatina Ø25
-Tapa encima: 0.60 mm. Luego el relieve blanco.
+Tapa encima: 0.60 mm. Luego relieves blanco + amarillo.
 
-Proyecto NUEVO en Flash. No reutilices un 3mf viejo.
-Importa 01_cuerpo.stl + 02_acento.stl → Agrupar → NO Reparar.
+Proyecto NUEVO en Flash.
+Importa 01_cuerpo + 02_acento + 03_aro → Agrupar → NO Reparar.
+Colores: 01 negro · 02 blanco · 03 amarillo.
 Rebanar 0,20 mm Standard @FF AD5X.
 
-La mira se imprime ANTES de la pausa: disco blanco Ø24.
+La mira blanca se imprime ANTES de la pausa: disco Ø24.
 
 En Previsualización:
 1. Slider DERECHO BAJA hasta la capa 7 (~1.40 mm).
@@ -17,7 +18,6 @@ En Previsualización:
 2. Clic derecho en esa capa → Añadir pausa.
 3. Imprime.
 
-Cuando pare (mira desde ARRIBA):
-- El círculo blanco = aquí la pegatina.
-- Timeskey Ø25 ENCIMA, hundida, adhesivo ABAJO.
+Cuando pare:
+- Timeskey Ø25 ENCIMA del círculo blanco, adhesivo ABAJO.
 - Que no sobresalga. Continuar.

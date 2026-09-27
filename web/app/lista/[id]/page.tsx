@@ -1,13 +1,20 @@
-import { ListaApp } from "@/components/ListaApp";
-import { listaIdOk } from "@/lib/lista";
+import { ListaApp, ListaLocked } from "@/components/ListaApp";
+import {
+  assertListaHome,
+  clientIpFromHeaders,
+  getLista,
+  listaIdOk,
+  registerListaHome,
+} from "@/lib/lista";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { headers } from "next/headers";
+import { notFound, redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ activar?: string }>;
+  searchParams: Promise<{ activar?: string; ok?: string }>;
 };
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -20,7 +27,20 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function ListaPage({ params, searchParams }: Props) {
   const { id } = await params;
-  const { activar } = await searchParams;
+  const sp = await searchParams;
   if (!listaIdOk(id)) notFound();
-  return <ListaApp listId={id} activateSecret={activar?.trim() || undefined} />;
+
+  const ip = clientIpFromHeaders(await headers());
+
+  if (sp.activar?.trim()) {
+    const result = await registerListaHome(id, ip, sp.activar.trim());
+    if (result.ok) redirect(`/lista/${id}?ok=1`);
+  }
+
+  const access = await assertListaHome(id, ip);
+  if (!access.ok) return <ListaLocked reason={access.reason} />;
+
+  return (
+    <ListaApp listId={id} initial={await getLista(id)} justActivated={sp.ok === "1"} />
+  );
 }

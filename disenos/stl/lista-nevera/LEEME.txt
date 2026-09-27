@@ -1,11 +1,15 @@
 Botón NFC nevera — lista de la compra
 =====================================
 
-Círculo Ø38 × 2.0 mm (fina, como el Wi‑Fi DINO).
-Cara: icono de lista (portapapeles) en relieve blanco sobre negro.
+Círculo Ø38 × 2.0 mm (fina).
+Cara: lista minimalista blanca + aro amarillo en el borde.
 NFC Timeskey Ø25 en el centro. Pausa a mitad.
 
-  01_cuerpo.stl + 02_acento.stl     Agrupar, NO Reparar
+  01_cuerpo.stl   negro
+  02_acento.stl   blanco  (lista + mira NFC)
+  03_aro.stl      amarillo (aro exterior)
+
+Agrupar las 3. NO Reparar.
 
 Imprime
 -------
@@ -13,11 +17,5 @@ Pausa OBLIGATORIA capa 7 (1.40 mm). Ver PAUSA_NFC.txt.
 Pozo Ø28, asiento Ø26, pegatina Ø25.
 REVERSO en la cama. Pegar ese lado a la nevera (cinta 3M).
 
-Colores: cuerpo = negro, acento = blanco.
 URL del chip: https://nfctap.tech/lista/casa
-
-Privacidad
-----------
-La lista SOLO se abre en la Wi‑Fi de casa (IP del router).
-Activar una vez: ver NFC.txt (?activar=CLAVE_DASHBOARD).
-Fuera de casa: Enviar/WhatsApp o Copiar antes de salir.
+Privada: solo Wi‑Fi de casa. Ver NFC.txt.
