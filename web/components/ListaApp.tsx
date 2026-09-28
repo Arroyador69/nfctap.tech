@@ -3,10 +3,15 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 
+export type ListaSection = "casa" | "limpieza";
+export type ListaUnit = "uds" | "g";
+
 export type ListaItemView = {
   id: string;
   text: string;
   qty: number;
+  unit: ListaUnit;
+  section: ListaSection;
   done: boolean;
   hasPhoto?: boolean;
   photoSrc?: string;
@@ -19,26 +24,60 @@ export type ListaView = {
   updatedAt: string;
 };
 
+const SECTIONS: { id: ListaSection; label: string }[] = [
+  { id: "casa", label: "Casa" },
+  { id: "limpieza", label: "Limpieza" },
+];
+
+function sectionLabel(s: ListaSection) {
+  return s === "limpieza" ? "Limpieza" : "Casa";
+}
+
+function normalizeItem(it: ListaItemView): ListaItemView {
+  return {
+    ...it,
+    unit: it.unit === "g" ? "g" : "uds",
+    section: it.section === "limpieza" ? "limpieza" : "casa",
+  };
+}
+
+function formatQty(qty: number, unit: ListaUnit) {
+  if (unit === "g") return `${qty} g`;
+  return qty > 1 ? `×${qty}` : "";
+}
+
 function itemLine(it: ListaItemView) {
-  return it.qty > 1 ? `• ${it.text} ×${it.qty}` : `• ${it.text}`;
+  const q = formatQty(it.qty, it.unit);
+  return q ? `• ${it.text} ${q}` : `• ${it.text}`;
 }
 
 function itemCaption(it: ListaItemView) {
-  return it.qty > 1 ? `${it.text} ×${it.qty}` : it.text;
+  const q = formatQty(it.qty, it.unit);
+  return q ? `${it.text} ${q}` : it.text;
+}
+
+function shareTextFromItems(items: ListaItemView[], title = "Lista de la compra") {
+  const pending = items.filter((it) => !it.done).map(normalizeItem);
+  if (!pending.length) return "Lista vacía.";
+  const blocks: string[] = [title];
+  for (const { id, label } of SECTIONS) {
+    const rows = pending.filter((it) => it.section === id);
+    if (!rows.length) continue;
+    blocks.push("", label);
+    blocks.push(...rows.map(itemLine));
+  }
+  return blocks.join("\n");
 }
 
 /** Solo ítems sin foto (van juntos en un mensaje de texto). */
 function shareTextSinFotos(items: ListaItemView[]) {
-  const sin = items.filter((it) => !it.done && !it.hasPhoto && !it.photoSrc);
+  const sin = items.filter((it) => !it.done && !it.hasPhoto && !it.photoSrc).map(normalizeItem);
   if (!sin.length) return "";
-  return ["Lista de la compra", ...sin.map(itemLine)].join("\n");
+  return shareTextFromItems(sin);
 }
 
-/** Lista completa (copiar). */
 function shareText(lista: ListaView) {
-  const pending = lista.items.filter((it) => !it.done);
-  if (!pending.length) return "Lista vacía.";
-  return ["Lista de la compra", ...pending.map(itemLine)].join("\n");
+  return shareTextFromItems(lista.items);
 }
 
 function fileSafeName(text: string) {
@@ -50,6 +89,20 @@ function fileSafeName(text: string) {
       .trim()
       .slice(0, 40) || "producto"
   );
+}
+
+function qtyStep(unit: ListaUnit) {
+  return unit === "g" ? 50 : 1;
+}
+
+function qtyBump(unit: ListaUnit, current: number, dir: 1 | -1) {
+  const step = qtyStep(unit);
+  if (unit === "g") {
+    const next = current + dir * step;
+    if (next < 1) return 0;
+    return Math.min(10000, Math.max(1, next));
+  }
+  return current + dir;
 }
 
 async function compressImage(file: File): Promise<Blob> {
@@ -72,6 +125,28 @@ async function compressImage(file: File): Promise<Blob> {
       0.72,
     );
   });
+}
+
+function SegBtn({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition ${
+        active ? "bg-[#1c1915] text-[#f6f1e7]" : "bg-transparent text-[#5c564c]"
+      }`}
+    >
+      {children}
+    </button>
+  );
 }
 
 export function ListaLocked({
@@ -110,19 +185,19 @@ export function ListaLocked({
 
   return (
     <div className="mx-auto flex min-h-[100dvh] max-w-lg flex-col justify-center px-5 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]">
-      <p className="text-[0.7rem] uppercase tracking-[0.2em] text-[#b0892c]">Nevera · privada</p>
+      <p className="text-[0.7rem] uppercase tracking-[0.2em] text-[#b0892c]">Casa · privada</p>
       <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl leading-tight text-[#1c1915]">
         Lista de la compra
       </h1>
       <p className="mt-3 text-base leading-relaxed text-[#5c564c]">
         {reason === "sin_activar"
-          ? "Activa la lista una vez con la clave del dashboard (estás en casa)."
-          : "Este dispositivo aún no tiene acceso. En la Wi‑Fi de casa, introduce la clave una vez."}
+          ? "Primera vez: introduce la clave estando en la Wi‑Fi de casa. Luego el TAP abre directo."
+          : "Este móvil aún no está activado. Conéctate a la Wi‑Fi de casa e introduce la clave una sola vez."}
       </p>
 
       <form onSubmit={onUnlock} className="mt-6 flex flex-col gap-3">
         <label className="text-sm font-medium text-[#5c564c]" htmlFor="clave-casa">
-          Clave (la misma del dashboard)
+          Clave (solo la primera vez)
         </label>
         <input
           id="clave-casa"
@@ -130,7 +205,7 @@ export function ListaLocked({
           autoComplete="current-password"
           value={clave}
           onChange={(e) => setClave(e.target.value)}
-          placeholder="Clave"
+          placeholder="Clave del dashboard"
           className="rounded-2xl border border-[#e6ddd0] bg-white px-4 py-3.5 text-base text-[#1c1915]"
         />
         <button
@@ -148,7 +223,7 @@ export function ListaLocked({
         </p>
       ) : null}
       <p className="mt-4 text-sm text-[#8a8173]">
-        Solo hace falta una vez por móvil/ordenador. Luego el TAP de la nevera abre la lista directo.
+        Se guarda en este dispositivo. Los 4 NFC de casa abren la misma lista.
       </p>
     </div>
   );
@@ -163,11 +238,17 @@ export function ListaApp({
   initial: ListaView;
   justActivated?: boolean;
 }) {
-  const [lista, setLista] = useState(initial);
+  const [lista, setLista] = useState<ListaView>({
+    ...initial,
+    items: initial.items.map(normalizeItem),
+  });
   const [text, setText] = useState("");
+  const [section, setSection] = useState<ListaSection>("casa");
+  const [unit, setUnit] = useState<ListaUnit>("uds");
+  const [qtyDraft, setQtyDraft] = useState(1);
   const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
-  const [toast, setToast] = useState(justActivated ? "Wi‑Fi de casa registrada" : "");
+  const [toast, setToast] = useState(justActivated ? "Dispositivo listo · Wi‑Fi de casa" : "");
   const [err, setErr] = useState("");
   const cameraRef = useRef<HTMLInputElement>(null);
   const itemCameraRef = useRef<HTMLInputElement>(null);
@@ -178,12 +259,30 @@ export function ListaApp({
   }>(null);
   const [viewer, setViewer] = useState<ListaItemView | null>(null);
 
-  const pending = useMemo(() => lista.items.filter((i) => !i.done), [lista]);
-  const done = useMemo(() => lista.items.filter((i) => i.done), [lista]);
+  const pending = useMemo(
+    () => lista.items.filter((i) => !i.done).map(normalizeItem),
+    [lista],
+  );
+  const done = useMemo(
+    () => lista.items.filter((i) => i.done).map(normalizeItem),
+    [lista],
+  );
+
+  const pendingBySection = useMemo(() => {
+    return SECTIONS.map(({ id, label }) => ({
+      id,
+      label,
+      items: pending.filter((it) => it.section === id),
+    })).filter((g) => g.items.length > 0);
+  }, [pending]);
 
   function flash(msg: string) {
     setToast(msg);
     window.setTimeout(() => setToast(""), 2200);
+  }
+
+  function applyLista(data: ListaView) {
+    setLista({ ...data, items: data.items.map(normalizeItem) });
   }
 
   async function mutate(fn: () => Promise<Response>) {
@@ -197,7 +296,7 @@ export function ListaApp({
         return null;
       }
       if (!res.ok) throw new Error(data.error || "Error");
-      setLista(data as ListaView);
+      applyLista(data as ListaView);
       return data as ListaView;
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Error");
@@ -218,7 +317,7 @@ export function ListaApp({
       const res = await fetch(`/api/lista/${listId}`, { method: "POST", body: form });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "No se pudo subir la foto");
-      setLista(data as ListaView);
+      applyLista(data as ListaView);
       flash("Foto añadida");
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Error");
@@ -231,19 +330,31 @@ export function ListaApp({
     e.preventDefault();
     const t = text.trim();
     if (!t) return;
+    const addQty = unit === "g" ? Math.max(1, qtyDraft || 100) : Math.max(1, qtyDraft || 1);
     setText("");
+    setQtyDraft(unit === "g" ? 100 : 1);
     const photo = pendingPhoto;
     setPendingPhoto(null);
     const next = await mutate(() =>
       fetch(`/api/lista/${listId}`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "add", text: t, qty: 1 }),
+        body: JSON.stringify({
+          action: "add",
+          text: t,
+          qty: addQty,
+          unit,
+          section,
+        }),
       }),
     );
     if (photo && next) {
       const item = next.items.find(
-        (it) => !it.done && it.text.toLocaleLowerCase("es") === t.toLocaleLowerCase("es"),
+        (it) =>
+          !it.done &&
+          it.section === section &&
+          it.unit === unit &&
+          it.text.toLocaleLowerCase("es") === t.toLocaleLowerCase("es"),
       );
       if (item) await uploadPhoto(item.id, photo);
     }
@@ -261,6 +372,30 @@ export function ListaApp({
         body: JSON.stringify({ itemId: item.id, qty }),
       }),
     );
+  }
+
+  async function setItemUnit(item: ListaItemView, nextUnit: ListaUnit) {
+    if (item.unit === nextUnit) return;
+    const nextQty = nextUnit === "g" ? (item.unit === "uds" ? Math.max(100, item.qty * 100) : item.qty) : Math.min(99, Math.max(1, item.qty >= 50 ? 1 : item.qty));
+    await mutate(() =>
+      fetch(`/api/lista/${listId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ itemId: item.id, unit: nextUnit, qty: nextQty }),
+      }),
+    );
+  }
+
+  async function moveSection(item: ListaItemView, next: ListaSection) {
+    if (item.section === next) return;
+    await mutate(() =>
+      fetch(`/api/lista/${listId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ itemId: item.id, section: next }),
+      }),
+    );
+    flash(next === "limpieza" ? "Pasado a Limpieza" : "Pasado a Casa");
   }
 
   async function toggleDone(item: ListaItemView) {
@@ -349,20 +484,19 @@ export function ListaApp({
         const jpeg = blob.type === "image/jpeg" ? blob : new Blob([blob], { type: "image/jpeg" });
         fotos.push({
           file: new File([jpeg], `${fileSafeName(item.text)}.jpg`, { type: "image/jpeg" }),
-          caption: itemCaption(item),
+          caption: `${sectionLabel(normalizeItem(item).section)} · ${itemCaption(normalizeItem(item))}`,
         });
       } catch {
         /* sin esa foto */
       }
     }
 
-    // Escritorio / sin compartir nativo
     if (!navigator.share) {
       if (destino === "whatsapp") {
         const fallback = [
           textoJunto || "Lista de la compra",
           ...(fotos.length
-            ? ["", "Con foto (ábrela en la lista):", ...conFoto.map((it) => itemLine(it))]
+            ? ["", "Con foto (ábrela en la lista):", ...conFoto.map((it) => itemLine(normalizeItem(it)))]
             : []),
         ]
           .filter(Boolean)
@@ -371,7 +505,6 @@ export function ListaApp({
         if (fotos.length) flash("Fotos: usa el móvil → Notas o WhatsApp");
         return;
       }
-      // Notas en escritorio: copiar texto
       const todo = shareText({ ...lista, items: vivos });
       try {
         await navigator.clipboard.writeText(todo);
@@ -385,12 +518,10 @@ export function ListaApp({
     setBusy(true);
     flash(elige);
     try {
-      // 1) Ítems sin foto, juntos
       if (textoJunto) {
         await navigator.share({ title: "Lista de la compra", text: textoJunto });
       }
 
-      // 2) Cada foto + su texto (mismo destino: Notas o WhatsApp en la hoja del sistema)
       let enviadas = 0;
       for (let i = 0; i < fotos.length; i++) {
         const { file, caption } = fotos[i];
@@ -444,24 +575,142 @@ export function ListaApp({
     }
   }
 
+  function renderItem(item: ListaItemView) {
+    const it = normalizeItem(item);
+    return (
+      <li
+        key={it.id}
+        className="flex flex-col gap-2 rounded-2xl border border-[#e6ddd0] bg-white px-3 py-2.5"
+      >
+        <div className="flex items-center gap-2.5">
+          {it.photoSrc ? (
+            <button
+              type="button"
+              aria-label="Ver foto en grande"
+              onClick={() => setViewer(it)}
+              className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-[#f0ebe3] ring-1 ring-[#e6ddd0]"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={it.photoSrc} alt="" className="h-full w-full object-cover" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              aria-label="Añadir foto"
+              disabled={busy}
+              onClick={() => {
+                setPhotoTargetId(it.id);
+                itemCameraRef.current?.click();
+              }}
+              className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-[#f0ebe3] text-[0.65rem] font-semibold uppercase tracking-wide text-[#5c564c]"
+            >
+              Foto
+            </button>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="text-[1.05rem] font-medium leading-snug text-[#1c1915]">{it.text}</p>
+            <p className="mt-0.5 text-sm tabular-nums text-[#7a7266]">
+              {it.unit === "g" ? `${it.qty} g` : it.qty > 1 ? `${it.qty} uds` : "1 ud"}
+            </p>
+            <button
+              type="button"
+              onClick={() => toggleDone(it)}
+              className="mt-0.5 text-xs font-medium text-[#b0892c]"
+            >
+              Marcar comprado
+            </button>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                aria-label="Menos"
+                onClick={() => setQty(it, qtyBump(it.unit, it.qty, -1))}
+                className="grid h-9 w-9 place-items-center rounded-xl bg-[#f0ebe3] text-lg font-bold"
+              >
+                −
+              </button>
+              <span className="min-w-[2.5rem] text-center text-sm font-semibold tabular-nums">
+                {it.unit === "g" ? `${it.qty}g` : it.qty}
+              </span>
+              <button
+                type="button"
+                aria-label="Más"
+                onClick={() => setQty(it, qtyBump(it.unit, it.qty, 1))}
+                className="grid h-9 w-9 place-items-center rounded-xl bg-[#f0ebe3] text-lg font-bold"
+              >
+                +
+              </button>
+            </div>
+            <button
+              type="button"
+              aria-label="Quitar"
+              onClick={() => setConfirm({ kind: "item", item: it })}
+              className="grid h-8 w-8 place-items-center rounded-xl text-[#8a8173]"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-1.5 pl-[4.25rem]">
+          <button
+            type="button"
+            onClick={() => setItemUnit(it, "uds")}
+            className={`rounded-lg px-2 py-1 text-[0.7rem] font-semibold ${
+              it.unit === "uds" ? "bg-[#1c1915] text-[#f6f1e7]" : "bg-[#f0ebe3] text-[#5c564c]"
+            }`}
+          >
+            uds
+          </button>
+          <button
+            type="button"
+            onClick={() => setItemUnit(it, "g")}
+            className={`rounded-lg px-2 py-1 text-[0.7rem] font-semibold ${
+              it.unit === "g" ? "bg-[#1c1915] text-[#f6f1e7]" : "bg-[#f0ebe3] text-[#5c564c]"
+            }`}
+          >
+            g
+          </button>
+          <button
+            type="button"
+            onClick={() => moveSection(it, it.section === "casa" ? "limpieza" : "casa")}
+            className="rounded-lg bg-[#f0ebe3] px-2 py-1 text-[0.7rem] font-semibold text-[#5c564c]"
+          >
+            → {it.section === "casa" ? "Limpieza" : "Casa"}
+          </button>
+        </div>
+      </li>
+    );
+  }
+
   return (
     <div className="mx-auto flex min-h-[100dvh] max-w-lg flex-col px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
       <header className="mb-4">
-        <p className="text-[0.7rem] uppercase tracking-[0.2em] text-[#b0892c]">Nevera · solo Wi‑Fi casa</p>
+        <p className="text-[0.7rem] uppercase tracking-[0.2em] text-[#b0892c]">
+          Casa · solo Wi‑Fi · clave 1ª vez
+        </p>
         <h1 className="mt-1 font-[family-name:var(--font-display)] text-3xl leading-tight text-[#1c1915]">
           Lista de la compra
         </h1>
         <p className="mt-1 text-sm text-[#7a7266]">
-          WhatsApp o Notas: textos sin foto juntos; cada foto con su nombre. En el móvil eliges la app.
+          Casa y Limpieza separadas. Cantidad en unidades o gramos.
         </p>
       </header>
 
       <form onSubmit={onAdd} className="mb-4 flex flex-col gap-2">
+        <div className="flex rounded-2xl border border-[#e6ddd0] bg-[#f0ebe3] p-1">
+          {SECTIONS.map((s) => (
+            <SegBtn key={s.id} active={section === s.id} onClick={() => setSection(s.id)}>
+              {s.label}
+            </SegBtn>
+          ))}
+        </div>
+
         <div className="flex gap-2">
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="¿Qué falta?"
+            placeholder={section === "limpieza" ? "¿Qué falta de limpieza?" : "¿Qué falta en casa?"}
             enterKeyHint="done"
             autoComplete="off"
             className="min-w-0 flex-1 rounded-2xl border border-[#e6ddd0] bg-white px-4 py-3.5 text-base text-[#1c1915] placeholder:text-[#b0a89c]"
@@ -482,6 +731,69 @@ export function ListaApp({
             Añadir
           </button>
         </div>
+
+        <div className="flex items-center gap-2">
+          <div className="flex flex-1 rounded-2xl border border-[#e6ddd0] bg-[#f0ebe3] p-1">
+            <SegBtn
+              active={unit === "uds"}
+              onClick={() => {
+                setUnit("uds");
+                setQtyDraft(1);
+              }}
+            >
+              Unidades
+            </SegBtn>
+            <SegBtn
+              active={unit === "g"}
+              onClick={() => {
+                setUnit("g");
+                setQtyDraft((q) => (q < 50 ? 100 : q));
+              }}
+            >
+              Gramos
+            </SegBtn>
+          </div>
+          <div className="flex items-center gap-1 rounded-2xl border border-[#e6ddd0] bg-white px-2 py-1.5">
+            <button
+              type="button"
+              aria-label="Menos cantidad"
+              onClick={() =>
+                setQtyDraft((q) => {
+                  const next = qtyBump(unit, q, -1);
+                  return next < 1 ? (unit === "g" ? 50 : 1) : next;
+                })
+              }
+              className="grid h-8 w-8 place-items-center rounded-lg bg-[#f0ebe3] text-base font-bold"
+            >
+              −
+            </button>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={unit === "g" ? 10000 : 99}
+              value={qtyDraft}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                if (!Number.isFinite(n)) return;
+                setQtyDraft(unit === "g" ? Math.min(10000, Math.max(1, Math.round(n))) : Math.min(99, Math.max(1, Math.round(n))));
+              }}
+              className="w-14 bg-transparent text-center text-sm font-semibold tabular-nums text-[#1c1915] outline-none"
+            />
+            <span className="pr-1 text-xs font-semibold text-[#7a7266]">
+              {unit === "g" ? "g" : "uds"}
+            </span>
+            <button
+              type="button"
+              aria-label="Más cantidad"
+              onClick={() => setQtyDraft((q) => qtyBump(unit, q, 1))}
+              className="grid h-8 w-8 place-items-center rounded-lg bg-[#f0ebe3] text-base font-bold"
+            >
+              +
+            </button>
+          </div>
+        </div>
+
         <input
           ref={cameraRef}
           type="file"
@@ -562,87 +874,22 @@ export function ListaApp({
       {err ? <p className="mb-3 text-sm text-red-700">{err}</p> : null}
 
       <div className="flex flex-1 flex-col gap-5">
-        <section>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-[#7a7266]">
-            Por comprar ({pending.length})
-          </h2>
-          {pending.length === 0 ? (
+        {pending.length === 0 ? (
+          <section>
             <p className="rounded-2xl border border-dashed border-[#e6ddd0] bg-white/50 px-4 py-8 text-center text-sm text-[#8a8173]">
-              Lista vacía. TAP y añade lo que falte.
+              Lista vacía. Elige Casa o Limpieza y añade lo que falte.
             </p>
-          ) : (
-            <ul className="space-y-2">
-              {pending.map((item) => (
-                <li
-                  key={item.id}
-                  className="flex items-center gap-2.5 rounded-2xl border border-[#e6ddd0] bg-white px-3 py-2.5"
-                >
-                  {item.photoSrc ? (
-                    <button
-                      type="button"
-                      aria-label="Ver foto en grande"
-                      onClick={() => setViewer(item)}
-                      className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-[#f0ebe3] ring-1 ring-[#e6ddd0]"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={item.photoSrc} alt="" className="h-full w-full object-cover" />
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      aria-label="Añadir foto"
-                      disabled={busy}
-                      onClick={() => {
-                        setPhotoTargetId(item.id);
-                        itemCameraRef.current?.click();
-                      }}
-                      className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-[#f0ebe3] text-[0.65rem] font-semibold uppercase tracking-wide text-[#5c564c]"
-                    >
-                      Foto
-                    </button>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[1.05rem] font-medium leading-snug text-[#1c1915]">{item.text}</p>
-                    <button
-                      type="button"
-                      onClick={() => toggleDone(item)}
-                      className="mt-0.5 text-xs font-medium text-[#b0892c]"
-                    >
-                      Marcar comprado
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      aria-label="Menos"
-                      onClick={() => setQty(item, item.qty - 1)}
-                      className="grid h-9 w-9 place-items-center rounded-xl bg-[#f0ebe3] text-lg font-bold"
-                    >
-                      −
-                    </button>
-                    <span className="w-7 text-center text-base font-semibold tabular-nums">{item.qty}</span>
-                    <button
-                      type="button"
-                      aria-label="Más"
-                      onClick={() => setQty(item, item.qty + 1)}
-                      className="grid h-9 w-9 place-items-center rounded-xl bg-[#f0ebe3] text-lg font-bold"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    aria-label="Quitar"
-                    onClick={() => setConfirm({ kind: "item", item })}
-                    className="grid h-9 w-9 place-items-center rounded-xl text-[#8a8173]"
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+          </section>
+        ) : (
+          pendingBySection.map((group) => (
+            <section key={group.id}>
+              <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-[#7a7266]">
+                {group.label} · por comprar ({group.items.length})
+              </h2>
+              <ul className="space-y-2">{group.items.map(renderItem)}</ul>
+            </section>
+          ))
+        )}
 
         {done.length > 0 ? (
           <section>
@@ -659,44 +906,50 @@ export function ListaApp({
               </button>
             </div>
             <ul className="space-y-2">
-              {done.map((item) => (
-                <li
-                  key={item.id}
-                  className="flex items-center gap-2.5 rounded-2xl border border-[#ece6dc] bg-[#faf7f2] px-3 py-2.5 opacity-70"
-                >
-                  {item.photoSrc ? (
-                    <button type="button" onClick={() => setViewer(item)} className="shrink-0">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={item.photoSrc}
-                        alt=""
-                        className="h-12 w-12 rounded-xl object-cover"
-                      />
-                    </button>
-                  ) : null}
-                  <div className="min-w-0 flex-1">
-                    <p className="text-base line-through">{item.text}</p>
+              {done.map((item) => {
+                const it = normalizeItem(item);
+                return (
+                  <li
+                    key={it.id}
+                    className="flex items-center gap-2.5 rounded-2xl border border-[#ece6dc] bg-[#faf7f2] px-3 py-2.5 opacity-70"
+                  >
+                    {it.photoSrc ? (
+                      <button type="button" onClick={() => setViewer(it)} className="shrink-0">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={it.photoSrc}
+                          alt=""
+                          className="h-12 w-12 rounded-xl object-cover"
+                        />
+                      </button>
+                    ) : null}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-[#8a8173]">
+                        {sectionLabel(it.section)}
+                      </p>
+                      <p className="text-base line-through">{it.text}</p>
+                      <button
+                        type="button"
+                        onClick={() => toggleDone(it)}
+                        className="mt-0.5 text-xs font-medium text-[#b0892c]"
+                      >
+                        Desmarcar
+                      </button>
+                    </div>
+                    <span className="text-sm tabular-nums text-[#8a8173]">
+                      {formatQty(it.qty, it.unit) || "1"}
+                    </span>
                     <button
                       type="button"
-                      onClick={() => toggleDone(item)}
-                      className="mt-0.5 text-xs font-medium text-[#b0892c]"
+                      aria-label="Quitar"
+                      onClick={() => setConfirm({ kind: "item", item: it })}
+                      className="grid h-9 w-9 place-items-center text-[#8a8173]"
                     >
-                      Desmarcar
+                      ×
                     </button>
-                  </div>
-                  {item.qty > 1 ? (
-                    <span className="text-sm tabular-nums text-[#8a8173]">×{item.qty}</span>
-                  ) : null}
-                  <button
-                    type="button"
-                    aria-label="Quitar"
-                    onClick={() => setConfirm({ kind: "item", item })}
-                    className="grid h-9 w-9 place-items-center text-[#8a8173]"
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           </section>
         ) : null}

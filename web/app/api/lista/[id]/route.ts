@@ -83,6 +83,8 @@ export async function POST(req: Request, ctx: Ctx) {
       action?: string;
       text?: string;
       qty?: number;
+      unit?: string;
+      section?: string;
       itemId?: string;
       secret?: string;
     };
@@ -109,7 +111,12 @@ export async function POST(req: Request, ctx: Ctx) {
       return okLista(await clearListaItemPhoto(id, body.itemId));
     }
     if (body.action === "add" || !body.action) {
-      return okLista(await addListaItem(id, body.text || "", body.qty ?? 1));
+      return okLista(
+        await addListaItem(id, body.text || "", body.qty ?? 1, {
+          section: body.section === "limpieza" ? "limpieza" : "casa",
+          unit: body.unit === "g" ? "g" : "uds",
+        }),
+      );
     }
     return NextResponse.json({ error: "acción desconocida" }, { status: 400 });
   } catch (e) {
@@ -128,6 +135,8 @@ export async function PATCH(req: Request, ctx: Ctx) {
       qty?: number;
       done?: boolean;
       text?: string;
+      unit?: string;
+      section?: string;
     };
     if (!body.itemId) return NextResponse.json({ error: "falta itemId" }, { status: 400 });
     return okLista(
@@ -135,6 +144,13 @@ export async function PATCH(req: Request, ctx: Ctx) {
         qty: body.qty,
         done: body.done,
         text: body.text,
+        unit: body.unit === "g" ? "g" : body.unit === "uds" ? "uds" : undefined,
+        section:
+          body.section === "limpieza"
+            ? "limpieza"
+            : body.section === "casa"
+              ? "casa"
+              : undefined,
       }),
     );
   } catch (e) {

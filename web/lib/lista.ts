@@ -8,10 +8,32 @@ const BLOB_KEY = "nfctab-listas.json";
 const ID_RE = /^[a-z0-9-]{3,32}$/;
 const COOKIE_PREFIX = "lista_home_";
 
+/** Casa = comida/despensa · Limpieza = droguería / hogar. */
+export type ListaSection = "casa" | "limpieza";
+
+/** uds = piezas · g = gramos. */
+export type ListaUnit = "uds" | "g";
+
+export const LISTA_SECTIONS: ListaSection[] = ["casa", "limpieza"];
+
+export function listaSectionLabel(s: ListaSection) {
+  return s === "limpieza" ? "Limpieza" : "Casa";
+}
+
+export function normalizeListaSection(raw: unknown): ListaSection {
+  return raw === "limpieza" ? "limpieza" : "casa";
+}
+
+export function normalizeListaUnit(raw: unknown): ListaUnit {
+  return raw === "g" ? "g" : "uds";
+}
+
 export type ListaItem = {
   id: string;
   text: string;
   qty: number;
+  unit: ListaUnit;
+  section: ListaSection;
   done: boolean;
   updatedAt: string;
   /** URL privada de Vercel Blob (solo servidor). */
@@ -238,10 +260,38 @@ function cleanText(raw: string) {
   return raw.replace(/\s+/g, " ").trim().slice(0, 80);
 }
 
-function clampQty(n: unknown) {
+function clampQty(n: unknown, unit: ListaUnit = "uds") {
   const v = typeof n === "number" ? n : Number(n);
-  if (!Number.isFinite(v)) return 1;
+  if (!Number.isFinite(v)) return unit === "g" ? 100 : 1;
+  if (unit === "g") {
+    // Gramos: de 1 g a 10 kg, redondeo a entero.
+    return Math.min(10000, Math.max(1, Math.round(v)));
+  }
   return Math.min(99, Math.max(1, Math.round(v)));
+}
+
+/** Normaliza ítems antiguos (sin section/unit) al leer. */
+export function normalizeListaItem(raw: Partial<ListaItem> & { id: string; text: string }): ListaItem {
+  const unit = normalizeListaUnit(raw.unit);
+  return {
+    id: raw.id,
+    text: raw.text,
+    qty: clampQty(raw.qty ?? 1, unit),
+    unit,
+    section: normalizeListaSection(raw.section),
+    done: Boolean(raw.done),
+    updatedAt: raw.updatedAt || new Date().toISOString(),
+    ...(raw.photoUrl ? { photoUrl: raw.photoUrl } : {}),
+  };
+}
+
+function normalizeLista(lista: Lista): Lista {
+  return {
+    ...lista,
+    items: (lista.items || []).map((it) =>
+      normalizeListaItem(it as Partial<ListaItem> & { id: string; text: string }),
+    ),
+  };
 }
 
 /** Acceso: cookie de este dispositivo, o misma IP pública del router. */
@@ -303,24 +353,32 @@ export async function registerListaHome(
 
 export async function getLista(id: string): Promise<Lista> {
   const data = await load();
-  return data.lists[id] ?? emptyLista(id);
+  return normalizeLista(data.lists[id] ?? emptyLista(id));
 }
 
 /** Vista segura para el cliente: sin URL privada del Blob. */
 export function listaPublicView(lista: Lista) {
+  const normalized = normalizeLista(lista);
   return {
-    id: lista.id,
-    title: lista.title,
-    updatedAt: lista.updatedAt,
-    items: lista.items.map((it) => ({
+    id: normalized.id,
+    title: normalized.title,
+    updatedAt: normalized.updatedAt,
+    items: normalized.items.map((it) => ({
       id: it.id,
       text: it.text,
       qty: it.qty,
+      unit: it.unit,
+      section: it.section,
       done: it.done,
       hasPhoto: Boolean(it.photoUrl),
-      photoSrc: it.photoUrl ? `/api/lista/${lista.id}/photo/${it.id}` : undefined,
+      photoSrc: it.photoUrl ? `/api/lista/${normalized.id}/photo/${it.id}` : undefined,
     })),
   };
+}
+
+export function formatListaQty(qty: number, unit: ListaUnit) {
+  if (unit === "g") return `${qty} g`;
+  return qty > 1 ? `×${qty}` : "";
 }
 
 export async function setListaItemPhoto(
@@ -404,23 +462,36 @@ export async function readListaItemPhoto(
   }
 }
 
-export async function addListaItem(id: string, text: string, qty = 1): Promise<Lista> {
+export async function addListaItem(
+  id: string,
+  text: string,
+  qty = 1,
+  opts?: { section?: ListaSection; unit?: ListaUnit },
+): Promise<Lista> {
   const t = cleanText(text);
   if (!t) throw new Error("texto vacío");
+  const section = normalizeListaSection(opts?.section);
+  const unit = normalizeListaUnit(opts?.unit);
   const data = await load();
-  const lista = data.lists[id] ?? emptyLista(id);
+  const lista = normalizeLista(data.lists[id] ?? emptyLista(id));
   const now = new Date().toISOString();
   const existing = lista.items.find(
-    (it) => !it.done && it.text.toLocaleLowerCase("es") === t.toLocaleLowerCase("es"),
+    (it) =>
+      !it.done &&
+      it.section === section &&
+      it.unit === unit &&
+      it.text.toLocaleLowerCase("es") === t.toLocaleLowerCase("es"),
   );
   if (existing) {
-    existing.qty = clampQty(existing.qty + clampQty(qty));
+    existing.qty = clampQty(existing.qty + clampQty(qty, unit), unit);
     existing.updatedAt = now;
   } else {
     lista.items.unshift({
       id: `i_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
       text: t,
-      qty: clampQty(qty),
+      qty: clampQty(qty, unit),
+      unit,
+      section,
       done: false,
       updatedAt: now,
     });
@@ -434,14 +505,22 @@ export async function addListaItem(id: string, text: string, qty = 1): Promise<L
 export async function patchListaItem(
   id: string,
   itemId: string,
-  patch: { qty?: number; done?: boolean; text?: string },
+  patch: {
+    qty?: number;
+    done?: boolean;
+    text?: string;
+    unit?: ListaUnit;
+    section?: ListaSection;
+  },
 ): Promise<Lista> {
   const data = await load();
-  const lista = data.lists[id] ?? emptyLista(id);
+  const lista = normalizeLista(data.lists[id] ?? emptyLista(id));
   const item = lista.items.find((it) => it.id === itemId);
   if (!item) throw new Error("ítem no encontrado");
   const now = new Date().toISOString();
-  if (patch.qty !== undefined) item.qty = clampQty(patch.qty);
+  if (patch.unit !== undefined) item.unit = normalizeListaUnit(patch.unit);
+  if (patch.section !== undefined) item.section = normalizeListaSection(patch.section);
+  if (patch.qty !== undefined) item.qty = clampQty(patch.qty, item.unit);
   if (patch.done !== undefined) item.done = Boolean(patch.done);
   if (patch.text !== undefined) {
     const t = cleanText(patch.text);
@@ -484,9 +563,20 @@ export async function clearDoneLista(id: string): Promise<Lista> {
   return lista;
 }
 
+export function listaItemLine(it: Pick<ListaItem, "text" | "qty" | "unit">) {
+  const q = formatListaQty(it.qty, it.unit);
+  return q ? `• ${it.text} ${q}` : `• ${it.text}`;
+}
+
 export function listaShareText(lista: Lista) {
-  const pending = lista.items.filter((it) => !it.done);
+  const pending = normalizeLista(lista).items.filter((it) => !it.done);
   if (!pending.length) return "Lista vacía.";
-  const lines = pending.map((it) => (it.qty > 1 ? `• ${it.text} ×${it.qty}` : `• ${it.text}`));
-  return `Lista de la compra\n${lines.join("\n")}`;
+  const blocks: string[] = ["Lista de la compra"];
+  for (const section of LISTA_SECTIONS) {
+    const rows = pending.filter((it) => it.section === section);
+    if (!rows.length) continue;
+    blocks.push("", listaSectionLabel(section));
+    blocks.push(...rows.map(listaItemLine));
+  }
+  return blocks.join("\n");
 }
