@@ -56,28 +56,67 @@ function itemCaption(it: ListaItemView) {
   return q ? `${it.text} ${q}` : it.text;
 }
 
-function shareTextFromItems(items: ListaItemView[], title = "Lista de la compra") {
+/** Lista plana para WhatsApp: sin Casa/Limpieza; todos los ítems (también los de foto). */
+function shareTextFlat(items: ListaItemView[], title = "Lista de la compra") {
   const pending = items.filter((it) => !it.done).map(normalizeItem);
   if (!pending.length) return "Lista vacía.";
-  const blocks: string[] = [title];
-  for (const { id, label } of SECTIONS) {
-    const rows = pending.filter((it) => it.section === id);
-    if (!rows.length) continue;
-    blocks.push("", label);
-    blocks.push(...rows.map(itemLine));
-  }
-  return blocks.join("\n");
-}
-
-/** Solo ítems sin foto (van juntos en un mensaje de texto). */
-function shareTextSinFotos(items: ListaItemView[]) {
-  const sin = items.filter((it) => !it.done && !it.hasPhoto && !it.photoSrc).map(normalizeItem);
-  if (!sin.length) return "";
-  return shareTextFromItems(sin);
+  return [title, ...pending.map(itemLine)].join("\n");
 }
 
 function shareText(lista: ListaView) {
-  return shareTextFromItems(lista.items);
+  return shareTextFlat(lista.items);
+}
+
+/** Foto con el nombre encima: WhatsApp suele tirar el caption del share. */
+async function photoWithCaption(blob: Blob, caption: string): Promise<File> {
+  const bmp = await createImageBitmap(blob);
+  const maxW = 1080;
+  const scale = Math.min(1, maxW / Math.max(bmp.width, 1));
+  const w = Math.max(1, Math.round(bmp.width * scale));
+  const h = Math.max(1, Math.round(bmp.height * scale));
+  const bar = Math.max(64, Math.round(h * 0.14));
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h + bar;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("No se pudo montar la foto");
+  ctx.fillStyle = "#1c1915";
+  ctx.fillRect(0, 0, w, bar);
+  ctx.drawImage(bmp, 0, bar, w, h);
+  bmp.close();
+
+  const label = caption.trim().slice(0, 48);
+  let size = Math.min(42, Math.max(22, Math.round(w / 18)));
+  ctx.fillStyle = "#f6f1e7";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = `700 ${size}px system-ui, -apple-system, sans-serif`;
+  while (size > 16 && ctx.measureText(label).width > w - 28) {
+    size -= 2;
+    ctx.font = `700 ${size}px system-ui, -apple-system, sans-serif`;
+  }
+  ctx.fillText(label, w / 2, bar / 2);
+
+  const out = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error("No se pudo exportar la foto"))),
+      "image/jpeg",
+      0.85,
+    );
+  });
+  return new File([out], `${fileSafeName(caption)}.jpg`, { type: "image/jpeg" });
+}
+
+async function loadPhotoFile(item: ListaItemView): Promise<File | null> {
+  if (!item.photoSrc) return null;
+  try {
+    const res = await fetch(item.photoSrc, { cache: "no-store", credentials: "same-origin" });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return await photoWithCaption(blob, itemCaption(normalizeItem(item)));
+  } catch {
+    return null;
+  }
 }
 
 function fileSafeName(text: string) {
@@ -461,106 +500,117 @@ export function ListaApp({
   }
 
   async function shareLista(destino: "whatsapp" | "notas") {
-    const vivos = lista.items.filter((it) => !it.done);
+    const vivos = lista.items.filter((it) => !it.done).map(normalizeItem);
     if (!vivos.length) {
       flash("Lista vacía");
       return;
     }
 
-    const conFoto = vivos.filter((it) => it.photoSrc);
-    const textoJunto = shareTextSinFotos(vivos);
+    const textoCompleto = shareTextFlat(vivos);
+    const conFoto = vivos.filter((it) => it.photoSrc || it.hasPhoto);
     const elige =
       destino === "notas"
         ? "Elige Notas (iPhone) o Keep / Notas (Android)"
         : "Elige WhatsApp";
 
-    type FotoMsg = { file: File; caption: string };
-    const fotos: FotoMsg[] = [];
+    setBusy(true);
+    flash(conFoto.length ? "Preparando fotos con nombre…" : elige);
+
+    const fotos: { file: File; caption: string }[] = [];
     for (const item of conFoto) {
-      try {
-        const res = await fetch(item.photoSrc!, { cache: "no-store" });
-        if (!res.ok) continue;
-        const blob = await res.blob();
-        const jpeg = blob.type === "image/jpeg" ? blob : new Blob([blob], { type: "image/jpeg" });
-        fotos.push({
-          file: new File([jpeg], `${fileSafeName(item.text)}.jpg`, { type: "image/jpeg" }),
-          caption: `${sectionLabel(normalizeItem(item).section)} · ${itemCaption(normalizeItem(item))}`,
-        });
-      } catch {
-        /* sin esa foto */
+      const file = await loadPhotoFile(item);
+      if (file) {
+        fotos.push({ file, caption: itemCaption(item) });
       }
     }
 
+    // Escritorio: WhatsApp Web no admite archivos vía wa.me → texto completo + aviso.
     if (!navigator.share) {
+      setBusy(false);
       if (destino === "whatsapp") {
-        const fallback = [
-          textoJunto || "Lista de la compra",
-          ...(fotos.length
-            ? ["", "Con foto (ábrela en la lista):", ...conFoto.map((it) => itemLine(normalizeItem(it)))]
-            : []),
-        ]
-          .filter(Boolean)
-          .join("\n");
-        window.open(`https://wa.me/?text=${encodeURIComponent(fallback)}`, "_blank", "noopener,noreferrer");
-        if (fotos.length) flash("Fotos: usa el móvil → Notas o WhatsApp");
+        window.open(
+          `https://wa.me/?text=${encodeURIComponent(textoCompleto)}`,
+          "_blank",
+          "noopener,noreferrer",
+        );
+        flash(
+          fotos.length
+            ? "Texto enviado. Las fotos con nombre solo se adjuntan desde el móvil."
+            : "Lista abierta en WhatsApp",
+        );
         return;
       }
-      const todo = shareText({ ...lista, items: vivos });
       try {
-        await navigator.clipboard.writeText(todo);
-        flash("Texto copiado. Pégalo en Notas. Las fotos, desde el móvil.");
+        await navigator.clipboard.writeText(textoCompleto);
+        flash("Texto copiado. Las fotos, desde el móvil.");
       } catch {
-        flash("Abre la lista en el móvil para guardar en Notas con fotos");
+        flash("Abre la lista en el móvil para compartir con fotos");
       }
       return;
     }
 
-    setBusy(true);
     flash(elige);
+    let enviadas = 0;
     try {
-      if (textoJunto) {
-        await navigator.share({ title: "Lista de la compra", text: textoJunto });
-      }
-
-      let enviadas = 0;
+      // 1) Primero las fotos (nombre ya va en la imagen). Una por una: WhatsApp las recibe.
       for (let i = 0; i < fotos.length; i++) {
         const { file, caption } = fotos[i];
-        const payload = { title: caption, text: caption, files: [file] };
-        if (i > 0 || textoJunto) {
-          flash(
-            destino === "notas"
-              ? `Notas · foto ${i + 1}/${fotos.length}: ${caption}`
-              : `WhatsApp · foto ${i + 1}/${fotos.length}: ${caption}`,
-          );
-          await new Promise((r) => setTimeout(r, 400));
+        flash(
+          destino === "whatsapp"
+            ? `WhatsApp · foto ${i + 1}/${fotos.length}: ${caption}`
+            : `Notas · foto ${i + 1}/${fotos.length}: ${caption}`,
+        );
+        if (i > 0) await new Promise((r) => setTimeout(r, 350));
+
+        // Solo archivo: WhatsApp ignora text+files juntos; el nombre ya está en la foto.
+        const soloFoto = { files: [file] as File[] };
+        const conTexto = { title: caption, text: caption, files: [file] as File[] };
+        try {
+          if (navigator.canShare?.(soloFoto)) {
+            // Preferir text+file si el destino lo acepta (Notas); WhatsApp a menudo no.
+            if (destino === "notas" && navigator.canShare?.(conTexto)) {
+              await navigator.share(conTexto);
+            } else {
+              await navigator.share(soloFoto);
+            }
+            enviadas += 1;
+          } else if (navigator.canShare?.(conTexto)) {
+            await navigator.share(conTexto);
+            enviadas += 1;
+          }
+        } catch (e) {
+          // AbortError = usuario canceló esa hoja; seguir con el resto.
+          if (e instanceof DOMException && e.name === "AbortError") continue;
+          throw e;
         }
-        if (navigator.canShare?.(payload)) {
-          await navigator.share(payload);
-        } else {
-          await navigator.share({ title: caption, text: `${caption} (foto en la lista)` });
-        }
-        enviadas += 1;
+      }
+
+      // 2) Lista de texto completa (incluye también los de foto, por si falla alguna).
+      flash(destino === "whatsapp" ? "WhatsApp · lista de texto" : "Notas · lista de texto");
+      if (fotos.length) await new Promise((r) => setTimeout(r, 350));
+      try {
+        await navigator.share({ title: "Lista de la compra", text: textoCompleto });
+      } catch (e) {
+        if (!(e instanceof DOMException && e.name === "AbortError")) throw e;
       }
 
       if (destino === "notas") {
         flash(
           enviadas
-            ? "Listo. En cada paso elige Notas / Keep"
-            : textoJunto
-              ? "Listo. Elige Notas / Keep"
-              : "Nada que guardar",
+            ? `Listo: ${enviadas} foto(s) + lista. Elige Notas/Keep en cada paso.`
+            : "Listo. Elige Notas / Keep",
         );
       } else {
         flash(
           enviadas
-            ? "Listo. En cada paso elige WhatsApp"
-            : textoJunto
-              ? "Listo. Elige WhatsApp"
-              : "Nada que enviar",
+            ? `Listo: ${enviadas} foto(s) con nombre + lista. Elige WhatsApp en cada paso.`
+            : conFoto.length && !enviadas
+              ? "No se pudieron adjuntar las fotos. La lista de texto sí se ofreció."
+              : "Listo. Elige WhatsApp",
         );
       }
     } catch {
-      /* canceló */
+      flash("Cancelado o no se pudo compartir");
     } finally {
       setBusy(false);
     }
@@ -693,7 +743,7 @@ export function ListaApp({
           Lista de la compra
         </h1>
         <p className="mt-1 text-sm text-[#7a7266]">
-          Casa y Limpieza separadas. Cantidad en unidades o gramos.
+          WhatsApp: fotos con el nombre encima + lista completa. Casa/Limpieza solo en pantalla.
         </p>
       </header>
 

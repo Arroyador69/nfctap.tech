@@ -571,12 +571,5 @@ export function listaItemLine(it: Pick<ListaItem, "text" | "qty" | "unit">) {
 export function listaShareText(lista: Lista) {
   const pending = normalizeLista(lista).items.filter((it) => !it.done);
   if (!pending.length) return "Lista vacía.";
-  const blocks: string[] = ["Lista de la compra"];
-  for (const section of LISTA_SECTIONS) {
-    const rows = pending.filter((it) => it.section === section);
-    if (!rows.length) continue;
-    blocks.push("", listaSectionLabel(section));
-    blocks.push(...rows.map(listaItemLine));
-  }
-  return blocks.join("\n");
+  return ["Lista de la compra", ...pending.map(listaItemLine)].join("\n");
 }
