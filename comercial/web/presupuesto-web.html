@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NFCTap — Web para tu negocio</title>
+  <style>
+    :root {
+      --bg: #f3eee4;
+      --ink: #1c1915;
+      --muted: #6f675c;
+      --gold: #c49a3c;
+      --card: #fffdf8;
+      --line: #e6ddd0;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: Georgia, "Times New Roman", serif; }
+    .page { max-width: 1040px; margin: 0 auto; padding: 44px 24px 64px; }
+    .kicker {
+      letter-spacing: 0.22em; text-transform: uppercase; font-size: 11px;
+      color: var(--gold); font-family: system-ui, sans-serif;
+    }
+    h1 { font-size: 40px; line-height: 1.08; font-weight: 400; margin: 12px 0 10px; }
+    .lead { color: var(--muted); font-size: 18px; max-width: 42em; }
+    .local {
+      margin: 28px 0 8px; padding: 22px; border: 1px solid var(--line);
+      border-radius: 20px; background: var(--card);
+    }
+    .local h2 { font-size: 22px; font-weight: 400; margin: 0 0 8px; }
+    .packs {
+      display: grid; gap: 16px;
+      grid-template-columns: 1fr 1fr 1fr;
+      margin: 28px 0;
+    }
+    .pack {
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: 22px; padding: 24px 22px; display: flex; flex-direction: column;
+    }
+    .pack.featured { background: var(--ink); color: #f6f1e7; border-color: var(--ink); }
+    .pack.top { background: #2a2318; color: #f6f1e7; border-color: #2a2318; }
+    .tag {
+      font-family: system-ui, sans-serif; font-size: 10px; letter-spacing: 0.16em;
+      text-transform: uppercase; color: var(--gold);
+    }
+    .pack.featured .tag, .pack.top .tag { color: #e2b43a; }
+    h3 { font-size: 26px; font-weight: 400; margin: 8px 0 0; }
+    .amount { font-size: 34px; margin: 12px 0 4px; }
+    .iva { font-size: 13px; color: var(--muted); }
+    .pack.featured .iva, .pack.top .iva { color: #d5cbb8; }
+    .mes {
+      margin: 10px 0 0; padding: 10px 12px; border-radius: 12px;
+      background: #f0e9dc; font-size: 14px; color: var(--ink);
+    }
+    .pack.featured .mes { background: #2c2925; color: #f6f1e7; }
+    .pack.top .mes { background: #3a3228; color: #f6f1e7; }
+    ul { margin: 14px 0 0; padding: 0; list-style: none; }
+    li { padding: 8px 0; border-top: 1px solid var(--line); font-size: 15px; }
+    .pack.featured li, .pack.top li { border-top-color: #3a3530; }
+    .note { font-size: 14px; color: var(--muted); margin-top: 20px; }
+    footer { margin-top: 32px; color: var(--muted); font-size: 14px; }
+    @media (max-width: 900px) { .packs { grid-template-columns: 1fr; } h1 { font-size: 32px; } }
+    @media print { body { background: white; } .page { padding: 8px; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <p class="kicker">NFCTap · nfctap.tech · web para negocios</p>
+    <h1>Tu web, lista para vender.<br />Tres opciones. Hosting incluido mes a mes.</h1>
+    <p class="lead">
+      Diseño responsive, login de usuarios y publicación en tu dominio.
+      Ideal para fotógrafos, trainers, locales, muebles y cualquier negocio
+      que quiera presencia online seria. Alta única + cuota mensual de
+      hosting y mantenimiento.
+    </p>
+
+    <div class="local">
+      <h2>Qué incluye siempre</h2>
+      <p class="lead" style="margin:0">
+        Diseño a medida de tu marca, versión móvil, certificado SSL,
+        formulario de contacto, Google Maps / ubicación, puesta en marcha
+        y formación breve para que sepas usarla. IVA no incluido.
+      </p>
+    </div>
+
+    <div class="packs">
+      <div class="pack">
+        <p class="tag">Entrada · con login</p>
+        <h3>Vitrina</h3>
+        <p class="amount">300 €</p>
+        <p class="iva">alta única · IVA no incluido</p>
+        <p class="mes"><strong>29 €/mes</strong> · hosting + mantenimiento</p>
+        <ul>
+          <li>Web responsive (móvil y escritorio)</li>
+          <li>Login de usuarios / clientes</li>
+          <li>Hasta 5 páginas (inicio, servicios, sobre ti, contacto…)</li>
+          <li>Formulario de contacto + WhatsApp</li>
+          <li>Dominio y SSL (configuración)</li>
+          <li>Entrega lista para publicar</li>
+        </ul>
+      </div>
+
+      <div class="pack featured">
+        <p class="tag">El que más se pide</p>
+        <h3>Negocio</h3>
+        <p class="amount">550 €</p>
+        <p class="iva">alta única · IVA no incluido</p>
+        <p class="mes"><strong>35 €/mes</strong> · hosting + mantenimiento</p>
+        <ul>
+          <li>Todo Vitrina</li>
+          <li>Panel de administración</li>
+          <li>Hasta 10 páginas + galería / portfolio</li>
+          <li>SEO local básico (Google)</li>
+          <li>Blog o novedades</li>
+          <li>Estadísticas de visitas</li>
+        </ul>
+      </div>
+
+      <div class="pack top">
+        <p class="tag">El completo</p>
+        <h3>Marca</h3>
+        <p class="amount">790 €</p>
+        <p class="iva">alta única · IVA no incluido</p>
+        <p class="mes"><strong>39 €/mes</strong> · hosting + mantenimiento</p>
+        <ul>
+          <li>Todo Negocio</li>
+          <li>Reservas, citas o catálogo de productos</li>
+          <li>Integración de pagos (si aplica)</li>
+          <li>SEO ampliado + velocidad optimizada</li>
+          <li>Formación ampliada + 2 rondas de cambios</li>
+          <li>Prioridad de soporte</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="note">
+      La cuota mensual cubre hosting, SSL, copias de seguridad, actualizaciones
+      de seguridad y soporte de mantenimiento. Sin permanencia larga: mes a mes.
+      Dominio anual (si no lo tienes) se cotiza aparte. Contenidos (textos y fotos)
+      los aportas tú o se pueden encargar aparte.
+    </p>
+    <footer>
+      NFCTap · contacto@nfctap.tech · España · Válido 30 días<br />
+      Vitrina 300 € · Negocio 550 € · Marca 790 € (+ cuota mensual) · IVA aparte
+    </footer>
+  </div>
+</body>
+</html>

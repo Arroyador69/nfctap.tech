@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NFCTap — App móvil Android e iPhone</title>
+  <style>
+    :root {
+      --bg: #f3eee4;
+      --ink: #1c1915;
+      --muted: #6f675c;
+      --gold: #c49a3c;
+      --card: #fffdf8;
+      --line: #e6ddd0;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: Georgia, "Times New Roman", serif; }
+    .page { max-width: 1040px; margin: 0 auto; padding: 44px 24px 64px; }
+    .kicker {
+      letter-spacing: 0.22em; text-transform: uppercase; font-size: 11px;
+      color: var(--gold); font-family: system-ui, sans-serif;
+    }
+    h1 { font-size: 40px; line-height: 1.08; font-weight: 400; margin: 12px 0 10px; }
+    .lead { color: var(--muted); font-size: 18px; max-width: 42em; }
+    .local {
+      margin: 28px 0 8px; padding: 22px; border: 1px solid var(--line);
+      border-radius: 20px; background: var(--card);
+    }
+    .local h2 { font-size: 22px; font-weight: 400; margin: 0 0 8px; }
+    .packs {
+      display: grid; gap: 16px;
+      grid-template-columns: 1fr 1fr 1fr;
+      margin: 28px 0;
+    }
+    .pack {
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: 22px; padding: 24px 22px; display: flex; flex-direction: column;
+    }
+    .pack.featured { background: var(--ink); color: #f6f1e7; border-color: var(--ink); }
+    .pack.top { background: #2a2318; color: #f6f1e7; border-color: #2a2318; }
+    .tag {
+      font-family: system-ui, sans-serif; font-size: 10px; letter-spacing: 0.16em;
+      text-transform: uppercase; color: var(--gold);
+    }
+    .pack.featured .tag, .pack.top .tag { color: #e2b43a; }
+    h3 { font-size: 26px; font-weight: 400; margin: 8px 0 0; }
+    .amount { font-size: 34px; margin: 12px 0 4px; }
+    .iva { font-size: 13px; color: var(--muted); }
+    .pack.featured .iva, .pack.top .iva { color: #d5cbb8; }
+    .mes {
+      margin: 10px 0 0; padding: 10px 12px; border-radius: 12px;
+      background: #f0e9dc; font-size: 14px; color: var(--ink);
+    }
+    .pack.featured .mes { background: #2c2925; color: #f6f1e7; }
+    .pack.top .mes { background: #3a3228; color: #f6f1e7; }
+    ul { margin: 14px 0 0; padding: 0; list-style: none; }
+    li { padding: 8px 0; border-top: 1px solid var(--line); font-size: 15px; }
+    .pack.featured li, .pack.top li { border-top-color: #3a3530; }
+    .note { font-size: 14px; color: var(--muted); margin-top: 20px; }
+    footer { margin-top: 32px; color: var(--muted); font-size: 14px; }
+    @media (max-width: 900px) { .packs { grid-template-columns: 1fr; } h1 { font-size: 32px; } }
+    @media print { body { background: white; } .page { padding: 8px; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <p class="kicker">NFCTap · nfctap.tech · app Android e iPhone</p>
+    <h1>Tu app en las dos tiendas.<br />Tres opciones. Mantenimiento mes a mes.</h1>
+    <p class="lead">
+      Aplicación para Android y iPhone con tu marca, login y las funciones
+      que tu negocio necesita para vender, reservar o fidelizar clientes.
+      Alta única + cuota mensual de hosting del backend y mantenimiento.
+    </p>
+
+    <div class="local">
+      <h2>Qué incluye siempre</h2>
+      <p class="lead" style="margin:0">
+        Una sola app para Android e iPhone, diseño con tu marca, login de
+        usuarios, panel básico, publicación guiada en Google Play y App Store
+        (cuentas de desarrollador a tu nombre) y formación para usarla.
+        IVA no incluido.
+      </p>
+    </div>
+
+    <div class="packs">
+      <div class="pack featured">
+        <p class="tag">El que más se pide · Android + iPhone</p>
+        <h3>App</h3>
+        <p class="amount">699 €</p>
+        <p class="iva">alta única · IVA no incluido</p>
+        <p class="mes"><strong>29 €/mes</strong> · hosting + mantenimiento</p>
+        <ul>
+          <li>App Android + iPhone (misma app)</li>
+          <li>Login de usuarios / clientes</li>
+          <li>Pantallas principales de tu negocio</li>
+          <li>Notificaciones push básicas</li>
+          <li>Contacto / WhatsApp desde la app</li>
+          <li>Publicación guiada en las dos tiendas</li>
+        </ul>
+      </div>
+
+      <div class="pack">
+        <p class="tag">Para vender y reservar</p>
+        <h3>App Negocio</h3>
+        <p class="amount">990 €</p>
+        <p class="iva">alta única · IVA no incluido</p>
+        <p class="mes"><strong>35 €/mes</strong> · hosting + mantenimiento</p>
+        <ul>
+          <li>Todo App</li>
+          <li>Panel de administración web</li>
+          <li>Reservas, citas o catálogo</li>
+          <li>Pagos in-app o enlace de pago (si aplica)</li>
+          <li>Notificaciones push avanzadas</li>
+          <li>Estadísticas de uso</li>
+        </ul>
+      </div>
+
+      <div class="pack top">
+        <p class="tag">El completo</p>
+        <h3>App Marca</h3>
+        <p class="amount">1.290 €</p>
+        <p class="iva">alta única · IVA no incluido</p>
+        <p class="mes"><strong>45 €/mes</strong> · hosting + mantenimiento</p>
+        <ul>
+          <li>Todo App Negocio</li>
+          <li>Diseño premium a medida</li>
+          <li>Integraciones (agenda, CRM, pasarela…)</li>
+          <li>Más pantallas y flujos a medida</li>
+          <li>Formación ampliada + 2 rondas de cambios</li>
+          <li>Prioridad de soporte y actualizaciones</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="note">
+      La cuota mensual cubre hosting del servidor, bases de datos, SSL,
+      copias de seguridad, actualizaciones de seguridad y mantenimiento.
+      Las tasas anuales de Apple y Google (cuentas de desarrollador) las
+      paga el cliente a las tiendas. Contenidos y cuentas de las stores
+      a tu nombre. Mes a mes, sin permanencia larga. IVA no incluido.
+    </p>
+    <footer>
+      NFCTap · contacto@nfctap.tech · España · Válido 30 días<br />
+      App 699 € · App Negocio 990 € · App Marca 1.290 € (+ cuota mensual) · IVA aparte
+    </footer>
+  </div>
+</body>
+</html>
