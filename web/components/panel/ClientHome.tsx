@@ -7,7 +7,7 @@ import {
   type PanelClientView,
 } from "@/components/panel/PanelWorkspace";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export function ClientHome({
   initial,
@@ -21,11 +21,6 @@ export function ClientHome({
   const now = new Date();
   const y = client.currentMonth?.year || now.getFullYear();
   const m = client.currentMonth?.month || now.getMonth() + 1;
-
-  useEffect(() => {
-    setClient(initial);
-  }, [initial]);
-
   async function logout() {
     await fetch("/api/panel/auth", {
       method: "POST",

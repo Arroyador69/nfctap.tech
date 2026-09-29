@@ -2,6 +2,7 @@
 
 import { ClientHome } from "@/components/panel/ClientHome";
 import type { PanelClientView } from "@/components/panel/PanelWorkspace";
+import Link from "next/link";
 import { useState } from "react";
 
 export function AdminClientDetail({ initial }: { initial: PanelClientView }) {
@@ -39,9 +40,9 @@ export function AdminClientDetail({ initial }: { initial: PanelClientView }) {
   return (
     <div>
       <div className="mx-auto max-w-lg px-4 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <a href="/panel/admin" className="text-sm font-semibold text-[#b0892c]">
+        <Link href="/panel/admin" className="text-sm font-semibold text-[#b0892c]">
           ← Todos los clientes
-        </a>
+        </Link>
         <div className="mt-3 rounded-3xl border border-[#e6ddd0] bg-white p-4">
           <p className="text-sm font-semibold text-[#1c1915]">Ajustar progreso del mes</p>
           <p className="mt-1 text-xs text-[#7a7266]">
@@ -63,7 +64,11 @@ export function AdminClientDetail({ initial }: { initial: PanelClientView }) {
           {msg ? <p className="mt-2 text-sm text-[#5c564c]">{msg}</p> : null}
         </div>
       </div>
-      <ClientHome initial={client} role="admin" />
+      <ClientHome
+        key={`${client.id}-${client.overallProgress}-${client.files.length}`}
+        initial={client}
+        role="admin"
+      />
     </div>
   );
 }

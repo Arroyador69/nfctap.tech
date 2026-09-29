@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useState } from "react";
 import type { PanelClientView } from "@/components/panel/PanelWorkspace";
 
@@ -133,7 +134,7 @@ export function AdminClients({ initial }: { initial: PanelClientView[] }) {
         ) : (
           clients.map((c) => (
             <li key={c.id}>
-              <a
+              <Link
                 href={`/panel/admin/${c.id}`}
                 className="block rounded-2xl border border-[#e6ddd0] bg-white px-4 py-3"
               >
@@ -142,7 +143,7 @@ export function AdminClients({ initial }: { initial: PanelClientView[] }) {
                   {c.packMeta.label} · {c.email} · {c.overallProgress}% trimestre
                   {c.contractAccepted ? " · contrato OK" : " · falta contrato"}
                 </p>
-              </a>
+              </Link>
             </li>
           ))
         )}
