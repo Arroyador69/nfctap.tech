@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
-export type TallerSection = "filamento" | "adhesivos" | "recambios" | "embalaje";
+export type TallerSection = "filamento" | "adhesivos" | "recambios" | "embalaje" | "otro";
 export type TallerUnit = "uds" | "bobinas" | "ml";
 export type TallerColor = "" | "negro" | "blanco" | "amarillo" | "otro";
 
@@ -29,6 +29,7 @@ const SECTIONS: { id: TallerSection; label: string }[] = [
   { id: "adhesivos", label: "Adhesivos" },
   { id: "recambios", label: "Recambios" },
   { id: "embalaje", label: "Embalaje" },
+  { id: "otro", label: "Otro" },
 ];
 
 const COLORS: { id: TallerColor; label: string }[] = [
@@ -44,7 +45,10 @@ function normalizeItem(it: TallerItemView): TallerItemView {
     ...it,
     unit: it.unit === "bobinas" || it.unit === "ml" ? it.unit : "uds",
     section:
-      it.section === "adhesivos" || it.section === "recambios" || it.section === "embalaje"
+      it.section === "adhesivos" ||
+      it.section === "recambios" ||
+      it.section === "embalaje" ||
+      it.section === "otro"
         ? it.section
         : "filamento",
     color:
@@ -440,7 +444,9 @@ export function TallerApp({
                 ? "3M, laca para cama…"
                 : section === "recambios"
                   ? "Boquilla 0,4, PEI…"
-                  : "Caja, cinta, etiqueta…"
+                  : section === "embalaje"
+                    ? "Caja, cinta, etiqueta…"
+                    : "Guantes, alcohol, herramienta…"
           }
           className="w-full rounded-2xl border border-[#e6ddd0] bg-white px-4 py-3.5 text-base text-[#1c1915]"
         />

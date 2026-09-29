@@ -12,7 +12,7 @@ const ID_RE = /^[a-z0-9-]{3,32}$/;
 const COOKIE_PREFIX = "taller_home_";
 
 /** Filamento PLA · pegamentos · boquillas/cama · cajas/cinta envíos. */
-export type TallerSection = "filamento" | "adhesivos" | "recambios" | "embalaje";
+export type TallerSection = "filamento" | "adhesivos" | "recambios" | "embalaje" | "otro";
 export type TallerUnit = "uds" | "bobinas" | "ml";
 export type TallerColor = "" | "negro" | "blanco" | "amarillo" | "otro";
 
@@ -21,6 +21,7 @@ export const TALLER_SECTIONS: TallerSection[] = [
   "adhesivos",
   "recambios",
   "embalaje",
+  "otro",
 ];
 
 export function tallerSectionLabel(s: TallerSection) {
@@ -31,13 +32,22 @@ export function tallerSectionLabel(s: TallerSection) {
       return "Recambios";
     case "embalaje":
       return "Embalaje";
+    case "otro":
+      return "Otro";
     default:
       return "Filamento";
   }
 }
 
 export function normalizeTallerSection(raw: unknown): TallerSection {
-  if (raw === "adhesivos" || raw === "recambios" || raw === "embalaje") return raw;
+  if (
+    raw === "adhesivos" ||
+    raw === "recambios" ||
+    raw === "embalaje" ||
+    raw === "otro"
+  ) {
+    return raw;
+  }
   return "filamento";
 }
 
