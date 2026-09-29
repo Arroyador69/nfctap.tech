@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 
 export function Header() {
   const path = usePathname();
-  if (path === "/w" || path.startsWith("/w/") || path.startsWith("/lista/") || path.startsWith("/taller/")) return null;
+  if (path === "/w" || path.startsWith("/w/") || path.startsWith("/lista/") || path.startsWith("/taller/") || path.startsWith("/panel")) return null;
   return (
     <header
       className="sticky top-0 z-40 border-b border-[#e6ddd0] bg-[#f6f1e8]/85 backdrop-blur-xl"

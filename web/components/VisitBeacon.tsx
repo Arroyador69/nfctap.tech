@@ -13,7 +13,8 @@ export function VisitBeacon() {
       pathname === "/w" ||
       pathname.startsWith("/w/") ||
       pathname.startsWith("/lista/") ||
-      pathname.startsWith("/taller/")
+      pathname.startsWith("/taller/") ||
+      pathname.startsWith("/panel")
     ) {
       return;
     }

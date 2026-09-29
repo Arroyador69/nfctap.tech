@@ -12,7 +12,8 @@ export function Footer() {
     path === "/w" ||
     path.startsWith("/w/") ||
     path.startsWith("/lista/") ||
-    path.startsWith("/taller/")
+    path.startsWith("/taller/") ||
+    path.startsWith("/panel")
   )
     return null;
   const shopBar =
