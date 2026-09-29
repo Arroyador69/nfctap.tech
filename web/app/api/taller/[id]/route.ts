@@ -2,6 +2,7 @@ import {
   addTallerItem,
   assertTallerHome,
   clearDoneTaller,
+  clearTallerItemPhoto,
   clientIpFromHeaders,
   getTaller,
   normalizeTallerColor,
@@ -10,6 +11,7 @@ import {
   patchTallerItem,
   registerTallerHome,
   removeTallerItem,
+  setTallerItemPhoto,
   tallerHomeCookieName,
   tallerHomeCookieOptions,
   tallerHomeCookieValue,
@@ -55,6 +57,29 @@ export async function GET(req: Request, ctx: Ctx) {
 export async function POST(req: Request, ctx: Ctx) {
   const { id } = await ctx.params;
   if (!tallerIdOk(id)) return badId();
+
+  const contentType = req.headers.get("content-type") || "";
+
+  if (contentType.includes("multipart/form-data")) {
+    const access = await gate(req, id);
+    if (!access.ok) return denied(access.reason);
+    try {
+      const form = await req.formData();
+      const itemId = String(form.get("itemId") || "");
+      const file = form.get("photo");
+      if (!itemId || !(file instanceof File)) {
+        return NextResponse.json({ error: "falta foto o ítem" }, { status: 400 });
+      }
+      if (!file.type.startsWith("image/")) {
+        return NextResponse.json({ error: "solo imágenes" }, { status: 400 });
+      }
+      const buf = Buffer.from(await file.arrayBuffer());
+      return okTaller(await setTallerItemPhoto(id, itemId, buf, file.type || "image/jpeg"));
+    } catch (e) {
+      return NextResponse.json({ error: e instanceof Error ? e.message : "error" }, { status: 400 });
+    }
+  }
+
   try {
     const body = (await req.json()) as {
       action?: string;
@@ -63,6 +88,7 @@ export async function POST(req: Request, ctx: Ctx) {
       unit?: string;
       section?: string;
       color?: string;
+      itemId?: string;
       secret?: string;
     };
     if (body.action === "registerHome") {
@@ -82,6 +108,10 @@ export async function POST(req: Request, ctx: Ctx) {
     if (!access.ok) return denied(access.reason);
     if (body.action === "clearDone") {
       return okTaller(await clearDoneTaller(id));
+    }
+    if (body.action === "clearPhoto") {
+      if (!body.itemId) return NextResponse.json({ error: "falta itemId" }, { status: 400 });
+      return okTaller(await clearTallerItemPhoto(id, body.itemId));
     }
     if (body.action === "add" || !body.action) {
       return okTaller(

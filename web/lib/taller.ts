@@ -71,6 +71,7 @@ export type TallerItem = {
   color: TallerColor;
   done: boolean;
   updatedAt: string;
+  photoUrl?: string;
 };
 
 export type Taller = {
@@ -295,6 +296,7 @@ export function normalizeTallerItem(
     color: normalizeTallerColor(raw.color),
     done: Boolean(raw.done),
     updatedAt: raw.updatedAt || new Date().toISOString(),
+    ...(raw.photoUrl ? { photoUrl: raw.photoUrl } : {}),
   };
 }
 
@@ -378,6 +380,8 @@ export function tallerPublicView(t: Taller) {
       section: it.section,
       color: it.color,
       done: it.done,
+      hasPhoto: Boolean(it.photoUrl),
+      photoSrc: it.photoUrl ? `/api/taller/${normalized.id}/photo/${it.id}` : undefined,
     })),
   };
 }
@@ -391,6 +395,87 @@ export function formatTallerQty(qty: number, unit: TallerUnit) {
 export function formatTallerColor(c: TallerColor) {
   if (!c) return "";
   return c;
+}
+
+export async function setTallerItemPhoto(
+  id: string,
+  itemId: string,
+  bytes: Buffer,
+  contentType: string,
+): Promise<Taller> {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    throw new Error("Falta Blob en Vercel para guardar fotos");
+  }
+  if (bytes.length > 1_200_000) throw new Error("Foto demasiado grande");
+  const data = await load();
+  const taller = data.lists[id] ?? emptyTaller(id);
+  const item = taller.items.find((it) => it.id === itemId);
+  if (!item) throw new Error("ítem no encontrado");
+
+  const { put, del } = await import("@vercel/blob");
+  const pathname = `taller-fotos/${id}/${itemId}.jpg`;
+  if (item.photoUrl) {
+    try {
+      await del(item.photoUrl);
+    } catch {
+      /* ok */
+    }
+  }
+  const blob = await put(pathname, bytes, {
+    access: "private",
+    addRandomSuffix: false,
+    allowOverwrite: true,
+    contentType: contentType.startsWith("image/") ? contentType : "image/jpeg",
+    cacheControlMaxAge: 0,
+  });
+  item.photoUrl = blob.url;
+  item.updatedAt = new Date().toISOString();
+  taller.updatedAt = item.updatedAt;
+  data.lists[id] = taller;
+  await persist(data);
+  return taller;
+}
+
+export async function clearTallerItemPhoto(id: string, itemId: string): Promise<Taller> {
+  const data = await load();
+  const taller = data.lists[id] ?? emptyTaller(id);
+  const item = taller.items.find((it) => it.id === itemId);
+  if (!item) throw new Error("ítem no encontrado");
+  if (item.photoUrl && process.env.BLOB_READ_WRITE_TOKEN) {
+    try {
+      const { del } = await import("@vercel/blob");
+      await del(item.photoUrl);
+    } catch {
+      /* ok */
+    }
+  }
+  delete item.photoUrl;
+  item.updatedAt = new Date().toISOString();
+  taller.updatedAt = item.updatedAt;
+  data.lists[id] = taller;
+  await persist(data);
+  return taller;
+}
+
+export async function readTallerItemPhoto(
+  id: string,
+  itemId: string,
+): Promise<{ body: ArrayBuffer; contentType: string } | null> {
+  const data = await load();
+  const item = data.lists[id]?.items.find((it) => it.id === itemId);
+  if (!item?.photoUrl || !process.env.BLOB_READ_WRITE_TOKEN) return null;
+  try {
+    const { get } = await import("@vercel/blob");
+    const result = await get(item.photoUrl, { access: "private" });
+    if (!result || result.statusCode !== 200 || !result.stream) return null;
+    const res = new Response(result.stream);
+    return {
+      body: await res.arrayBuffer(),
+      contentType: result.blob.contentType || "image/jpeg",
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function addTallerItem(
@@ -476,6 +561,15 @@ export async function patchTallerItem(
 export async function removeTallerItem(id: string, itemId: string): Promise<Taller> {
   const data = await load();
   const taller = data.lists[id] ?? emptyTaller(id);
+  const item = taller.items.find((it) => it.id === itemId);
+  if (item?.photoUrl && process.env.BLOB_READ_WRITE_TOKEN) {
+    try {
+      const { del } = await import("@vercel/blob");
+      await del(item.photoUrl);
+    } catch {
+      /* ok */
+    }
+  }
   taller.items = taller.items.filter((it) => it.id !== itemId);
   taller.updatedAt = new Date().toISOString();
   data.lists[id] = taller;
