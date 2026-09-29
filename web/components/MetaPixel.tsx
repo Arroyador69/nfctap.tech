@@ -10,7 +10,14 @@ export function MetaPixel() {
   const first = useRef(true);
 
   useEffect(() => {
-    if (!pathname || pathname.startsWith("/dashboard") || pathname === "/w" || pathname.startsWith("/w/")) {
+    if (
+      !pathname ||
+      pathname.startsWith("/dashboard") ||
+      pathname === "/w" ||
+      pathname.startsWith("/w/") ||
+      pathname.startsWith("/lista/") ||
+      pathname.startsWith("/taller/")
+    ) {
       return;
     }
     if (first.current) {

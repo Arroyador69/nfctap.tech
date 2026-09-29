@@ -12,7 +12,8 @@ export function VisitBeacon() {
       pathname.startsWith("/dashboard") ||
       pathname === "/w" ||
       pathname.startsWith("/w/") ||
-      pathname.startsWith("/lista/")
+      pathname.startsWith("/lista/") ||
+      pathname.startsWith("/taller/")
     ) {
       return;
     }

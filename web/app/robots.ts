@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const disallow = ["/dashboard", "/api/", "/w", "/lista/", "/carrito", "/pedido"];
+const disallow = ["/dashboard", "/api/", "/w", "/lista/", "/taller/", "/carrito", "/pedido"];
 
 export default function robots(): MetadataRoute.Robots {
   return {

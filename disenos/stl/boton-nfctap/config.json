@@ -1,0 +1,47 @@
+{
+  "nombre": "boton-nfctap",
+  "kind": "boton-nfctap",
+  "forma": "circulo",
+  "cuerpo": "negro",
+  "acento": "blanco",
+  "aro": "amarillo",
+  "archivos": [
+    "01_cuerpo.stl",
+    "02_acento.stl",
+    "03_aro.stl"
+  ],
+  "placa": [
+    38.0,
+    38.0,
+    2.0
+  ],
+  "relieve": 0.45,
+  "aro_mm": [
+    33.6,
+    36.8
+  ],
+  "cara": [
+    "NFC",
+    "Tap",
+    ".Tech"
+  ],
+  "tipografia": {
+    "nfc_h": 6.8,
+    "tap_h": 5.0,
+    "tech_h": 4.6
+  },
+  "url": "https://nfctap.tech/taller/casa",
+  "nfc": {
+    "sticker": 25.0,
+    "well": 28.0,
+    "seat": 26.0,
+    "pad": 24.0,
+    "y": 0.0,
+    "z_floor": 0.8,
+    "z_pause": 1.4,
+    "layer": 7,
+    "cover": 0.6000000000000001
+  },
+  "uso": "pegar reverso · materiales / marca",
+  "nota": "Mismo tamaño que lista-nevera. Letras sólidas blancas + aro amarillo."
+}

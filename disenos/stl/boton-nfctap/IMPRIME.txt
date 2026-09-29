@@ -1,0 +1,9 @@
+CAMA — botón NFCTap (marca)
+===========================
+Reverso a la cama (cara lisa = pegar).
+Ø38 × 2.0 mm + relieve 0.5 mm.
+01_cuerpo.stl (negro)
+02_acento.stl (blanco)  NFC / Tap / .Tech
+03_aro.stl (amarillo)
+Agrupar las 3. NO Reparar.
+Pausa capa 7. Ver PAUSA_NFC.txt.

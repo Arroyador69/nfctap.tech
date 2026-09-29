@@ -1,0 +1,9 @@
+Botón NFCTap — un NFC (Timeskey Ø25)
+
+URL del chip (materiales del taller):
+  https://nfctap.tech/taller/casa
+
+Misma clave que el dashboard / lista nevera.
+Primera vez: Wi‑Fi de casa + clave. Luego el TAP abre directo.
+
+Escribe el chip DESPUÉS de imprimir y meter la pegatina.
