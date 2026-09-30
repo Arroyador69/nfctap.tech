@@ -1,0 +1,16 @@
+CUNA TAP — SOLO ESTOS STL
+=========================
+
+CAMA 1 — GRANO (el de siempre, carpeta padre)
+  ../01_grano_negro.stl
+  ../02_grano_oro.stl
+  Pausa NFC capa 15. NO Reparar.
+
+CAMA 2 — CUNA TAP (esta carpeta, sin pausa)
+  03_cuna_letras_negras.stl
+  04_letras_oro.stl
+  Espalda plana en la cama. TAP HERE arriba.
+  Negro=03, amarillo=04. Agrupar. NO Reparar.
+
+NO mezclar grano y cuna en la misma cama.
+NO imprimir la carpeta whatsapp/ ni comprobar/.

@@ -1,0 +1,32 @@
+Freddo's Fuengirola — OPCIÓN cuna TAP
+=====================================
+
+No sustituye a la cuna Freddo's de la carpeta padre. Es otra cara.
+
+Qué cambia
+----------
+Misma cuna negra (ranura, nido, pie, tetones, tamaños).
+El grano es el de siempre (Freddo's COFFEE, reseña, clubcard).
+En la placa, en vez de repetir Freddo's:
+
+        TAP HERE
+
+Solo inglés, un tamaño que llena la cara (sin español). Vale para los dos chips:
+  IZQ  G Google → reseña
+  DER  Wallet   → clubcard / ticks del café
+
+Imprime
+-------
+GRANO: 01 + 02 de la carpeta padre (no hace falta reimprimirlo).
+CUNA:  03 + 04 DE ESTA carpeta. Agrupar. Negro=03, amarillo=04.
+       Espalda plana en la cama. Sin pausa. Sin soportes.
+
+03 es la misma pieza negra que la cuna Freddo's (copia).
+04 es nuevo: TAP HERE + NFCTAP.TECH en el pie.
+
+Medidas (igual que la cuna Freddo's)
+------------------------------------
+Alto montado: 205 mm
+Pie: 145 × 72 mm
+Nido 34 mm · ranura 8.8 mm · labio 8.5 mm
+Cara: TAP HERE 18.0 mm (solo inglés)

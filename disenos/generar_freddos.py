@@ -2,14 +2,15 @@
 """Grano NFC + posado Freddo's (Fuengirola) para AD5X.
 
 El grano es el de la O del logo: ovalo tipo rugby, inclinado a la derecha,
-hendidura en S. Dos NFC (reseña Google / club de puntos) con texto TAP.
+hendidura en S. Dos NFC (reseña Google / Google Wallet).
 
 Piezas
 ------
-  01_grano_negro.stl         cuerpo del grano + TAP / iconos negros
-  02_grano_oro.stl           discos amarillos de los dos TAP
+  01_grano_negro.stl         cuerpo del grano + G Google y icono Google Wallet
+  02_grano_oro.stl           discos amarillos + Freddo's COFFEE + textos
   03_cuna_letras_negras.stl  letras + pie + ranura del grano
   04_letras_oro.stl          wordmark + NFCTAP.TECH bajo las letras
+  opcion-tap/                misma cuna; 04 = TAP HERE solo inglés (Freddo's va en el grano)
 
 Colores en stock: negro + amarillo (el rojo y el blanco no son de marca).
 """
@@ -18,6 +19,7 @@ from __future__ import annotations
 
 import json
 import math
+import shutil
 import sys
 from pathlib import Path
 
@@ -33,11 +35,13 @@ from generar_tarjetas import (  # noqa: E402
     rounded_rect,
     shifted,
     slanted_bar,
-    star,
     stroke_arc,
     text_mesh,
     translate,
+    google_g_mesh,
+    google_g_svg,
 )
+from google_wallet_logo import wallet_mesh, wallet_svg  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 OUT = HERE / "stl" / "freddos-fuengirola"
@@ -47,24 +51,29 @@ WORDMARK_JSON = HERE / "freddos_wordmark.json"
 SCALE = 0.80
 BEAN_TILT = math.radians(-33.0)
 RX, RY = 80.0 * SCALE, 108.0 * SCALE
-BEAN_T = 8.0
+# Pieza real: ranura ~6–7 mm (diseño 8,8). Grano 8 mm no entra.
+# 5,0 mm entra holgado aunque baile. Pozo NFC no se escala en XY.
+BEAN_T = 5.0
 
-# Mismo sistema que la genérica que imprimió bien. Un poco más holgado.
+# Mismo Ø que la genérica. Pila Z más baja para que quepa tapa sobre el chip.
 WELL_D = 36.0
 SEAT_D = 30.0
 STICKER_D = 25.0
 PAD_D = 24.0
 PAD_H = 0.50
-Z_FLOOR = 3.20
-Z_GUIDE = 3.60
-Z_PAUSE = 4.80
+Z_FLOOR = 1.40
+Z_GUIDE = 1.80
+Z_PAUSE = 3.00
 FIRST_LAYER = 0.25
 LAYER_H = 0.20
 COVER = BEAN_T - Z_PAUSE
 
-# Lóbulos: posición a escala. El Ø del pozo se queda.
-NFC_L_LOCAL = (-38.0 * SCALE, 10.0 * SCALE)
-NFC_R_LOCAL = (38.0 * SCALE, -10.0 * SCALE)
+# Izquierda más baja: cabe Freddo's COFFEE arriba y LEAVE A REVIEW debajo.
+# Derecha igual (Wallet + GET YOUR CLUBCARD). Local +Y = punta del rugby.
+NFC_L_LOCAL = (-40.6, 7.0)
+NFC_R_LOCAL = (38.0, 27.0)
+HELVETICA = Path("/System/Library/Fonts/Helvetica.ttc")
+SNELL = Path("/System/Library/Fonts/Supplemental/SnellRoundhand.ttc")
 
 CREASE_W = 8.2 * SCALE
 # S hueca como el logo. 0,93 deja ~6 mm de carne en cada punta: un solo grano.
@@ -77,10 +86,27 @@ TYPE_Z0 = PAD_Z1
 TYPE_Z1 = PAD_Z1 + 0.80
 # Disco TAP en la cara: no se encoge, que se lea.
 PAD_R = 19.6
+# Misma G que la genérica (diámetro 33 mm). Wallet cabe en el disco Ø39.
+G_R = 16.5
+WALLET_W = 28.0
 
-LETTER_RELIEF = 0.90
+LETTER_RELIEF = 1.20
 LETTER_H = 52.0 * SCALE
 WORD_W = 148.0 * SCALE
+# El nido sigue al grano (inclinado a la izquierda). El wordmark va a la
+# izquierda para que Freddo's quepa entero sobre negro, S incluida.
+WORDMARK_DX = -16.0
+LETTER_XY_PAD = 0.20
+LETTER_FACE_PAD = 10.0
+
+# Misma placa y nido. El grano ya lleva Freddo's; la cuna explica el tap
+# (reseña Google + club Wallet). Solo inglés, un tamaño que ocupe el hueco
+# de las dos líneas anteriores sin salirse de la placa.
+CUNA_TAP_DIR = "opcion-tap"
+TAP_EN = "TAP HERE"
+TAP_EN_H = 18.0
+TAP_EN_TRACK = 1.25
+TAP_EN_PAD = 0.12
 
 # Pie + letras = cuna. Z = profundidad (apoyo en mesa). Y = alto.
 FOOT_Y = 8.0
@@ -380,6 +406,320 @@ def _extrude_polys(polys: list[list[tuple[float, float]]], z0: float, z1: float)
     return m
 
 
+def _font_obj(path: Path, face: int):
+    from fontTools.ttLib import TTFont
+    from fontTools.ttLib.ttCollection import TTCollection
+
+    if path.suffix.lower() == ".ttc":
+        return TTCollection(str(path)).fonts[face]
+    return TTFont(str(path))
+
+
+def _ttf_word_glyphs(
+    text: str,
+    h: float,
+    path: Path,
+    face: int = 0,
+    tracking: float = 0.0,
+) -> list[tuple[list[tuple[float, float]], list[list[tuple[float, float]]]]]:
+    from fontTools.pens.svgPathPen import SVGPathPen
+
+    from instagram_logo import svg_rings
+
+    font = _font_obj(path, face)
+    gs = font.getGlyphSet()
+    cmap = font.getBestCmap()
+    os2 = font["OS/2"]
+    cap = float(getattr(os2, "sCapHeight", 0) or 0) or float(font["hhea"].ascent)
+    scale = h / cap
+    glyphs: list[tuple[list[tuple[float, float]], list[list[tuple[float, float]]]]] = []
+    pen_x = 0.0
+    for i, ch in enumerate(text):
+        gid = cmap.get(ord(ch))
+        if gid is None:
+            pen_x += h * 0.35
+            continue
+        glyph = gs[gid]
+        pen = SVGPathPen(gs)
+        glyph.draw(pen)
+        rings = [[(pen_x + px * scale, py * scale) for px, py in ring] for ring in svg_rings(pen.getCommands(), steps=7)]
+        if rings:
+            # Contornos sueltos (punto de la i, del !) son glifos aparte, no agujeros.
+            def _area(r: list[tuple[float, float]]) -> float:
+                return abs(sum(p[0] * q[1] - q[0] * p[1] for p, q in zip(r, r[1:] + r[:1])))
+
+            def _inside(pt: tuple[float, float], poly: list[tuple[float, float]]) -> bool:
+                x, y = pt
+                ok = False
+                n = len(poly)
+                for k in range(n):
+                    x1, y1 = poly[k]
+                    x2, y2 = poly[(k + 1) % n]
+                    if (y1 > y) != (y2 > y) and x < (x2 - x1) * (y - y1) / (y2 - y1 + 1e-18) + x1:
+                        ok = not ok
+                return ok
+
+            parents: list[int | None] = []
+            for i, ring in enumerate(rings):
+                cx = sum(p[0] for p in ring) / len(ring)
+                cy = sum(p[1] for p in ring) / len(ring)
+                container: int | None = None
+                best = 1e18
+                for j, other in enumerate(rings):
+                    if i == j:
+                        continue
+                    if _inside((cx, cy), other) and _area(other) > _area(ring) and _area(other) < best:
+                        best = _area(other)
+                        container = j
+                parents.append(container)
+            for i, ring in enumerate(rings):
+                if parents[i] is not None:
+                    continue
+                holes = [rings[j] for j, p in enumerate(parents) if p == i]
+                glyphs.append((ring, holes))
+        pen_x += glyph.width * scale
+        if i < len(text) - 1:
+            pen_x += tracking
+    if not glyphs:
+        return []
+    xs = [p[0] for outer, _h in glyphs for p in outer]
+    ys = [p[1] for outer, _h in glyphs for p in outer]
+    ox, oy = (min(xs) + max(xs)) / 2.0, (min(ys) + max(ys)) / 2.0
+    out = []
+    for outer, holes in glyphs:
+        out.append(
+            (
+                [(x - ox, y - oy) for x, y in outer],
+                [[(x - ox, y - oy) for x, y in hole] for hole in holes],
+            )
+        )
+    return out
+
+
+def _placed_word_poly(
+    text: str,
+    cx: float,
+    cy: float,
+    h: float,
+    path: Path,
+    face: int = 0,
+    tracking: float = 0.0,
+    rot: float = 0.0,
+    xy_pad: float = 0.0,
+):
+    """Contorno 2D del texto, ya colocado. xy_pad engorda hairlines (boquilla 0,4)."""
+    from shapely.geometry import Polygon
+    from shapely.ops import unary_union
+
+    parts = []
+    for outer, holes in _ttf_word_glyphs(text, h, path, face, tracking):
+        placed_o = xfrm(outer, cx, cy, rot)
+        placed_h = [xfrm(hole, cx, cy, rot) for hole in holes]
+        try:
+            poly = Polygon(placed_o, placed_h)
+        except Exception:
+            poly = Polygon(placed_o)
+        if not poly.is_valid:
+            poly = poly.buffer(0)
+        if not poly.is_empty:
+            parts.append(poly)
+    if not parts:
+        return Polygon()
+    poly = unary_union(parts)
+    if xy_pad:
+        poly = poly.buffer(xy_pad)
+    return poly
+
+
+def _poly_ring_pts(poly) -> list[tuple[float, float]]:
+    geoms = list(poly.geoms) if poly.geom_type == "MultiPolygon" else [poly]
+    pts: list[tuple[float, float]] = []
+    for g in geoms:
+        pts.extend((float(x), float(y)) for x, y in g.exterior.coords)
+        for hole in g.interiors:
+            pts.extend((float(x), float(y)) for x, y in hole.coords)
+    return pts
+
+
+def _assert_nozzle_ok(poly, name: str, min_w: float = 0.44) -> None:
+    """Falla si hay trazo más fino que la boquilla 0,4 mm (se evapora al laminar)."""
+    if poly.is_empty:
+        raise SystemExit(f"  Texto '{name}' vacío.")
+    opened = poly.buffer(-min_w / 2.0).buffer(min_w / 2.0)
+    thin = poly.difference(opened)
+    pct = 100.0 * thin.area / poly.area if poly.area else 100.0
+    if pct > 4.0:
+        raise SystemExit(
+            f"  '{name}' tiene {pct:.0f} % de trazo < {min_w:.2f} mm: "
+            "FlashPrint lo tira. Engorda el glifo."
+        )
+
+
+def _ttf_word_mesh(
+    text: str,
+    cx: float,
+    cy: float,
+    h: float,
+    z0: float,
+    z1: float,
+    path: Path,
+    face: int = 0,
+    tracking: float = 0.0,
+    rot: float = 0.0,
+    xy_pad: float = 0.0,
+) -> Mesh:
+    from instagram_logo import _shapely_extrude
+
+    poly = _placed_word_poly(text, cx, cy, h, path, face, tracking, rot, xy_pad)
+    if poly.is_empty:
+        return Mesh()
+    return _shapely_extrude(poly, z0, z1)
+
+
+def _in_bean(x: float, y: float, margin: float = 1.3) -> bool:
+    left, right = bean_lobe("left"), bean_lobe("right")
+    for i in range(8):
+        a = 2.0 * math.pi * i / 8.0
+        px, py = x + margin * math.cos(a), y + margin * math.sin(a)
+        if not (_pip(px, py, left) or _pip(px, py, right)):
+            return False
+    return True
+
+
+def _require_in_bean(pts: list[tuple[float, float]], name: str) -> None:
+    bad = [(x, y) for x, y in pts if not _in_bean(x, y)]
+    if bad:
+        raise SystemExit(f"  Texto '{name}' se sale del grano ({len(bad)} pts).")
+
+
+def _caption_block(
+    lines: list[str],
+    cx: float,
+    y_top: float,
+    h: float,
+    name: str,
+    tracking: float = 0.55,
+    xy_pad: float = 0.10,
+) -> Mesh:
+    """Mayúsculas Helvetica Bold, centradas, con rayita debajo. Todo dentro del grano."""
+    gap = 1.15
+    m = Mesh()
+    y = y_top - h / 2.0
+    widths: list[float] = []
+    for line in lines:
+        poly = _placed_word_poly(line, cx, y, h, HELVETICA, 1, tracking, xy_pad=xy_pad)
+        _assert_nozzle_ok(poly, name + " / " + line)
+        pts = _poly_ring_pts(poly)
+        xs = [p[0] for p in pts]
+        widths.append(max(xs) - min(xs) if xs else 8.0)
+        _require_in_bean(pts[:: max(1, len(pts) // 40)], name + " / " + line)
+        m.extend(
+            _ttf_word_mesh(
+                line, cx, y, h, PAD_Z0, TYPE_Z1, HELVETICA, face=1, tracking=tracking, xy_pad=xy_pad
+            )
+        )
+        y -= h + gap
+    bar_w = max(min(max(widths) * 0.42, 9.0), 5.5)
+    bar_y = y + gap - 0.35
+    _require_in_bean(
+        [(cx - bar_w / 2, bar_y), (cx + bar_w / 2, bar_y)],
+        name + " raya",
+    )
+    m.extend(extrude(rectangle(bar_w, 0.55, cx, bar_y), PAD_Z0, TYPE_Z1))
+    return m
+
+
+def bean_face_copy() -> Mesh:
+    """Freddo's COFFEE + pies de foto + Have an Ice Day!, encima de la cuna."""
+    from shapely.geometry import Polygon
+    from shapely.ops import unary_union
+
+    from instagram_logo import _shapely_extrude
+
+    m = Mesh()
+    mark_w = 54.0
+    mark_cx, mark_cy = 5.0, 60.6
+    mark_parts = []
+    for poly in logo_wordmark_polys(mark_w):
+        placed = [(x + mark_cx, y + mark_cy) for x, y in poly]
+        geom = Polygon(placed)
+        if not geom.is_valid:
+            geom = geom.buffer(0)
+        if not geom.is_empty:
+            mark_parts.append(geom)
+    mark = unary_union(mark_parts).buffer(0.12)
+    mark_pts = _poly_ring_pts(mark)
+    _require_in_bean(mark_pts[:: max(1, len(mark_pts) // 24)], "Freddo's")
+    _assert_nozzle_ok(mark, "Freddo's")
+    m.extend(_shapely_extrude(mark, PAD_Z0, TYPE_Z1))
+    coffee_y = mark_cy - 8.2
+    coffee = _placed_word_poly("COFFEE", mark_cx, coffee_y, 2.95, HELVETICA, 1, 1.40, xy_pad=0.10)
+    _assert_nozzle_ok(coffee, "COFFEE")
+    _require_in_bean(_poly_ring_pts(coffee)[:: max(1, len(_poly_ring_pts(coffee)) // 30)], "COFFEE")
+    m.extend(
+        _ttf_word_mesh(
+            "COFFEE",
+            mark_cx,
+            coffee_y,
+            2.95,
+            PAD_Z0,
+            TYPE_Z1,
+            HELVETICA,
+            face=1,
+            tracking=1.40,
+            xy_pad=0.10,
+        )
+    )
+    cap_h = 2.85
+    m.extend(
+        _caption_block(
+            ["LEAVE", "A REVIEW"], NFC_L[0], NFC_L[1] - PAD_R - 2.4, cap_h, "LEAVE A REVIEW"
+        )
+    )
+    m.extend(
+        _caption_block(
+            ["GET YOUR", "CLUBCARD"],
+            NFC_R[0],
+            NFC_R[1] - PAD_R - 2.4,
+            2.70,
+            "CLUBCARD",
+            tracking=0.08,
+            xy_pad=0.12,
+        )
+    )
+    # Snell Regular se evapora al laminar (hairlines < 0,4 mm). Bold + 0,32 mm.
+    ice_cx, ice_cy = -1.2, -28.0
+    ice_h = 9.3
+    ice_pad = 0.32
+    ice_face = 1
+    ice_track = -0.08
+    hide_y = BB[2] + NEST + 6.0
+    for label, dy in (("Have", 7.6), ("an Ice Day!", -4.2)):
+        poly = _placed_word_poly(
+            label, ice_cx, ice_cy + dy, ice_h, SNELL, ice_face, ice_track, xy_pad=ice_pad
+        )
+        pts = _poly_ring_pts(poly)
+        _require_in_bean(pts[:: max(1, len(pts) // 30)], label)
+        if min(p[1] for p in pts) < hide_y:
+            raise SystemExit(f"  '{label}' queda tapado por la cuna (y={min(p[1] for p in pts):.1f})")
+        _assert_nozzle_ok(poly, label)
+        m.extend(
+            _ttf_word_mesh(
+                label,
+                ice_cx,
+                ice_cy + dy,
+                ice_h,
+                PAD_Z0,
+                TYPE_Z1,
+                SNELL,
+                face=ice_face,
+                tracking=ice_track,
+                xy_pad=ice_pad,
+            )
+        )
+    return m
+
+
 def bean_gold() -> Mesh:
     m = Mesh()
     for cx, cy in (NFC_L, NFC_R):
@@ -394,35 +734,19 @@ def bean_gold() -> Mesh:
         )
     for cx, cy in (NFC_L, NFC_R):
         m.extend(extrude(circle(cx, cy, PAD_R, 48), PAD_Z0, PAD_Z1))
+    m.extend(bean_face_copy())
     m.extend(extrude(rectangle(2.0, 2.0, 0.0, BB[3] + 8.0), 0.0, 0.20))
     return m
 
 
 def label_reseña() -> Mesh:
-    """Izquierda: estrella + TAP + RESEÑA. Texto horizontal, grano inclinado."""
-    return _stack_label(
-        NFC_L,
-        icon=star(0.0, 0.0, 3.6),
-        title="TAP",
-        sub="RESEÑA",
-    )
+    """Izquierda: G de Google del sistema, centrada en el disco amarillo."""
+    return google_g_mesh(NFC_L[0], NFC_L[1], G_R, TYPE_Z0, TYPE_Z1)
 
 
 def label_puntos() -> Mesh:
-    """Derecha: tarjeta + TAP + PUNTOS. Texto horizontal, grano inclinado."""
-    card = rounded_rect(8.2, 5.4, 1.1)
-    return _stack_label(NFC_R, icon=card, title="TAP", sub="PUNTOS")
-
-
-def _stack_label(origin: tuple[float, float], icon: list[tuple[float, float]], title: str, sub: str) -> Mesh:
-    """Icono y letras en negro, encima del disco amarillo. Siempre horizontales."""
-    m = Mesh()
-    m.extend(extrude(xfrm(icon, origin[0], origin[1] + 10.5), TYPE_Z0, TYPE_Z1))
-    for poly in didot_word(title, 9.4):
-        m.extend(extrude(xfrm(poly, origin[0], origin[1] + 1.8), TYPE_Z0, TYPE_Z1 + 0.05))
-    for poly in didot_word(sub, 6.6):
-        m.extend(extrude(xfrm(poly, origin[0], origin[1] - 7.8), TYPE_Z0, TYPE_Z1))
-    return m
+    """Derecha: icono Google Wallet (tarjetas), centrado en el disco amarillo."""
+    return wallet_mesh(NFC_R[0], NFC_R[1], WALLET_W, TYPE_Z0, TYPE_Z1)
 
 
 # ---------------------------------------------------------------------------
@@ -703,7 +1027,7 @@ def logo_on_baseline(target_w: float = WORD_W) -> tuple[list[list[tuple[float, f
     ys = [p[1] for poly in polys for p in poly]
     dy = -min(ys)
     top = max(ys) + dy
-    return [[(x, y + dy + FOOT_Y) for x, y in poly] for poly in polys], top + FOOT_Y
+    return [[(x + WORDMARK_DX, y + dy + FOOT_Y) for x, y in poly] for poly in polys], top + FOOT_Y
 
 
 def logo_glyphs_on_baseline(target_w: float = WORD_W) -> tuple[list[dict], float]:
@@ -713,8 +1037,8 @@ def logo_glyphs_on_baseline(target_w: float = WORD_W) -> tuple[list[dict], float
     for g in glyphs:
         placed.append(
             {
-                "outer": [(x, y + dy) for x, y in g["outer"]],
-                "holes": [[(x, y + dy) for x, y in h] for h in g["holes"]],
+                "outer": [(x + WORDMARK_DX, y + dy) for x, y in g["outer"]],
+                "holes": [[(x + WORDMARK_DX, y + dy) for x, y in h] for h in g["holes"]],
             }
         )
     return placed, ymax + dy
@@ -854,29 +1178,46 @@ def _csg_diff(body, cuts: list, nombre: str):
     return u
 
 
+def wordmark_xy() -> tuple[float, float, float, float]:
+    glyphs, _top = logo_glyphs_on_baseline()
+    xs = [p[0] for g in glyphs for p in g["outer"]]
+    ys = [p[1] for g in glyphs for p in g["outer"]]
+    return min(xs), max(xs), min(ys), max(ys)
+
+
+def face_plate_x(nest_x0: float, nest_x1: float) -> tuple[float, float]:
+    """Placa de las letras: cubre Freddo's entero. El nido (grano) no se ensancha."""
+    lx0, lx1, _, _ = wordmark_xy()
+    return min(nest_x0, lx0 - LETTER_FACE_PAD), max(nest_x1, lx1 + LETTER_FACE_PAD)
+
+
 def build_cuna_tm(with_letters: bool):
     """Placa negra continua: Freddo's (04) encima, nido ARRIBA con aire, sin cortar glifos."""
     spec = nest_spec()
     lay = spec["lay"]
     x0, x1 = lay["x0"], lay["x1"]
+    fx0, fx1 = face_plate_x(x0, x1)
     nest_y0, nest_y1 = lay["nest_y0"], lay["nest_y1"]
-    fw = lay["foot_w"] + 8.0
+    # Pie solo lo justo: no simétrico. La derecha vacía era plástico tirado.
+    foot_x0 = min(fx0, x0) - 3.0
+    foot_x1 = max(fx1, x1) + 3.0
     fy0, fy1 = spec["floor_y0"], spec["floor_y1"]
     nombre = "cuna" if with_letters else "cuna_test"
     del with_letters  # la cara es placa; el wordmark entero va en 04
     parts = [
         # Pie TRASERO: no sale a la cara, no tapa Freddo's.
-        _tm_box(-fw / 2.0, 0.0, 0.0, fw / 2.0, FOOT_BACK_Y, SLOT_Z1),
+        _tm_box(foot_x0, 0.0, 0.0, foot_x1, FOOT_BACK_Y, SLOT_Z1),
         # Estante DELANTERO, más bajo que el wordmark.
-        _tm_box(-fw / 2.0, 0.0, SLOT_Z1, fw / 2.0, FOOT_FRONT_Y, FOOT_Z),
+        _tm_box(foot_x0, 0.0, SLOT_Z1, foot_x1, FOOT_FRONT_Y, FOOT_Z),
+        # Nido: mismo hueco que el grano (x0..x1). No se toca.
         _tm_box(x0, 0.0, 0.0, x1, nest_y1, SLOT_Z0),
-        _tm_box(x0, FOOT_FRONT_Y, SLOT_Z0, x1, nest_y0, SLOT_Z1),
-        # Cara: desde encima del estante hasta el nido. Letras (04) encima, enteras.
-        _tm_box(x0, FOOT_FRONT_Y, SLOT_Z1, x1, nest_y0, LETTER_Z1),
         _tm_box(x0, fy0 - 0.4, SLOT_Z0 - 0.4, x1, fy1, SLOT_Z1),
         _tm_box(x0 + STOP_W, nest_y1 - LIP, SLOT_Z1 - 0.4, x1 - STOP_W, nest_y1, LETTER_Z1),
         _tm_box(x0, nest_y0, SLOT_Z0, x0 + STOP_W, nest_y1, LETTER_Z1),
         _tm_box(x1 - STOP_W, nest_y0, SLOT_Z0, x1, nest_y1, LETTER_Z1),
+        # Cara de letras: más ancha, Freddo's entero sobre negro.
+        _tm_box(fx0, FOOT_FRONT_Y, SLOT_Z0, fx1, nest_y0, SLOT_Z1),
+        _tm_box(fx0, FOOT_FRONT_Y, SLOT_Z1, fx1, nest_y0, LETTER_Z1),
     ]
     body = _csg_union(parts, nombre)
     cuts = [
@@ -921,17 +1262,81 @@ def assert_encaje() -> None:
             f"(alto {top:.2f} mm, aire {gap:.2f} < {LETTER_CLEAR:.1f})"
         )
     glyphs, _t = logo_glyphs_on_baseline()
+    xmin = min(p[0] for g in glyphs for p in g["outer"])
+    xmax = max(p[0] for g in glyphs for p in g["outer"])
     ymin = min(p[1] for g in glyphs for p in g["outer"])
     ymax = max(p[1] for g in glyphs for p in g["outer"])
     if ymin < FOOT_FRONT_Y + 1.2:
         raise SystemExit(f"  Estante del pie (y={FOOT_FRONT_Y:.1f}) come el wordmark (y0={ymin:.1f})")
     if ymax > spec["lay"]["nest_y0"] - 6.0:
         raise SystemExit(f"  Nido (y={spec['lay']['nest_y0']:.1f}) sigue encima de las letras (y1={ymax:.1f})")
-    print(f"  Wordmark libre  pie {FOOT_FRONT_Y:.1f} → letras {ymin:.1f}…{ymax:.1f} → nido {spec['lay']['nest_y0']:.1f}")
+    plate0, plate1 = face_plate_x(spec["lay"]["x0"], spec["lay"]["x1"])
+    if xmin < plate0 + 2.0 or xmax > plate1 - 2.0:
+        raise SystemExit(
+            f"  Wordmark [{xmin:.1f},{xmax:.1f}] se sale de la placa "
+            f"[{plate0:.1f},{plate1:.1f}] (la S quedaría en el aire)"
+        )
+    print(
+        f"  Wordmark libre  pie {FOOT_FRONT_Y:.1f} → letras {ymin:.1f}…{ymax:.1f} → nido {spec['lay']['nest_y0']:.1f}  "
+        f"x {xmin:.1f}…{xmax:.1f} en placa {plate0:.1f}…{plate1:.1f}"
+    )
     print(
         f"  Encaje OK  ranura {SLOT_W:.1f} (grano {BEAN_T:.1f}, holgura Z {holgura_z:.2f} mm)  "
         f"{len(spec['fits'])} tetones Ø{PEG_D} en bolsillos Ø{PEG_HOLE_D} (abren ARRIBA)"
     )
+    if COVER < 1.85:
+        raise SystemExit(f"  Tapa NFC {COVER:.2f} mm: el chip quedaría al aire")
+    if holgura_z < 1.40:
+        raise SystemExit(f"  Holgura {holgura_z:.2f} mm: hace falta ~1,5 mm para que entre suelto")
+
+
+def _circle_inside(cx: float, cy: float, r: float, poly: list[tuple[float, float]], n: int = 28) -> bool:
+    if not _pip(cx, cy, poly):
+        return False
+    for i in range(n):
+        a = 2.0 * math.pi * i / n
+        if not _pip(cx + r * math.cos(a), cy + r * math.sin(a), poly):
+            return False
+    return True
+
+
+def assert_nfc_fit() -> None:
+    """Pozos enteros en el lóbulo y por encima del nido (no a ras de la cuna)."""
+    left, right = bean_lobe("left"), bean_lobe("right")
+    lay = nest_layout()
+    gap = math.hypot(NFC_L[0] - NFC_R[0], NFC_L[1] - NFC_R[1])
+    if gap < WELL_D + 4.0:
+        raise SystemExit(f"  NFC demasiado juntos ({gap:.1f} mm)")
+    for name, pt, lobe in (("reseña", NFC_L, left), ("puntos", NFC_R, right)):
+        if not _circle_inside(pt[0], pt[1], WELL_D / 2 + 0.4, lobe):
+            raise SystemExit(f"  Pozo {name} se sale del lóbulo")
+        if not _circle_inside(pt[0], pt[1], PAD_R + 0.3, lobe):
+            raise SystemExit(f"  Disco TAP {name} se sale del lóbulo")
+        mounted_y = pt[1] + lay["lift"]
+        if mounted_y - PAD_R < lay["nest_y1"] + 18.0:
+            raise SystemExit(
+                f"  NFC {name} a ras de la cuna "
+                f"(disco y={mounted_y - PAD_R:.1f}, nido {lay['nest_y1']:.1f})"
+            )
+    print(
+        f"  NFC OK  reseña ({NFC_L[0]:.1f},{NFC_L[1]:.1f})  "
+        f"puntos ({NFC_R[0]:.1f},{NFC_R[1]:.1f})  "
+        f"sep {gap:.0f} mm  {COVER:.1f} mm de tapa"
+    )
+
+
+def assert_pausa_hueco() -> None:
+    """La pila Z deja hueco para la pegatina y tapa de PLA encima."""
+    well = Z_PAUSE - Z_FLOOR
+    if well < 1.45:
+        raise SystemExit(f"  Pausa: hueco NFC {well:.2f} mm, hace falta ≥1,45")
+    if COVER < 1.85:
+        raise SystemExit(f"  Pausa: tapa {COVER:.2f} mm, el chip quedaría al aire")
+    if Z_FLOOR + PAD_H > Z_PAUSE - 0.40:
+        raise SystemExit("  Pausa: la mira amarilla invade la capa de la pegatina")
+    if Z_GUIDE + 0.45 > Z_PAUSE - 0.20:
+        raise SystemExit("  Pausa: el anillo de guía cierra el asiento")
+    print(f"  Pausa OK  capa {pause_layer()} ({Z_PAUSE:.2f} mm)  hueco {well:.2f} + tapa {COVER:.2f} mm")
 
 
 def assert_encaje_mesh() -> None:
@@ -1096,16 +1501,97 @@ def stand_gold() -> Mesh:
 
     glyphs, _letter_top = logo_glyphs_on_baseline()
     m = Mesh()
-    for g in glyphs:
+    for i, g in enumerate(glyphs):
         poly = Polygon(g["outer"], g["holes"])
         if not poly.is_valid:
             poly = poly.buffer(0)
-        m.extend(_shapely_extrude(poly, LETTER_Z1, LETTER_Z1 + LETTER_RELIEF))
+        # La S no se infla: el buffer se comía los remates del logo.
+        if LETTER_XY_PAD > 0 and i < len(glyphs) - 1:
+            poly = poly.buffer(LETTER_XY_PAD)
+        if not poly.is_empty:
+            m.extend(_shapely_extrude(poly, LETTER_Z1, LETTER_Z1 + LETTER_RELIEF))
     # Firma en la cara delantera del pie, debajo de Freddo's (visible al cliente).
     m.extend(
         shifted(
             text_mesh("NFCTAP.TECH", pixel=0.70, height=0.80, z0=FOOT_Z, advance=6),
-            0.0,
+            WORDMARK_DX,
+            FOOT_FRONT_Y / 2,
+        )
+    )
+    return m
+
+
+def tap_face_spec() -> dict:
+    """Misma placa que Freddo's. Solo TAP HERE, centrado bajo el nido."""
+    lay = nest_layout()
+    fx0, fx1 = face_plate_x(lay["x0"], lay["x1"])
+    cx = (fx0 + fx1) / 2.0
+    y1 = lay["nest_y0"] - 6.5
+    en_cy = y1 - TAP_EN_H / 2.0
+    return {
+        "lay": lay,
+        "fx0": fx0,
+        "fx1": fx1,
+        "cx": cx,
+        "en_cy": en_cy,
+    }
+
+
+def assert_tap_face() -> None:
+    """TAP HERE dentro de la placa, sin comer pie ni nido."""
+    spec = tap_face_spec()
+    nest_y0 = spec["lay"]["nest_y0"]
+    name, cy, h, track, pad = (
+        TAP_EN,
+        spec["en_cy"],
+        TAP_EN_H,
+        TAP_EN_TRACK,
+        TAP_EN_PAD,
+    )
+    poly = _placed_word_poly(name, spec["cx"], cy, h, HELVETICA, 1, track, xy_pad=pad)
+    if poly.is_empty:
+        raise SystemExit(f"  '{name}' vacío en la cuna TAP.")
+    _assert_nozzle_ok(poly, name)
+    pts = _poly_ring_pts(poly)
+    xs = [p[0] for p in pts]
+    ys = [p[1] for p in pts]
+    if min(ys) < FOOT_FRONT_Y + 1.2:
+        raise SystemExit(f"  '{name}' lo come el estante (y0={min(ys):.1f})")
+    if max(ys) > nest_y0 - 6.0:
+        raise SystemExit(f"  '{name}' lo come el nido (y1={max(ys):.1f}, nido {nest_y0:.1f})")
+    if min(xs) < spec["fx0"] + 2.0 or max(xs) > spec["fx1"] - 2.0:
+        raise SystemExit(
+            f"  '{name}' [{min(xs):.1f},{max(xs):.1f}] se sale de la placa "
+            f"[{spec['fx0']:.1f},{spec['fx1']:.1f}]"
+        )
+    print(
+        f"  Cuna TAP OK  {TAP_EN} @ {TAP_EN_H:.0f} mm  "
+        f"centro x={spec['cx']:.1f}  ancho={max(xs) - min(xs):.0f} mm"
+    )
+
+
+def stand_gold_tap() -> Mesh:
+    """Relieve TAP HERE (solo inglés). El grano sigue llevando Freddo's."""
+    spec = tap_face_spec()
+    m = Mesh()
+    m.extend(
+        _ttf_word_mesh(
+            TAP_EN,
+            spec["cx"],
+            spec["en_cy"],
+            TAP_EN_H,
+            LETTER_Z1,
+            LETTER_Z1 + LETTER_RELIEF,
+            HELVETICA,
+            face=1,
+            tracking=TAP_EN_TRACK,
+            xy_pad=TAP_EN_PAD,
+        )
+    )
+    m.extend(
+        shifted(
+            text_mesh("NFCTAP.TECH", pixel=0.70, height=0.80, z0=FOOT_Z, advance=6),
+            WORDMARK_DX,
             FOOT_FRONT_Y / 2,
         )
     )
@@ -1121,13 +1607,16 @@ def mounted_size() -> dict[str, float]:
     lay = nest_layout()
     ymin_m = lay["ymin"] + lay["lift"]
     ymax_m = BB[3] + lay["lift"]
+    fx0, fx1 = face_plate_x(lay["x0"], lay["x1"])
+    foot_x0 = min(fx0, lay["x0"]) - 3.0
+    foot_x1 = max(fx1, lay["x1"]) + 3.0
     return {
         "alto": ymax_m,
         "letras_alto": lay["letter_top"],
         "nido_alto": NEST,
         "grano_alto": BEAN_H,
         "grano_ancho": BEAN_W,
-        "ancho_pie": lay["foot_w"] + 8.0,
+        "ancho_pie": foot_x1 - foot_x0,
         "fondo_pie": FOOT_Z,
         "grano_grosor": BEAN_T,
         "holgura_ranura": SLOT_W - BEAN_T,
@@ -1139,27 +1628,66 @@ def mounted_size() -> dict[str, float]:
     }
 
 
-def write_preview(path: Path) -> None:
+def _svg_evenodd(poly, fill: str) -> list[str]:
+    geoms = list(poly.geoms) if poly.geom_type == "MultiPolygon" else [poly]
+    out: list[str] = []
+    for g in geoms:
+        d = "M " + " L ".join(f"{x:.2f},{-y:.2f}" for x, y in g.exterior.coords) + " Z"
+        for hole in g.interiors:
+            d += " M " + " L ".join(f"{x:.2f},{-y:.2f}" for x, y in hole.coords) + " Z"
+        out.append(f'<path d="{d}" fill="{fill}" fill-rule="evenodd"/>')
+    return out
+
+
+def write_preview(path: Path, face: str = "freddos") -> None:
     left_d = " ".join(f"{x:.1f},{-y:.1f}" for x, y in bean_lobe("left"))
     right_d = " ".join(f"{x:.1f},{-y:.1f}" for x, y in bean_lobe("right"))
     nl, nr = NFC_L, NFC_R
-    letter_parts = []
-    for poly in logo_on_baseline()[0]:
-        pts = " ".join(f"{x:.2f},{-y:.2f}" for x, y in poly)
-        letter_parts.append(f'<polygon points="{pts}" fill="#E6C36A"/>')
+    letter_parts: list[str] = []
+    if face == "tap":
+        spec = tap_face_spec()
+        poly = _placed_word_poly(
+            TAP_EN,
+            spec["cx"],
+            spec["en_cy"],
+            TAP_EN_H,
+            HELVETICA,
+            1,
+            TAP_EN_TRACK,
+            xy_pad=TAP_EN_PAD,
+        )
+        letter_parts.extend(_svg_evenodd(poly, "#E6C36A"))
+        titulo = "Freddo's — cuna TAP HERE"
+        sub = "Mismo grano y misma cuna · Freddo's va en el grano · solo inglés"
+        pie_nota = "TAP HERE"
+        firma_nota = "NFCTAP.TECH (borde del pie)"
+    else:
+        for poly in logo_on_baseline()[0]:
+            pts = " ".join(f"{x:.2f},{-y:.2f}" for x, y in poly)
+            letter_parts.append(f'<polygon points="{pts}" fill="#E6C36A"/>')
+        titulo = "Freddo's — el wordmark es la cuna"
+        sub = "Letras abajo · grano encajado arriba · G Google / Google Wallet"
+        pie_nota = "Freddo's = cuna"
+        firma_nota = "NFCTAP.TECH (bajo las letras)"
     letter_svg = "\n    ".join(letter_parts)
     svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 860" width="900" height="860">
   <rect width="900" height="860" fill="#1c120c"/>
-  <text x="40" y="40" fill="#E6C36A" font-family="Georgia, serif" font-size="22">Freddo's — el wordmark es la cuna</text>
-  <text x="40" y="62" fill="#9a7a48" font-family="Georgia, serif" font-size="12">Letras abajo · grano encajado arriba · TAP horizontal</text>
+  <text x="40" y="40" fill="#E6C36A" font-family="Georgia, serif" font-size="22">{titulo}</text>
+  <text x="40" y="62" fill="#9a7a48" font-family="Georgia, serif" font-size="12">{sub}</text>
 
   <g transform="translate(230,280) scale(0.92)">
     <polygon points="{left_d}" fill="#111" stroke="#E6C36A" stroke-width="1.2"/>
     <polygon points="{right_d}" fill="#111" stroke="#E6C36A" stroke-width="1.2"/>
-    <circle cx="{nl[0]}" cy="{-nl[1]}" r="18" fill="none" stroke="#E6C36A" stroke-width="2"/>
-    <circle cx="{nr[0]}" cy="{-nr[1]}" r="18" fill="none" stroke="#E6C36A" stroke-width="2"/>
-    <text x="{nl[0]}" y="{-nl[1] - 8}" text-anchor="middle" fill="#E6C36A" font-family="Georgia, serif" font-size="7">TAP RESEÑA</text>
-    <text x="{nr[0]}" y="{-nr[1] - 8}" text-anchor="middle" fill="#E6C36A" font-family="Georgia, serif" font-size="7">TAP PUNTOS</text>
+    <circle cx="{nl[0]}" cy="{-nl[1]}" r="{PAD_R:.1f}" fill="#E6C36A"/>
+    <circle cx="{nr[0]}" cy="{-nr[1]}" r="{PAD_R:.1f}" fill="#E6C36A"/>
+    {google_g_svg(nl[0], -nl[1], G_R, "#111")}
+    {wallet_svg(nr[0], nr[1], WALLET_W, "#111")}
+    <text x="-2" y="-71.2" text-anchor="middle" fill="#E6C36A" font-family="Georgia, serif" font-size="9">Freddo's</text>
+    <text x="-2" y="-62.4" text-anchor="middle" fill="#E6C36A" font-family="Helvetica, sans-serif" font-size="3.2" letter-spacing="1.2">COFFEE</text>
+    <text x="{nl[0]}" y="{-nl[1] + PAD_R + 6}" text-anchor="middle" fill="#E6C36A" font-family="Helvetica, sans-serif" font-size="3.2">LEAVE A REVIEW</text>
+    <text x="{nr[0]}" y="{-nr[1] + PAD_R + 6}" text-anchor="middle" fill="#E6C36A" font-family="Helvetica, sans-serif" font-size="3.2">GET YOUR CLUBCARD</text>
+    <text x="-1.2" y="20.4" text-anchor="middle" fill="#E6C36A" font-family="Snell Roundhand, Georgia, cursive" font-size="9.3" font-weight="700">Have</text>
+    <text x="-1.2" y="32.2" text-anchor="middle" fill="#E6C36A" font-family="Snell Roundhand, Georgia, cursive" font-size="9.3" font-weight="700">an Ice Day!</text>
   </g>
   <text x="230" y="500" text-anchor="middle" fill="#E6C36A" font-family="Georgia, serif" font-size="13">Grano {BEAN_W:.0f} x {BEAN_H:.0f} x {BEAN_T:.0f} mm</text>
 
@@ -1168,17 +1696,17 @@ def write_preview(path: Path) -> None:
   <ellipse cx="620" cy="175" rx="16" ry="58" fill="#111" stroke="#E6C36A" stroke-width="1.4" transform="rotate(-33 620 175)"/>
   <rect x="602" y="228" width="12" height="36" fill="#E6C36A"/>
   <rect x="590" y="262" width="80" height="18" rx="2" fill="#111" stroke="#E6C36A"/>
-  <text x="700" y="170" fill="#9a7a48" font-size="11">tetones + ranura 8,8 mm</text>
-  <text x="700" y="248" fill="#9a7a48" font-size="11">Freddo's = cuna</text>
+  <text x="700" y="170" fill="#9a7a48" font-size="11">tetones + ranura {SLOT_W:.1f} / grano {BEAN_T:.1f} mm</text>
+  <text x="700" y="248" fill="#9a7a48" font-size="11">{pie_nota}</text>
   <text x="700" y="274" fill="#9a7a48" font-size="11">pie {FOOT_Z:.0f} mm + cinta 3M</text>
 
   <g transform="translate(680,430) scale(0.9)">
     {letter_svg}
   </g>
-  <text x="680" y="500" text-anchor="middle" fill="#9a7a48" font-size="10">NFCTAP.TECH (bajo las letras)</text>
+  <text x="680" y="500" text-anchor="middle" fill="#9a7a48" font-size="10">{firma_nota}</text>
 
-  <text x="40" y="560" fill="#E6C36A" font-family="Georgia, serif" font-size="13">Pausa NFC · capa 24 (4,80 mm)</text>
-  <text x="40" y="582" fill="#9a7a48" font-size="12">Hoyos Ø36 · pegatina hundida · 16 capas encima.</text>
+  <text x="40" y="560" fill="#E6C36A" font-family="Georgia, serif" font-size="13">Pausa NFC · capa {pause_layer()} ({Z_PAUSE:.2f} mm)</text>
+  <text x="40" y="582" fill="#9a7a48" font-size="12">Hoyos Ø36 · pegatina hundida · tapa {COVER:.1f} mm.</text>
   <text x="40" y="610" fill="#9a7a48" font-size="12">Negro = 01 + 03. Amarillo = 02 + 04.</text>
 </svg>
 """
@@ -1192,7 +1720,10 @@ Que es
 ------
 1. GRANO rugby inclinado, S HUECA como el logo (se ve el aire).
    Los lóbulos son UNA pieza: carne en las puntas + enlace oculto en el nido.
-   Disco amarillo + TAP negro. Dos NFC Ø25. Abajo: tetones.
+   Disco amarillo: G + LEAVE A REVIEW / Wallet + GET YOUR CLUBCARD.
+   Arriba Freddo's COFFEE. Abajo Have an Ice Day! (Snell Bold, trazo
+   ≥ 0,44 mm para que el laminador no tire las hairlines). Queda por
+   encima de la cuna, visible con el grano encajado.
 2. CUNA = placa negra + Freddo's ENTERO en amarillo (04). El nido va
    8 mm POR ENCIMA del wordmark. El pie delantero queda BAJO las letras,
    no las tapa. Grano de arriba:
@@ -1212,7 +1743,7 @@ Imprime
 -------
 ANTES de las 8 h: test-encaje/ (stub + cuna sin letras). Prueba el tap.
 
-GRANO: solo 01 + 02. Agrupar. Pausa capa 24. NO Reparar.
+GRANO: solo 01 + 02. Agrupar. Pausa capa {layer}. NO Reparar.
 CUNA:  solo 03 + 04. Agrupar. Negro=03, amarillo=04. Sin pausa.
        NO mezclar el grano en la misma cama.
        Coloca la cuna APOYADA EN LA ESPALDA (la cara plana trasera
@@ -1240,7 +1771,7 @@ def write_notes(dest: Path) -> None:
     dim = mounted_size()
     layer = pause_layer()
     (dest / "LEEME.txt").write_text(
-        LEEME.format(foot=FOOT_Z) + (
+        LEEME.format(foot=FOOT_Z, layer=layer) + (
             f"\nMedidas (80 % del original, NFC igual)\n"
             f"--------------------------------------\n"
             f"Alto montado sobre mesa: {dim['alto']:.0f} mm\n"
@@ -1258,7 +1789,7 @@ def write_notes(dest: Path) -> None:
             "Pausa NFC — grano Freddo's (rugby)\n"
             "=================================\n"
             f"Altura: {Z_PAUSE:.2f} mm · capa {layer} (primera 0,25 + 0,20 mm)\n"
-            f"Dos pozos: IZQ reseña · DER puntos. Mismo sistema que la genérica.\n"
+            f"Dos pozos: IZQ Google Reviews · DER Google Wallet. Mismo sistema que la genérica.\n"
             f"Pozo Ø{WELL_D:.0f} · asiento Ø{SEAT_D:.0f} · mira Ø{PAD_D:.0f} · pegatina Ø{STICKER_D:.0f}\n"
             f"Tapa encima: {COVER:.2f} mm\n\n"
             "Proyecto NUEVO. Importa 01_grano_negro + 02_grano_oro → Agrupar → NO Reparar.\n"
@@ -1268,19 +1799,19 @@ def write_notes(dest: Path) -> None:
             "Cuando pare (mira desde ARRIBA):\n"
             "- Círculo amarillo = aquí la pegatina Timeskey Ø25.\n"
             "- Hundida, adhesivo ABAJO. Que no sobresalga. Continuar.\n"
-            "- IZQ = RESEÑA (Google). DER = PUNTOS (club).\n"
+            "- IZQ = G de Google (reseña). DER = Google Wallet.\n"
         ),
         encoding="utf-8",
     )
     (dest / "NFC.txt").write_text(
         (
             "Freddo's Fuengirola — dos NFC en el grano\n\n"
-            "IZQUIERDA — TAP / RESEÑA\n"
+            "IZQUIERDA — G de Google + LEAVE A REVIEW\n"
             "  Google Reviews del local. Pedir el enlace al cliente.\n"
             "  NFC Tap Config → Cualquier enlace → URL de reseña.\n\n"
-            "DERECHA — TAP / PUNTOS\n"
-            "  Alta o tarjeta de fidelidad / club de puntos.\n"
-            "  Pedir URL (web, app, formulario).\n\n"
+            "DERECHA — Google Wallet + GET YOUR CLUBCARD\n"
+            "  Pase / club Google Wallet del local.\n"
+            "  Pedir URL.\n\n"
             "No grabar hasta tener las dos URLs.\n"
         ),
         encoding="utf-8",
@@ -1301,8 +1832,8 @@ def write_notes(dest: Path) -> None:
             "pad": PAD_D,
             "z_pause": Z_PAUSE,
             "layer": pause_layer(),
-            "left": "TAP RESEÑA / Google",
-            "right": "TAP PUNTOS / club",
+            "left": "G Google / reseña",
+            "right": "Google Wallet",
         },
         "encaje": {
             "slot_w": SLOT_W,
@@ -1327,6 +1858,60 @@ def write_notes(dest: Path) -> None:
         },
     }
     (dest / "config.json").write_text(json.dumps(cfg, indent=2, ensure_ascii=False), encoding="utf-8")
+    (dest / "IMPRIME.txt").write_text(
+        (
+            "SOLO ESTOS STL\n"
+            "==============\n\n"
+            f"CAMA 1 — GRANO (pausa NFC capa {layer}, NO Reparar)\n"
+            "  01_grano_negro.stl\n"
+            "  02_grano_oro.stl\n"
+            f"  Grosor {BEAN_T:.1f} mm (entra holgado en ranura {SLOT_W:.1f}).\n\n"
+            "CAMA 2 — CUNA (sin pausa, NO Reparar)\n"
+            "  03_cuna_letras_negras.stl\n"
+            "  04_letras_oro.stl\n"
+            "  Espalda plana en la cama. Freddo's arriba.\n"
+            "  La cuna de la 1ª impresión vale: misma ranura. Reimprime el GRANO.\n\n"
+            "Si FlashPrint dice \"contornos con geometría incorrecta\", NO imprimas.\n"
+            "Proyecto NUEVO. No reabrir .3mf viejos.\n\n"
+            "NO imprimir: carpeta comprobar/ (es el conjunto montado, solo para mirar).\n"
+            "NO mezclar grano y cuna en la misma cama.\n"
+        ),
+        encoding="utf-8",
+    )
+    (dest / "COSTE.txt").write_text(
+        (
+            "Coste Freddo's Fuengirola (redondeo AL ALZA)\n"
+            "PLA 22 €/kg  ·  luz 0,20 €/h (calentamiento incluido)\n"
+            "=====================================================\n\n"
+            "CUNA (1 vez, se reutiliza)\n"
+            "  PLA ~130 g ............................ 2,90 €\n"
+            "  Luz ~8 h .............................. 1,60 €\n"
+            "  --------------------------------\n"
+            "  Cuna .................................. 4,50 €\n\n"
+            "GRANO 1 — 8 mm (no entra)\n"
+            "  PLA ~70 g (61 g slicer + purga) ....... 1,55 €\n"
+            "  Luz ~2 h (1 h 32 + calentar) .......... 0,40 €\n"
+            "  --------------------------------\n"
+            "  Grano 1 ............................... 1,95 €\n\n"
+            "GRANO 2 — 5 mm (TAP / estrella)\n"
+            "  PLA ~50 g ............................. 1,10 €\n"
+            "  Luz ~1 h 30 min ....................... 0,30 €\n"
+            "  --------------------------------\n"
+            "  Grano 2 ............................... 1,40 €\n\n"
+            "GRANO 3 — 5 mm (G + Google Wallet)\n"
+            "  PLA ~50 g ............................. 1,10 €\n"
+            "  Luz ~1 h 30 min ....................... 0,30 €\n"
+            "  --------------------------------\n"
+            "  Grano 3 ............................... 1,40 €\n\n"
+            "2× Timeskey NTAG215 ..................... 1,00 €\n\n"
+            "TOTAL gastado (3 granos + cuna + NFC) ... 11,00 €\n"
+            "  (si reutilizaste las mismas 2 pegatinas: 10,00 €)\n\n"
+            "Pieza buena sola (cuna + grano 3 + NFC) . 7,00 €\n"
+            "Los 2 granos fallidos ................... ~3,50 €\n\n"
+            "A 55 € al cliente cubres material, fallos y tu tiempo.\n"
+        ),
+        encoding="utf-8",
+    )
 
 
 def generate() -> None:
@@ -1339,6 +1924,8 @@ def generate() -> None:
     print(f"  Montado alto {dim['alto']:.0f} mm (máx {MAX_ALTO:.0f})  pie {dim['ancho_pie']:.0f}x{dim['fondo_pie']:.0f} mm")
     print(f"  Encaje: ranura {SLOT_W}  labio {LIP}  nido {NEST}  tetones {len(peg_sites())}  S hueca")
     assert_encaje()
+    assert_nfc_fit()
+    assert_pausa_hueco()
     print(f"  Pausa NFC capa {pause_layer()}  ({Z_PAUSE:.2f} mm)  pozo Ø{WELL_D:.0f} (no escala)")
     bean_body().write_stl(dest / "01_grano_negro.stl", "grano_negro")
     bean_gold().write_stl(dest / "02_grano_oro.stl", "grano_oro")
@@ -1385,5 +1972,95 @@ def generate() -> None:
     print(f"  Test encaje  {test}")
 
 
+LEEME_TAP = """Freddo's Fuengirola — OPCIÓN cuna TAP
+=====================================
+
+No sustituye a la cuna Freddo's de la carpeta padre. Es otra cara.
+
+Qué cambia
+----------
+Misma cuna negra (ranura, nido, pie, tetones, tamaños).
+El grano es el de siempre (Freddo's COFFEE, reseña, clubcard).
+En la placa, en vez de repetir Freddo's:
+
+        TAP HERE
+
+Solo inglés, un tamaño que llena la cara (sin español). Vale para los dos chips:
+  IZQ  G Google → reseña
+  DER  Wallet   → clubcard / ticks del café
+
+Imprime
+-------
+GRANO: 01 + 02 de la carpeta padre (no hace falta reimprimirlo).
+CUNA:  03 + 04 DE ESTA carpeta. Agrupar. Negro=03, amarillo=04.
+       Espalda plana en la cama. Sin pausa. Sin soportes.
+
+03 es la misma pieza negra que la cuna Freddo's (copia).
+04 es nuevo: TAP HERE + NFCTAP.TECH en el pie.
+"""
+
+
+def write_notes_tap(dest: Path) -> None:
+    dest.mkdir(parents=True, exist_ok=True)
+    dim = mounted_size()
+    (dest / "LEEME.txt").write_text(
+        LEEME_TAP
+        + (
+            f"\nMedidas (igual que la cuna Freddo's)\n"
+            f"------------------------------------\n"
+            f"Alto montado: {dim['alto']:.0f} mm\n"
+            f"Pie: {dim['ancho_pie']:.0f} × {dim['fondo_pie']:.0f} mm\n"
+            f"Nido {NEST:.0f} mm · ranura {SLOT_W:.1f} mm · labio {LIP:.1f} mm\n"
+            f"Cara: {TAP_EN} {TAP_EN_H:.1f} mm (solo inglés)\n"
+        ),
+        encoding="utf-8",
+    )
+    (dest / "IMPRIME.txt").write_text(
+        (
+            "CUNA TAP — SOLO ESTOS STL\n"
+            "=========================\n\n"
+            "CAMA 1 — GRANO (el de siempre, carpeta padre)\n"
+            "  ../01_grano_negro.stl\n"
+            "  ../02_grano_oro.stl\n"
+            "  Pausa NFC capa 15. NO Reparar.\n\n"
+            "CAMA 2 — CUNA TAP (esta carpeta, sin pausa)\n"
+            "  03_cuna_letras_negras.stl\n"
+            "  04_letras_oro.stl\n"
+            "  Espalda plana en la cama. TAP HERE arriba.\n"
+            "  Negro=03, amarillo=04. Agrupar. NO Reparar.\n\n"
+            "NO mezclar grano y cuna en la misma cama.\n"
+            "NO imprimir la carpeta whatsapp/ ni comprobar/.\n"
+        ),
+        encoding="utf-8",
+    )
+
+
+def generate_cuna_tap() -> None:
+    dest = OUT / CUNA_TAP_DIR
+    dest.mkdir(parents=True, exist_ok=True)
+    print("\nGenerando cuna TAP  TAP HERE (solo inglés, no toca la cuna Freddo's)")
+    assert_encaje()
+    assert_nfc_fit()
+    assert_pausa_hueco()
+    assert_tap_face()
+    src03 = OUT / "03_cuna_letras_negras.stl"
+    if not src03.exists():
+        raise SystemExit("Falta 03_cuna_letras_negras.stl. Genera primero la cuna Freddo's.")
+    shutil.copy2(src03, dest / "03_cuna_letras_negras.stl")
+    print(f"  copiado  {src03.name} → {dest.name}/")
+    stand_gold_tap().write_stl(dest / "04_letras_oro.stl", "tap")
+    write_preview(dest / "vista-previa.svg", face="tap")
+    write_notes_tap(dest)
+    print(f"  OK  {dest}")
+
+
 if __name__ == "__main__":
-    generate()
+    import argparse
+
+    p = argparse.ArgumentParser()
+    p.add_argument("--cuna", choices=("freddos", "tap"), default="freddos")
+    args = p.parse_args()
+    if args.cuna == "tap":
+        generate_cuna_tap()
+    else:
+        generate()
