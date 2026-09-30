@@ -100,12 +100,11 @@ LETTER_XY_PAD = 0.20
 LETTER_FACE_PAD = 10.0
 
 # Misma placa y nido. El grano ya lleva Freddo's; la cuna explica el tap
-# (reseña Google + club Wallet). Solo inglés, un tamaño que ocupe el hueco
-# de las dos líneas anteriores sin salirse de la placa.
+# (reseña Google + club Wallet). Solo inglés, centrado, con margen en la placa.
 CUNA_TAP_DIR = "opcion-tap"
 TAP_EN = "TAP HERE"
-TAP_EN_H = 18.0
-TAP_EN_TRACK = 1.25
+TAP_EN_H = 14.0
+TAP_EN_TRACK = 1.35
 TAP_EN_PAD = 0.12
 
 # Pie + letras = cuna. Z = profundidad (apoyo en mesa). Y = alto.
@@ -1522,12 +1521,14 @@ def stand_gold() -> Mesh:
 
 
 def tap_face_spec() -> dict:
-    """Misma placa que Freddo's. Solo TAP HERE, centrado bajo el nido."""
+    """Misma placa que Freddo's. Solo TAP HERE, centrado en la cara libre."""
     lay = nest_layout()
     fx0, fx1 = face_plate_x(lay["x0"], lay["x1"])
     cx = (fx0 + fx1) / 2.0
-    y1 = lay["nest_y0"] - 6.5
-    en_cy = y1 - TAP_EN_H / 2.0
+    # Banda entre el nido y el estante del pie: centrar el texto en vertical.
+    y_top = lay["nest_y0"] - 6.5
+    y_bot = FOOT_FRONT_Y + 1.2
+    en_cy = (y_top + y_bot) / 2.0
     return {
         "lay": lay,
         "fx0": fx0,
