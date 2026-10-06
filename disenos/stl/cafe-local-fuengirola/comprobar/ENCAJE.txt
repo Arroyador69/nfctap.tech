@@ -1,0 +1,9 @@
+TEST Café Local ↔ base ranura Ø110
+=========================================
+Montaje: base → O de CANTO en la ranura. Sin 02_encaje.
+
+  Ranura  3.800 × 22.0 × prof 12.0
+  Cara    grosor 3.400  tetón 16.0×12.0
+  Holgura 0.400 mm
+
+  [OK] mismo contrato que copa-nfc / wifi-palo

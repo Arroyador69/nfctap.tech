@@ -1,0 +1,58 @@
+{
+  "nombre": "cafe-local-fuengirola",
+  "fuente": "diseños ravi / Cafe-Local-3D",
+  "escala": 3.5934,
+  "o": {
+    "ancho": 114.99,
+    "alto": 183.79,
+    "grosor": 3.4
+  },
+  "nfc": {
+    "sticker": 25.0,
+    "well": 28.0,
+    "seat": 26.0,
+    "z_pause": 2.0,
+    "layer": 10,
+    "left": {
+      "xy": [
+        -40.3,
+        135.43
+      ],
+      "marca": "Google Reviews"
+    },
+    "right": {
+      "xy": [
+        39.8,
+        135.43
+      ],
+      "marca": "Instagram"
+    }
+  },
+  "soporte": {
+    "tipo": "ranura-estable",
+    "base_d": 110.0,
+    "tenon": [
+      16.0,
+      12.0
+    ],
+    "slot": [
+      3.8,
+      22.0,
+      12.0
+    ]
+  },
+  "montado": {
+    "alto_cara": 225.79,
+    "base_d": 110.0
+  },
+  "colores": {
+    "cuerpo": "negro",
+    "acento": "blanco"
+  },
+  "textos": {
+    "arriba": "LOCAL",
+    "izq": "G Google + TAP HERE",
+    "der": "Instagram + TAP HERE",
+    "abajo": "SIN RODEOS"
+  }
+}

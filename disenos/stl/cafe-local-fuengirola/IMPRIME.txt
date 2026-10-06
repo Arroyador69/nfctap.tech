@@ -1,0 +1,15 @@
+Café Local — cómo imprimir (AD5X)
+=================================
+
+BASE (misma que copa):
+  1. Abrir 01_base.stl + 05_base_tap.stl → Agrupar
+  2. Negro=01 · Blanco=05 · sin soportes · sin pausa
+
+CARA:
+  1. Abrir 03_cara_negro.stl + 04_cara_blanco.stl → Agrupar (NO Reparar)
+  2. Negro=03 · Blanco=04
+  3. Espalda plana en cama (Z=0). Cara con LOCAL arriba.
+  4. Pausa capa 10 (2.00 mm) → 2× Timeskey Ø25
+  5. Sin soportes. Capa 0,20 · primera 0,25
+
+Montaje: base en mesa → cara de CANTO, tetón cae en la ranura.

@@ -1,0 +1,39 @@
+Café Local Fuengirola — O tipográfica NFC
+==========================================
+
+Qué es
+------
+La O del logo LOCAL (Ravi), con hueco en el medio y carne unida.
+Ampliada ×3.59. Dos chips: reseña Google (izq) e Instagram (der).
+
+  LOCAL
+  [G]  TAP HERE     [IG]  TAP HERE
+  [NFC]             [NFC]
+  SIN RODEOS
+       |
+     tetón → base Ø110 ranura (se pone y se quita)
+
+NO es atril: la cara cae de canto en la base estándar NFCTap
+(misma que copa-nfc / wifi-palo). Se acerca al cliente a mano.
+
+Colores: negro (cara+base) + blanco (textos, logos, nfctap.tech).
+
+Montaje
+-------
+1. Base en mesa (cuello arriba, nfctap.tech al cliente).
+2. Cara de canto: tetón CAE en la ranura.
+3. Para enseñar al cliente: se saca, se acerca, se vuelve a poner.
+
+Imprime
+-------
+BASE:  Agrupar 01 + 05. Negro=01, blanco=05. Sin pausa.
+CARA:  Agrupar 03 + 04. Negro=03, blanco=04.
+       Pausa capa 10 (2.00 mm) → 2× Timeskey Ø25.
+
+Medidas
+-------
+O: 115 × 184 × 3.40 mm
+Alto total cara (con palo): 226 mm
+Base Ø110 · ranura 3.80 · tetón 16×12
+NFC: pozo Ø28 @ izq (-40.3,135.4) · der (39.8,135.4)
+Logos Y=175.0 · TAP Y=155.9

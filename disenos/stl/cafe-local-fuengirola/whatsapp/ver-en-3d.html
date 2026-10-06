@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>NFCTap · Café Local</title>
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <style>
+    html, body { margin: 0; height: 100%; background: #16181a; color: #f4f1ea; font-family: Georgia, serif; }
+    model-viewer { width: 100%; height: calc(100% - 64px); background: #22262a; }
+    footer { height: 64px; display: flex; align-items: center; justify-content: center; font-size: 15px; opacity: 0.85; }
+  </style>
+</head>
+<body>
+  <model-viewer src="./Cafe-Local-3D.glb" alt="Café Local NFC"
+    camera-controls touch-action="pan-y" shadow-intensity="0.55" exposure="1.05"
+    camera-orbit="12deg 70deg 0.34m" field-of-view="26deg"
+    poster="./Cafe-Local-propuesta.jpg"></model-viewer>
+  <footer>Café Local · Google + Instagram · NFCTap.tech</footer>
+</body>
+</html>
