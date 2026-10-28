@@ -1,6 +1,5 @@
 "use client";
 
-import { NegocioPreview } from "@/components/NegocioPreview";
 import { unicaPrice } from "@/lib/catalog";
 import { isEmail, isHttpUrl, isPhone, isPostalCode } from "@/lib/logo";
 import { metaClickIds } from "@/lib/meta-pixel";
@@ -21,15 +20,16 @@ const ROLE_LABEL: Record<Role, string> = {
 export function NegocioOrder({
   bodyColor = "negro",
   accentColor = "blanco",
+  logoDataUrl = "",
 }: {
   bodyColor?: BodyColor;
   accentColor?: AccentColor;
+  logoDataUrl?: string;
 }) {
   const [chips, setChips] = useState<1 | 2 | 3>(2);
   const [roles, setRoles] = useState<Role[]>(["google", "instagram", "otro"]);
   const [urls, setUrls] = useState(["", "", ""]);
   const [line1, setLine1] = useState("");
-  const [logoDataUrl, setLogoDataUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [tried, setTried] = useState(false);
@@ -63,34 +63,11 @@ export function NegocioOrder({
     [form],
   );
 
-  function onLogo(file: File | null) {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setError("El logo tiene que ser una imagen (PNG o JPG).");
-      return;
-    }
-    if (file.size > 900_000) {
-      setError("Logo demasiado grande (máx. ~900 KB).");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const data = String(reader.result || "");
-      if (!data.startsWith("data:image/")) {
-        setError("No se pudo leer el logo.");
-        return;
-      }
-      setLogoDataUrl(data);
-      setError("");
-    };
-    reader.readAsDataURL(file);
-  }
-
   async function pay() {
     setTried(true);
     setError("");
     if (!logoDataUrl) {
-      setError("Sube el logo de tu negocio.");
+      setError("Sube el logo arriba, en el círculo de la pieza 3D.");
       return;
     }
     for (let i = 0; i < chips; i++) {
@@ -148,17 +125,12 @@ export function NegocioOrder({
   }
 
   return (
-    <section className="mx-auto grid max-w-6xl gap-8 px-5 pb-24 lg:grid-cols-[minmax(280px,340px)_1fr]">
-      <div className="order-1 lg:sticky lg:top-8 lg:order-none lg:self-start">
-        <div className="rounded-[28px] border border-[#e6ddd0] bg-[#faf6ee] p-5 sm:p-6">
-          <NegocioPreview logoDataUrl={logoDataUrl} line1={line1} roles={roles} chips={chips} />
-        </div>
-      </div>
-      <div className="order-2 rounded-[28px] border border-[#e6ddd0] bg-white p-6 sm:p-8">
+    <section className="mx-auto max-w-6xl px-5 pb-24">
+      <div className="rounded-[28px] border border-[#e6ddd0] bg-white p-6 sm:p-8">
         <h2 className="text-2xl font-semibold">Encargar el tuyo</h2>
         <p className="mt-2 text-sm text-[#6f675c]">
-          Sube el logo (círculo), elige 1–3 chips y paga. Base {euros(unicaPrice(2))} con 2 chips ·
-          +{euros(15)} el tercero · 1 chip {euros(unicaPrice(1))}. Menos de 2 minutos.
+          El logo ya está en el 3D. Elige chips, pega enlaces y paga. Base {euros(unicaPrice(2))}{" "}
+          con 2 chips · +{euros(15)} el tercero · 1 chip {euros(unicaPrice(1))}.
         </p>
 
         <label className="mt-6 block text-sm font-medium">
@@ -178,20 +150,6 @@ export function NegocioOrder({
             ))}
           </div>
         </label>
-
-        <label className="mt-5 block text-sm font-medium">
-          Logo (PNG/JPG)
-          <input
-            type="file"
-            accept="image/*"
-            className="mt-2 block w-full text-sm"
-            onChange={(e) => onLogo(e.target.files?.[0] || null)}
-          />
-        </label>
-        {logoDataUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={logoDataUrl} alt="Logo" className="mt-3 h-16 w-16 rounded-lg object-contain bg-[#f3eee4]" />
-        ) : null}
 
         <label className="mt-5 block text-sm font-medium">
           Nombre en la pieza (opcional)
@@ -263,7 +221,10 @@ export function NegocioOrder({
               ["postalCode", "Código postal"],
             ] as const
           ).map(([key, label]) => (
-            <label key={key} className={`text-sm font-medium ${key === "line1" || key === "line2" ? "sm:col-span-2" : ""}`}>
+            <label
+              key={key}
+              className={`text-sm font-medium ${key === "line1" || key === "line2" ? "sm:col-span-2" : ""}`}
+            >
               {label}
               <input
                 value={form[key]}
@@ -291,12 +252,16 @@ export function NegocioOrder({
 
         <div className="mt-6 space-y-1 text-sm text-[#5c564c]">
           <p className="flex justify-between">
-            <span>Producto ({chips} chip{chips > 1 ? "s" : ""})</span>
+            <span>
+              Producto ({chips} chip{chips > 1 ? "s" : ""})
+            </span>
             <span>{euros(productEuros)}</span>
           </p>
           <p className="flex justify-between">
             <span>Envío ({ZONE_LABEL[zone]})</span>
-            <span>{form.postalCode.length === 5 ? (ship === 0 ? "Gratis" : euros(ship)) : "—"}</span>
+            <span>
+              {form.postalCode.length === 5 ? (ship === 0 ? "Gratis" : euros(ship)) : "—"}
+            </span>
           </p>
           <p className="flex justify-between text-base font-semibold text-[#1c1915]">
             <span>Total</span>
