@@ -37,6 +37,12 @@ export type CardDesign = {
   googleUrl: string;
   /** Segundo NFC (pieza única o segunda genérica). */
   extraUrl?: string;
+  /** Tercer NFC (pieza única con 3 chips). */
+  thirdUrl?: string;
+  /** Nº de chips NFC en pieza única (1–3). Default 2. */
+  chipCount?: 1 | 2 | 3;
+  /** Rol de cada chip: google | instagram | whatsapp | otro */
+  chipRoles?: ("google" | "instagram" | "whatsapp" | "otro")[];
   pieces?: OrderPiece[];
   /** TAP Wi‑Fi de pared: red que grabamos en el chip. */
   wifiSsid?: string;

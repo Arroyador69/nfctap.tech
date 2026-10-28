@@ -2,7 +2,7 @@ import { DashboardNav } from "@/components/DashboardNav";
 import { isAdmin } from "@/lib/auth";
 import { orderGoodsLabel, orderPieces } from "@/lib/catalog";
 import { euros, ZONE_LABEL } from "@/lib/shipping";
-import { polarMissing, polarReady, polarWifiReady } from "@/lib/polar";
+import { polarMissing, polarReady, polarUnicaReady, polarWifiReady } from "@/lib/polar";
 import { blobConfigured, getShipping, listOrders } from "@/lib/store";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -46,6 +46,13 @@ export default async function DashboardPage() {
       {polarReady() && !polarWifiReady() && (
         <p className="mt-4 rounded-2xl bg-[#fff4d6] px-4 py-3 text-sm">
           Falta POLAR_PRODUCT_WIFI_1: los atriles se cobran, el TAP Wi‑Fi de pared no. Corre{" "}
+          <code>npm run polar:setup</code> y pega el ID en Vercel.
+        </p>
+      )}
+
+      {polarReady() && !polarUnicaReady() && (
+        <p className="mt-4 rounded-2xl bg-[#fff4d6] px-4 py-3 text-sm">
+          Falta POLAR_PRODUCT_UNICA_1: /negocio (logo + chips) no cobrará. Corre{" "}
           <code>npm run polar:setup</code> y pega el ID en Vercel.
         </p>
       )}

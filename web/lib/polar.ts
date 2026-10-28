@@ -9,6 +9,7 @@ const PRODUCT_ENV = [
 ] as const;
 
 const WIFI_ENV = "POLAR_PRODUCT_WIFI_1";
+const UNICA_ENV = "POLAR_PRODUCT_UNICA_1";
 
 export function polarHasToken() {
   return Boolean(process.env.POLAR_ACCESS_TOKEN);
@@ -16,6 +17,10 @@ export function polarHasToken() {
 
 export function polarReady() {
   return Boolean(polarHasToken() && PRODUCT_ENV.every((k) => process.env[k]));
+}
+
+export function polarUnicaReady() {
+  return Boolean(polarHasToken() && process.env[UNICA_ENV]);
 }
 
 export function polarMissing() {
@@ -34,8 +39,9 @@ export function polarWifiReady() {
 
 export function polarProductSlot(kind: ProductKind, qty: number) {
   if (kind === "wifi") return WIFI_ENV;
+  if (kind === "unica") return UNICA_ENV;
   const slot = qty >= 2 ? 2 : 1;
-  const k = kind === "generica" ? "GENERIC" : kind === "unica" ? "UNICA" : "CUSTOM";
+  const k = kind === "generica" ? "GENERIC" : "CUSTOM";
   return `POLAR_PRODUCT_${k}_${slot}`;
 }
 
@@ -87,7 +93,14 @@ export async function createPolarCheckout(input: {
   models?: string;
   wifiQty?: number;
 }) {
-  if (!polarReady()) return null;
+  if (input.kind === "unica") {
+    if (!polarUnicaReady()) {
+      console.error(`Polar: falta ${UNICA_ENV}`);
+      return null;
+    }
+  } else if (!polarReady()) {
+    return null;
+  }
   if (input.kind === "wifi" && !process.env[WIFI_ENV]) {
     console.error(`Polar: falta ${WIFI_ENV}`);
     return null;

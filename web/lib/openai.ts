@@ -28,7 +28,7 @@ Hechos que no puedes inventar:
 - Atril NFC de barra: Google, WhatsApp o Instagram. Primera ${PRICE.generica.first} €, cada una más ${PRICE.generica.extra} €.
 - Con logo: primera ${PRICE.personalizada.first} €, cada una más ${PRICE.personalizada.extra} €.
 - TAP Wi‑Fi de pared: ${PRICE.wifi.first} €, adhesivo incluido, diseño fijo (Wi‑Fi + TAP HERE). No lleva logo.
-- Pieza única a medida: ${PRICE.unica.first} €, por email, no se encarga en la web.
+- Pieza con logo (estilo Markos): desde 70 € / 80 € con 2 chips / 95 € con 3 · pedido en /negocio.
 - Impreso en España. Envío Correos 24 h, solo España. Pago Polar (tarjeta, Apple Pay, Bizum).
 - Sin app. Chip NTAG con el enlace del negocio. No hay partnership con Google, Meta ni WhatsApp.
 - El TAP Wi‑Fi: Android se une al tocar; iPhone enseña red y clave.

@@ -7,6 +7,7 @@ import {
   MAX_QTY,
   needsLogo,
   parseKind,
+  unicaPrice,
 } from "@/lib/catalog";
 import { cartGoodsPrice, isCartLine, polarFromCart } from "@/lib/cart";
 import { newId } from "@/lib/ids";
@@ -51,15 +52,21 @@ function parsePieces(kind: CardDesign["kind"], design: CardDesign, qty: number):
   }
   const raw = Array.isArray(design?.pieces) ? design.pieces : [];
   if (kind === "unica") {
-    if (!nfcUrlOk("google", design?.googleUrl || "") && !isHttpUrl(design?.googleUrl || "")) {
-      return { error: "Falta el enlace del primer NFC" };
+    const chips = Math.min(3, Math.max(1, Math.floor(design?.chipCount || 2))) as 1 | 2 | 3;
+    const u1 = (design?.googleUrl || "").trim();
+    const u2 = (design?.extraUrl || "").trim();
+    const u3 = (design?.thirdUrl || "").trim();
+    if (!isHttpUrl(u1)) return { error: "Falta el enlace del primer chip (Google, Instagram u otro)" };
+    const out: OrderPiece[] = [{ model: "personalizada", nfcUrl: u1 }];
+    if (chips >= 2) {
+      if (!isHttpUrl(u2)) return { error: "Falta el enlace del segundo chip" };
+      out.push({ model: "personalizada", nfcUrl: u2 });
     }
-    const extra = typeof design?.extraUrl === "string" ? design.extraUrl.trim() : "";
-    if (!isHttpUrl(extra)) return { error: "Falta el segundo NFC (carta, Instagram o menú)" };
-    return [
-      { model: "personalizada", nfcUrl: design.googleUrl.trim() },
-      { model: "personalizada", nfcUrl: extra },
-    ];
+    if (chips >= 3) {
+      if (!isHttpUrl(u3)) return { error: "Falta el enlace del tercer chip" };
+      out.push({ model: "personalizada", nfcUrl: u3 });
+    }
+    return out;
   }
   if (kind === "personalizada") {
     const url = (design?.googleUrl || raw[0]?.nfcUrl || "").trim();
@@ -142,7 +149,9 @@ function parseCartItems(raw: unknown):
   let used = 0;
   for (const item of raw) {
     if (!isCartLine(item)) return { error: "Hay un producto del carrito que no es válido" };
-    if (item.kind === "unica") return { error: "La pieza única se encarga por email" };
+    if (item.kind === "unica") {
+      return { error: "La pieza con logo y varios chips se pide en /negocio" };
+    }
     const qty = clampQty(item.qty);
     if (used + qty > MAX_QTY) return { error: `Tope ${MAX_QTY} piezas por pedido` };
     used += qty;
@@ -242,17 +251,11 @@ export async function POST(req: Request) {
   const admin = await isAdmin();
   const fromAdmin = admin && body.source === "admin";
   const handover: Handover = fromAdmin && body.handover === "mano" ? "mano" : "envio";
-  if (!fromAdmin && body.kind === "unica") {
-    return NextResponse.json(
-      { error: "La pieza única se encarga por email, no desde la web." },
-      { status: 400 },
-    );
-  }
   const cart = parseCartItems(body.items);
   if (cart && "error" in cart) {
     return NextResponse.json({ error: cart.error }, { status: 400 });
   }
-  const kind = cart ? cart.kind : parseKind(body.kind, fromAdmin);
+  const kind = cart ? cart.kind : parseKind(body.kind, true);
   const design = cart ? cart.design : (body.design as CardDesign);
   const parsed = cart ? cart.pieces : parsePieces(kind, design, clampQty(body.qty));
   if (!cart && parsed && "error" in parsed) {
@@ -340,7 +343,15 @@ export async function POST(req: Request) {
       : undefined;
 
   const settings = await getShipping();
-  const productEuros = cart ? cart.productEuros : goodsPrice(kind, qty, wifiAddon?.qty || 0);
+  const chipCount =
+    kind === "unica"
+      ? (Math.min(3, Math.max(1, Math.floor(design?.chipCount || pieces.length || 2))) as 1 | 2 | 3)
+      : undefined;
+  const productEuros = cart
+    ? cart.productEuros
+    : kind === "unica"
+      ? unicaPrice(chipCount || 2)
+      : goodsPrice(kind, qty, wifiAddon?.qty || 0);
   const shippingPrice = handover === "mano" ? 0 : shippingCost(normalized.zone, settings, productEuros);
   const id = newId();
 
@@ -361,6 +372,9 @@ export async function POST(req: Request) {
       logoMask,
       googleUrl: pieces[0].nfcUrl,
       extraUrl: pieces[1]?.nfcUrl,
+      thirdUrl: pieces[2]?.nfcUrl,
+      chipCount,
+      chipRoles: design?.chipRoles,
       pieces,
       wifiSsid: kind === "wifi" ? (design.wifiSsid || "").trim() : undefined,
       wifiPassword: kind === "wifi" ? (design.wifiOpen ? "" : design.wifiPassword || "") : undefined,

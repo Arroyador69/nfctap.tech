@@ -60,6 +60,14 @@ const PRODUCTS = [
     description:
       "Placa NFC de pared TAP HERE: el huésped acerca el móvil y se conecta al Wi‑Fi. Diseño fijo, adhesivo incluido. Impreso en España. Precio con IVA. En el pago se suma el envío según zona.",
   },
+  {
+    env: "POLAR_PRODUCT_UNICA_1",
+    sku: "UNICA_1",
+    name: "NFCTap tu negocio (logo + chips)",
+    euros: 80,
+    description:
+      "Pieza con tu logo (estilo Markos/Freddo's). 1–3 chips NFC (Google, Instagram, WhatsApp u otro). Base 80 € con 2 chips; 1 chip 70 €; 3 chips 95 €. Impreso en España. Precio con IVA. En el pago se suma el envío. El checkout fija el importe exacto según chips.",
+  },
 ];
 
 function loadDotEnv(url) {

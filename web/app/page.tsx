@@ -108,15 +108,29 @@ export default function HomePage() {
           </article>
         </div>
 
-        <p className="mt-10 max-w-2xl text-sm leading-6 text-[#6f675c]">
-          <span className="font-semibold text-[#1c1915]">Pieza única · {euros(PRICES.unica[1])}. </span>
-          Pieza a medida de tu negocio (forma, logo, dos NFC). Cada caso se diseña aparte: no
-          se encarga desde aquí.{" "}
-          <a className="underline decoration-[#d9cfc0] underline-offset-2" href={`mailto:${BRAND.email}`}>
-            {BRAND.email}
-          </a>
-          .
-        </p>
+        <article className="mt-10 overflow-hidden rounded-[28px] border border-[#1c1915] bg-white md:grid md:grid-cols-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/stock/markos.jpg"
+            alt="Atril personalizado Markos Peluqueros"
+            className="aspect-[4/3] h-full w-full object-cover"
+          />
+          <div className="flex flex-col justify-center p-6 sm:p-8">
+            <p className="text-xs uppercase tracking-[0.18em] text-[#b0892c]">Tu negocio</p>
+            <h3 className="mt-1 text-2xl font-semibold">Logo + 1 a 3 chips NFC</h3>
+            <p className="mt-2 text-sm leading-6 text-[#6f675c]">
+              Como Markos o Freddo&apos;s: subes el logo, eliges Google / Instagram / WhatsApp u otro
+              enlace, y lo enviamos a tu local. Desde {euros(70)} (1 chip) · base {euros(PRICES.unica[1])}{" "}
+              (2 chips) · +{euros(15)} el tercero.
+            </p>
+            <Link
+              href="/negocio"
+              className="mt-6 inline-block rounded-full bg-[#1c1915] px-5 py-2.5 text-center text-sm text-[#f6f1e7]"
+            >
+              Encargar con logo
+            </Link>
+          </div>
+        </article>
       </section>
 
       <section className="mx-auto max-w-6xl px-5 pb-16">

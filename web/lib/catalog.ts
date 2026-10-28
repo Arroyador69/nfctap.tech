@@ -31,22 +31,32 @@ export const MAX_QTY = 30;
 export const PRICE = {
   generica: { first: 20, extra: 15 },
   personalizada: { first: 30, extra: 25 },
-  unica: { first: 70, extra: 0 },
+  /** Base = 2 chips (logo Markos / Freddo's). */
+  unica: { first: 80, extra: 15 },
   wifi: { first: 15, extra: 15 },
 } as const;
+
+/** 1 chip 70 € · 2 chips 80 € · 3 chips 95 € (+15 desde la base de 2). */
+export function unicaPrice(chips: number) {
+  const n = Math.min(3, Math.max(1, Math.floor(chips || 2)));
+  if (n === 1) return 70;
+  return PRICE.unica.first + PRICE.unica.extra * (n - 2);
+}
+
+export const UNICA_CHIP_OPTIONS = [1, 2, 3] as const;
 
 /** Compat: una y pack de dos. El resto usa productPrice(). */
 export const PRICES: Record<ProductKind, { 1: number; 2: number }> = {
   generica: { 1: PRICE.generica.first, 2: PRICE.generica.first + PRICE.generica.extra },
   personalizada: { 1: PRICE.personalizada.first, 2: PRICE.personalizada.first + PRICE.personalizada.extra },
-  unica: { 1: PRICE.unica.first, 2: PRICE.unica.first },
+  unica: { 1: PRICE.unica.first, 2: PRICE.unica.first }, // base 2 chips = 80 €
   wifi: { 1: PRICE.wifi.first, 2: PRICE.wifi.first + PRICE.wifi.extra },
 };
 
-export function productPrice(kind: ProductKind, qty: number) {
+export function productPrice(kind: ProductKind, qty: number, chips?: number) {
   const n = Math.max(0, Math.floor(qty));
   if (n < 1) return 0;
-  if (kind === "unica") return PRICE.unica.first;
+  if (kind === "unica") return unicaPrice(chips ?? 2);
   const { first, extra } = PRICE[kind];
   return first + extra * (n - 1);
 }
@@ -56,9 +66,9 @@ export function wifiPrice(qty: number) {
 }
 
 /** Atriles + TAP Wi‑Fi de pared en el mismo pedido. */
-export function goodsPrice(kind: ProductKind, qty: number, wifiAddonQty = 0) {
+export function goodsPrice(kind: ProductKind, qty: number, wifiAddonQty = 0, chips?: number) {
   const wifi = kind === "wifi" ? 0 : wifiPrice(wifiAddonQty);
-  return productPrice(kind, qty) + wifi;
+  return productPrice(kind, qty, chips) + wifi;
 }
 
 export type ModelCounts = Record<CatalogModel, number>;
@@ -190,7 +200,7 @@ export const TEMPLATES = [
 export const KIND_META: Record<ProductKind, { label: string; short: string }> = {
   generica: { label: "Genérica", short: "Google, WhatsApp o Instagram" },
   personalizada: { label: "Con tu logo", short: "Tu marca" },
-  unica: { label: "Pieza única", short: "Tu negocio · 2 NFC" },
+  unica: { label: "Tu negocio", short: "Logo · 1–3 NFC · desde 70 €" },
   wifi: { label: "TAP Wi‑Fi pared", short: "Pared · adhesivo" },
 };
 
@@ -210,7 +220,7 @@ export function qtysFor(kind: ProductKind): number[] {
   return kind === "unica" ? [1] : [1, 2];
 }
 
-export function parseKind(value: unknown, allowUnica = false): ProductKind {
+export function parseKind(value: unknown, allowUnica = true): ProductKind {
   if (value === "generica" || value === "personalizada" || value === "wifi") return value;
   if (allowUnica && value === "unica") return value;
   return "generica";
@@ -226,7 +236,9 @@ export function parseModels(value: unknown): CatalogModel[] {
 }
 
 export function kindsFor(admin: boolean): ProductKind[] {
-  return admin ? ["generica", "personalizada", "unica", "wifi"] : ["generica", "personalizada", "wifi"];
+  return admin
+    ? ["generica", "personalizada", "unica", "wifi"]
+    : ["generica", "personalizada", "unica", "wifi"];
 }
 
 export function productLabel(kind: ProductKind, qty: number, pieces?: OrderPiece[]) {
