@@ -6,7 +6,7 @@ import { isEmail, isHttpUrl, isPhone, isPostalCode } from "@/lib/logo";
 import { metaClickIds } from "@/lib/meta-pixel";
 import { PROVINCIAS } from "@/lib/provinces";
 import { euros, shippingCost, ZONE_LABEL, zoneFromPostalCode } from "@/lib/shipping";
-import type { ShippingZone } from "@/lib/types";
+import type { AccentColor, BodyColor, ShippingZone } from "@/lib/types";
 import { useMemo, useState } from "react";
 
 type Role = "google" | "instagram" | "whatsapp" | "otro";
@@ -18,7 +18,13 @@ const ROLE_LABEL: Record<Role, string> = {
   otro: "Otro enlace",
 };
 
-export function NegocioOrder() {
+export function NegocioOrder({
+  bodyColor = "negro",
+  accentColor = "blanco",
+}: {
+  bodyColor?: BodyColor;
+  accentColor?: AccentColor;
+}) {
   const [chips, setChips] = useState<1 | 2 | 3>(2);
   const [roles, setRoles] = useState<Role[]>(["google", "instagram", "otro"]);
   const [urls, setUrls] = useState(["", "", ""]);
@@ -110,8 +116,8 @@ export function NegocioOrder() {
             kind: "unica",
             model: "personalizada",
             template: "clasica",
-            bodyColor: "negro",
-            accentColor: "blanco",
+            bodyColor,
+            accentColor,
             line1: line1.trim().slice(0, 22),
             line2: "",
             logoDataUrl,
@@ -151,9 +157,8 @@ export function NegocioOrder() {
       <div className="order-2 rounded-[28px] border border-[#e6ddd0] bg-white p-6 sm:p-8">
         <h2 className="text-2xl font-semibold">Encargar el tuyo</h2>
         <p className="mt-2 text-sm text-[#6f675c]">
-          Mismo diseño que Markos: subes el logo (va en el círculo) y eliges 1–3 chips. Base{" "}
-          {euros(unicaPrice(2))} con 2 chips · +{euros(15)} cada chip extra · 1 chip{" "}
-          {euros(unicaPrice(1))}.
+          Sube el logo (círculo), elige 1–3 chips y paga. Base {euros(unicaPrice(2))} con 2 chips ·
+          +{euros(15)} el tercero · 1 chip {euros(unicaPrice(1))}. Menos de 2 minutos.
         </p>
 
         <label className="mt-6 block text-sm font-medium">

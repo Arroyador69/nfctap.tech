@@ -1,6 +1,6 @@
 # NFCTap · Outreach negocios locales (Resend)
 
-Objetivo: **≥ 5 ventas/día** del producto `/negocio` (logo + 1–3 chips).  
+Objetivo: **≥ 10 ventas/día** del producto `/negocio` (logo + 1–3 chips).  
 Ritmo: **500 mails/día** (10 oleadas × 50), mismo patrón anti-burst que Delfín Check-in.
 
 ## Precios web (pedido online)
@@ -8,11 +8,11 @@ Ritmo: **500 mails/día** (10 oleadas × 50), mismo patrón anti-burst que Delf�
 | Chips | Precio | Notas |
 |-------|--------|--------|
 | 1 | **70 €** | Un enlace (Google / IG / WA / otro) |
-| 2 | **80 €** | Base · referencia Markos / Freddo's |
+| 2 | **80 €** | Base |
 | 3 | **95 €** | +15 € el tercero |
 
-Página: https://nfctap.tech/negocio  
-Imágenes: `/public/stock/markos.jpg`, `freddos.jpg`, `google-barra.jpg`
+Página: https://nfctap.tech/negocio (visor 3D + Polar UNICA)  
+Fotos mail: `/public/stock/freddos.jpg`, `markos.jpg` (sin nombrar clientes)
 
 ## 1. DNS Resend (hacer hoy)
 
@@ -73,9 +73,8 @@ Código: `lib/business-leads/constants.ts`, `template.ts` (mail con foto Markos)
 ## 4. Mail (conversión)
 
 - **Ciudad:** siempre la del negocio lead (Fuengirola primero en cola, luego resto España)
-- **Hero:** Freddos editado (`/stock/freddos.jpg`)
-- **Segunda foto:** Markos barbería (`/stock/markos.jpg`)
-- Menciona web del negocio si la tenemos · firma **NFCTap** (no nombres personales)
+- **Hero + segunda foto:** producto real (`/stock/freddos.jpg`, `/stock/markos.jpg`) · sin nombrar locales
+- Menciona web del negocio si la tenemos · firma **nfctap.tech**
 - CTA «Encargar en 2 minutos» → `/negocio` (80 € · 2 chips · +chips)
 - Rapidez: pedido &lt;2 min · fabricación/envío ~2 días · taller España
 - Código: `lib/business-leads/template.ts`
@@ -97,7 +96,7 @@ Siguiente iteración en este repo:
 | Métrica | Meta |
 |---------|------|
 | Mails | ≤ 500 |
-| Ventas `/negocio` pagadas | ≥ **5** |
+| Ventas `/negocio` pagadas | ≥ **10** |
 | Cola queued | ≥ 800 |
 
 Si llegas a 5 ventas → parar oleadas ese día (reputación + foco en producir pedidos).

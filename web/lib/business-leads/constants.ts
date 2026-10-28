@@ -1,6 +1,6 @@
 /**
  * Outreach negocios locales NFCTap — ritmo anti-burst (mismo patrón que Delfín).
- * Objetivo: ~500 mails/día · meta ≥5 ventas/día.
+ * Objetivo: ~500 mails/día · meta ≥10 ventas/día (/negocio).
  * Proveedor: Resend (dominio nfctap.tech verificado).
  */
 
@@ -12,8 +12,8 @@ export const NFC_LEADS_DAILY_HARD_CAP = 500;
 
 export const NFC_LEADS_WAVES_PER_DAY = 10;
 
-/** Si hay ≥5 pedidos pagados `unica`/`personalizada` ese día → stop envíos. */
-export const NFC_SALES_DAILY_GOAL = 5;
+/** Si hay ≥10 pedidos pagados `unica` ese día → stop envíos. */
+export const NFC_SALES_DAILY_GOAL = 10;
 
 /** Cola mínima tras prepare. */
 export const NFC_LEADS_MIN_QUEUED = 800;

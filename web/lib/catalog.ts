@@ -31,7 +31,7 @@ export const MAX_QTY = 30;
 export const PRICE = {
   generica: { first: 20, extra: 15 },
   personalizada: { first: 30, extra: 25 },
-  /** Base = 2 chips (logo Markos / Freddo's). */
+  /** Base = 2 chips (/negocio). */
   unica: { first: 80, extra: 15 },
   wifi: { first: 15, extra: 15 },
 } as const;

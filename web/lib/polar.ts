@@ -92,6 +92,7 @@ export async function createPolarCheckout(input: {
   zone?: ShippingZone;
   models?: string;
   wifiQty?: number;
+  chips?: number;
 }) {
   if (input.kind === "unica") {
     if (!polarUnicaReady()) {
@@ -144,9 +145,15 @@ export async function createPolarCheckout(input: {
       shipping: String(input.shippingEuros),
       total: String(input.totalEuros),
       zone: input.zone || "",
-      catalog: String(productPrice(input.kind, input.qty)),
+      catalog: String(
+        input.kind === "unica"
+          ? productPrice(input.kind, input.qty, input.chips)
+          : productPrice(input.kind, input.qty),
+      ),
       models: input.models || input.kind,
       wifi: input.wifiQty ? String(input.wifiQty) : "0",
+      chips: input.chips ? String(input.chips) : "",
+      source: input.kind === "unica" ? "negocio" : "web",
     },
   };
   if (input.returnUrl) body.return_url = input.returnUrl;

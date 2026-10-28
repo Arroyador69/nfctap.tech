@@ -7,9 +7,9 @@ export type OutreachVars = {
   city: string;
   /** Web pública del negocio, si la tenemos. */
   websiteUrl?: string;
-  /** Override hero (por defecto Freddos editado). */
+  /** Override hero (pieza en barra). */
   heroImageUrl?: string;
-  /** Segunda foto (por defecto Markos). */
+  /** Segunda foto de producto. */
   secondImageUrl?: string;
 };
 
@@ -68,7 +68,7 @@ export function nfctapOutreachHtml(v: OutreachVars) {
         </td></tr>
         <tr><td style="padding:20px 28px 8px;">
           <p style="margin:0 0 10px;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#b0892c;">Así queda en local</p>
-          <img src="${escapeAttr(second)}" alt="Ejemplo Markos Peluqueros — atril NFC con logo" width="504" style="display:block;width:100%;max-width:504px;height:auto;border:0;border-radius:14px;" />
+          <img src="${escapeAttr(second)}" alt="Pieza NFC con logo — NFCTap" width="504" style="display:block;width:100%;max-width:504px;height:auto;border:0;border-radius:14px;" />
         </td></tr>
         <tr><td style="padding:16px 28px 28px;font-size:12px;color:#a39a8c;line-height:1.5;">
           NFCTap · taller en España · ${BRAND.email}<br />

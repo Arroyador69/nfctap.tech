@@ -112,22 +112,22 @@ export default function HomePage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/stock/markos.jpg"
-            alt="Atril personalizado Markos Peluqueros"
+            alt="Pieza NFC con logo en la barra — NFCTap"
             className="aspect-[4/3] h-full w-full object-cover"
           />
           <div className="flex flex-col justify-center p-6 sm:p-8">
             <p className="text-xs uppercase tracking-[0.18em] text-[#b0892c]">Tu negocio</p>
             <h3 className="mt-1 text-2xl font-semibold">Logo + 1 a 3 chips NFC</h3>
             <p className="mt-2 text-sm leading-6 text-[#6f675c]">
-              Como Markos o Freddo&apos;s: subes el logo, eliges Google / Instagram / WhatsApp u otro
-              enlace, y lo enviamos a tu local. Desde {euros(70)} (1 chip) · base {euros(PRICES.unica[1])}{" "}
+              La ves en 3D, subes el logo y eliges Google, Instagram, WhatsApp u otro enlace. Envío
+              a tu local en unos 2 días. Desde {euros(70)} (1 chip) · base {euros(PRICES.unica[1])}{" "}
               (2 chips) · +{euros(15)} el tercero.
             </p>
             <Link
               href="/negocio"
               className="mt-6 inline-block rounded-full bg-[#1c1915] px-5 py-2.5 text-center text-sm text-[#f6f1e7]"
             >
-              Encargar con logo
+              Ver en 3D y encargar
             </Link>
           </div>
         </article>

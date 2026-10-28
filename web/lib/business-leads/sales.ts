@@ -4,13 +4,13 @@ import { NFC_SALES_DAILY_GOAL } from "./constants";
 
 const PAID = new Set(["pagado", "en_impresion", "enviado", "entregado"]);
 
-/** Pedidos pagados unica/personalizada del día (Madrid). */
+/** Pedidos pagados `/negocio` (unica) del día (Madrid) — KPI oleadas. */
 export async function salesTodayCount() {
   const day = madridDate();
   const orders = await listOrders();
   return orders.filter((o) => {
     if (!PAID.has(o.status)) return false;
-    if (o.kind !== "unica" && o.kind !== "personalizada") return false;
+    if (o.kind !== "unica") return false;
     const created = o.createdAt?.slice(0, 10);
     // createdAt ISO → comparar fecha Madrid vía toLocale
     const madrid = new Intl.DateTimeFormat("en-CA", {

@@ -426,6 +426,7 @@ export async function POST(req: Request) {
       zone: normalized.zone,
       models: pieces.map((p) => p.model).join(","),
       wifiQty: wifiAddon?.qty || (kind === "wifi" ? qty : 0),
+      chips: kind === "unica" ? chipCount : undefined,
     });
   } catch {
     checkoutUrl = null;
