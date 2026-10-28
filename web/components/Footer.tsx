@@ -37,6 +37,9 @@ export function Footer() {
             <Link href="/guia" className="hover:text-[#1c1915]">
               Guía
             </Link>
+            <Link href="/#a-medida" className="hover:text-[#1c1915]">
+              A medida
+            </Link>
             <Link href="/envios" className="hover:text-[#1c1915]">
               Envíos
             </Link>

@@ -61,6 +61,10 @@ export const HOME_FAQ: FaqItem[] = [
     q: "¿El TAP Wi‑Fi de pared es lo mismo que el atril?",
     a: "No. El atril va en la barra. El TAP Wi‑Fi se pega a la pared: el huésped acerca el móvil y se conecta a la red. Diseño fijo, adhesivo incluido.",
   },
+  {
+    q: "¿Hacéis llaveros u otras piezas a medida?",
+    a: `Sí. Llaveros NFC, placas, expositores y packs de evento. Escríbenos a ${BRAND.email} con la idea: te mandamos mockup 3D y precio cerrado. Los atriles y el Wi‑Fi se encargan online; lo demás lo diseñamos contigo.`,
+  },
 ];
 
 export function organizationJsonLd() {

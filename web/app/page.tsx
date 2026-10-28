@@ -131,6 +131,56 @@ export default function HomePage() {
             </Link>
           </div>
         </article>
+
+        <article
+          id="a-medida"
+          className="mt-5 rounded-[28px] border border-[#e6ddd0] bg-[#faf6ee] p-6 sm:p-8 md:grid md:grid-cols-[1.2fr_1fr] md:gap-8"
+        >
+          <div>
+            <p className="text-xs uppercase tracking-[0.18em] text-[#b0892c]">Más allá del atril</p>
+            <h3 className="mt-1 font-[family-name:var(--font-display)] text-2xl sm:text-3xl">
+              Llaveros, placas, expositores… a medida
+            </h3>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-[#5c564c]">
+              También hacemos <strong>llaveros NFC</strong>, placas de mesa, expositores, botones y
+              piezas con tu marca. Si lo que necesitas no está en la tienda, escríbenos: te
+              diseñamos la idea, te mandamos mockup 3D y la imprimimos.
+            </p>
+            <ul className="mt-4 grid gap-2 text-sm text-[#5c564c] sm:grid-cols-2">
+              <li>· Llaveros y colgantes NFC</li>
+              <li>· Placas y carteles de mostrador</li>
+              <li>· Expositores y stands de marca</li>
+              <li>· Packs evento / feria</li>
+            </ul>
+            <a
+              href={`mailto:${BRAND.email}?subject=${encodeURIComponent("Idea a medida NFCTap")}&body=${encodeURIComponent("Hola, quiero una pieza a medida.\n\nNegocio:\nQué necesito (llavero, placa…):\nCantidad aprox:\n")}`}
+              className="mt-6 inline-block rounded-full bg-[#1c1915] px-5 py-2.5 text-sm text-[#f6f1e7]"
+            >
+              Escríbenos tu idea
+            </a>
+            <p className="mt-2 text-xs text-[#8a8173]">{BRAND.email}</p>
+          </div>
+          <div className="mt-6 flex flex-col justify-center rounded-[22px] border border-[#e6ddd0] bg-white p-5 md:mt-0">
+            <p className="text-sm font-medium text-[#1c1915]">Cómo va</p>
+            <ol className="mt-3 space-y-2 text-sm text-[#6f675c]">
+              <li>
+                <span className="font-semibold text-[#1c1915]">1.</span> Nos cuentas el uso y el logo
+              </li>
+              <li>
+                <span className="font-semibold text-[#1c1915]">2.</span> Te mandamos propuesta 3D /
+                JPG
+              </li>
+              <li>
+                <span className="font-semibold text-[#1c1915]">3.</span> Precio cerrado · impresión ·
+                envío
+              </li>
+            </ol>
+            <p className="mt-4 text-xs leading-5 text-[#8a8173]">
+              Sin checkout online para estas piezas: cada diseño es distinto. Los atriles y el TAP
+              Wi‑Fi sí se encargan aquí.
+            </p>
+          </div>
+        </article>
       </section>
 
       <section className="mx-auto max-w-6xl px-5 pb-16">
