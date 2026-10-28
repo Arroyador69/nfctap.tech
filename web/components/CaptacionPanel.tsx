@@ -43,7 +43,7 @@ export function CaptacionPanel({
       <h2 className="text-lg font-semibold">Pruebas (antes de oleadas)</h2>
       <p className="mt-1 text-sm text-[#6f675c]">
         1) Mail a ti · 2) Ping Telegram · 3) Solo entonces encender cron de oleadas.
-        {salesStop ? " Hoy ya hay ≥5 ventas: no hace falta oleada." : null}
+        {salesStop ? " Hoy ya hay ≥10 ventas: no hace falta oleada." : null}
       </p>
 
       <label className="mt-4 block text-sm font-medium">

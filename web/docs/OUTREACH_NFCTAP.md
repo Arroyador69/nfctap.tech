@@ -68,7 +68,7 @@ Cada envío: `city` + `businessName` (+ `websiteUrl` si hay) en `OutreachVars`.
 | Ventana | 08:00–17:30 Madrid |
 | Stop | si ventas pagadas ≥ **5** ese día |
 
-Código: `lib/business-leads/constants.ts`, `template.ts` (mail con foto Markos), `send-resend.ts`.
+Código: `lib/business-leads/constants.ts`, `template.ts`, `send-resend.ts`.
 
 ## 4. Mail (conversión)
 
@@ -99,4 +99,4 @@ Siguiente iteración en este repo:
 | Ventas `/negocio` pagadas | ≥ **10** |
 | Cola queued | ≥ 800 |
 
-Si llegas a 5 ventas → parar oleadas ese día (reputación + foco en producir pedidos).
+Si llegas a 10 ventas `/negocio` → parar oleadas ese día (reputación + foco en producir).
