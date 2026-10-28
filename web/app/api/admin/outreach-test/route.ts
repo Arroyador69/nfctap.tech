@@ -37,8 +37,9 @@ export async function POST(req: Request) {
       process.env.RESEND_FROM?.trim() ||
       `NFCTap <hola@${process.env.NEXT_PUBLIC_SITE_DOMAIN || "nfctap.tech"}>`;
     const r = await sendNfctapOutreach(to, {
-      businessName: "Prueba NFCTap",
+      businessName: "Café de prueba",
       city: "Fuengirola",
+      websiteUrl: "https://ejemplo-cafe.es",
     });
     out.mail = r.ok
       ? { ok: true, id: r.id, from }

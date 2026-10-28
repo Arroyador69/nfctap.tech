@@ -1,5 +1,10 @@
 import { BRAND } from "@/lib/catalog";
-import { nfctapOutreachHtml, nfctapOutreachText, type OutreachVars } from "./template";
+import {
+  nfctapOutreachHtml,
+  nfctapOutreachSubject,
+  nfctapOutreachText,
+  type OutreachVars,
+} from "./template";
 
 export type SendResult =
   | { ok: true; id: string; provider: "resend" }
@@ -8,6 +13,7 @@ export type SendResult =
 /**
  * Envía un cold email vía Resend.
  * Requiere RESEND_API_KEY y dominio nfctap.tech verificado (SPF/DKIM).
+ * From: NFCTap (marca), nunca un nombre personal.
  */
 export async function sendNfctapOutreach(
   to: string,
@@ -21,8 +27,6 @@ export async function sendNfctapOutreach(
     process.env.SMTP_FROM_OUTREACH?.trim() ||
     `NFCTap <hola@${BRAND.domain}>`;
 
-  const subject = `${vars.businessName || "Tu local"}: atril NFC con tu logo desde la barra`;
-
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -32,7 +36,8 @@ export async function sendNfctapOutreach(
     body: JSON.stringify({
       from,
       to: [to],
-      subject,
+      reply_to: BRAND.email,
+      subject: nfctapOutreachSubject(vars),
       html: nfctapOutreachHtml(vars),
       text: nfctapOutreachText(vars),
       tags: [{ name: "campaign", value: "nfctap_local_es" }],

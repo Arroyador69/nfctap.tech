@@ -47,14 +47,15 @@ Pasos:
 
 ## 2. Geografía
 
-Orden de cola (constants):
+Orden de cola (constants) — el **mail siempre pone la ciudad del lead**, no un sitio fijo:
 
 1. Fuengirola  
 2. Mijas · Benalmádena · Torremolinos  
 3. Málaga · Marbella  
-4. Resto provincia / Andalucía  
+4. Resto provincia / Andalucía → resto España  
 
 Tipos: café, restaurante, bar, peluquería, belleza, hotel, comida rápida.
+Cada envío: `city` + `businessName` (+ `websiteUrl` si hay) en `OutreachVars`.
 
 ## 3. Ritmo
 
@@ -69,11 +70,15 @@ Tipos: café, restaurante, bar, peluquería, belleza, hotel, comida rápida.
 
 Código: `lib/business-leads/constants.ts`, `template.ts` (mail con foto Markos), `send-resend.ts`.
 
-## 4. Mail
+## 4. Mail (conversión)
 
-- **Primera imagen:** Markos mockup barbería (`/stock/markos.jpg`)
-- CTA → `/negocio`
-- Texto corto + baja
+- **Ciudad:** siempre la del negocio lead (Fuengirola primero en cola, luego resto España)
+- **Hero:** Freddos editado (`/stock/freddos.jpg`)
+- **Segunda foto:** Markos barbería (`/stock/markos.jpg`)
+- Menciona web del negocio si la tenemos · firma **NFCTap** (no nombres personales)
+- CTA «Encargar en 2 minutos» → `/negocio` (80 € · 2 chips · +chips)
+- Rapidez: pedido &lt;2 min · fabricación/envío ~2 días · taller España
+- Código: `lib/business-leads/template.ts`
 
 ## 5. Descubrir emails
 
