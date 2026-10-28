@@ -40,6 +40,9 @@ export function Footer() {
             <Link href="/#a-medida" className="hover:text-[#1c1915]">
               A medida
             </Link>
+            <a href="/otros-servicios.pdf" className="hover:text-[#1c1915]" target="_blank" rel="noopener noreferrer">
+              Otros servicios
+            </a>
             <Link href="/envios" className="hover:text-[#1c1915]">
               Envíos
             </Link>

@@ -152,12 +152,22 @@ export default function HomePage() {
               <li>· Expositores y stands de marca</li>
               <li>· Packs evento / feria</li>
             </ul>
-            <a
-              href={`mailto:${BRAND.email}?subject=${encodeURIComponent("Idea a medida NFCTap")}&body=${encodeURIComponent("Hola, quiero una pieza a medida.\n\nNegocio:\nQué necesito (llavero, placa…):\nCantidad aprox:\n")}`}
-              className="mt-6 inline-block rounded-full bg-[#1c1915] px-5 py-2.5 text-sm text-[#f6f1e7]"
-            >
-              Escríbenos tu idea
-            </a>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <a
+                href={`mailto:${BRAND.email}?subject=${encodeURIComponent("Idea a medida NFCTap")}&body=${encodeURIComponent("Hola, quiero una pieza a medida.\n\nNegocio:\nQué necesito (llavero, placa…):\nCantidad aprox:\n")}`}
+                className="inline-block rounded-full bg-[#1c1915] px-5 py-2.5 text-sm text-[#f6f1e7]"
+              >
+                Escríbenos tu idea
+              </a>
+              <a
+                href="/otros-servicios.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block rounded-full bg-white px-5 py-2.5 text-sm ring-1 ring-[#e6ddd0]"
+              >
+                Otros servicios (PDF)
+              </a>
+            </div>
             <p className="mt-2 text-xs text-[#8a8173]">{BRAND.email}</p>
           </div>
           <div className="mt-6 flex flex-col justify-center rounded-[22px] border border-[#e6ddd0] bg-white p-5 md:mt-0">
@@ -176,8 +186,8 @@ export default function HomePage() {
               </li>
             </ol>
             <p className="mt-4 text-xs leading-5 text-[#8a8173]">
-              Sin checkout online para estas piezas: cada diseño es distinto. Los atriles y el TAP
-              Wi‑Fi sí se encargan aquí.
+              En el PDF: packs de redes (Barrio → Faro) y piezas a medida. Sin checkout online;
+              atriles, Wi‑Fi y /negocio sí se encargan aquí.
             </p>
           </div>
         </article>

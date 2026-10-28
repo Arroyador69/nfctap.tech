@@ -131,7 +131,7 @@ export function NegocioOrder() {
         return;
       }
       if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
+        window.location.assign(data.checkoutUrl);
         return;
       }
       setError("Pedido creado, pero no hay enlace de pago. Escríbenos a contacto@nfctap.tech");
