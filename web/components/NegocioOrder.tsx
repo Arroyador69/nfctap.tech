@@ -142,15 +142,18 @@ export function NegocioOrder() {
   }
 
   return (
-    <section className="mx-auto grid max-w-6xl gap-8 px-5 pb-24 lg:grid-cols-[320px_1fr]">
-      <div className="lg:sticky lg:top-8 lg:self-start">
-        <NegocioPreview logoDataUrl={logoDataUrl} line1={line1} roles={roles} chips={chips} />
+    <section className="mx-auto grid max-w-6xl gap-8 px-5 pb-24 lg:grid-cols-[minmax(280px,340px)_1fr]">
+      <div className="order-1 lg:sticky lg:top-8 lg:order-none lg:self-start">
+        <div className="rounded-[28px] border border-[#e6ddd0] bg-[#faf6ee] p-5 sm:p-6">
+          <NegocioPreview logoDataUrl={logoDataUrl} line1={line1} roles={roles} chips={chips} />
+        </div>
       </div>
-      <div className="rounded-[28px] border border-[#e6ddd0] bg-white p-6 sm:p-8">
+      <div className="order-2 rounded-[28px] border border-[#e6ddd0] bg-white p-6 sm:p-8">
         <h2 className="text-2xl font-semibold">Encargar el tuyo</h2>
         <p className="mt-2 text-sm text-[#6f675c]">
-          Sube el logo (se ve en el círculo, estilo Markos). Elige 1–3 chips y pega los enlaces. Base{" "}
-          {euros(unicaPrice(2))} con 2 chips · +{euros(15)} cada chip extra · 1 chip {euros(unicaPrice(1))}.
+          Mismo diseño que Markos: subes el logo (va en el círculo) y eliges 1–3 chips. Base{" "}
+          {euros(unicaPrice(2))} con 2 chips · +{euros(15)} cada chip extra · 1 chip{" "}
+          {euros(unicaPrice(1))}.
         </p>
 
         <label className="mt-6 block text-sm font-medium">

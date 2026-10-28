@@ -44,7 +44,7 @@ export function nfctapOutreachHtml(v: OutreachVars) {
             ${escapeHtml(name)}: una pieza con tu logo que el cliente toca y entra
           </h1>
           <p style="margin:16px 0 0;font-size:16px;line-height:1.55;color:#5c564c;">
-            Somos <strong>NFCTap</strong>. Diseñamos e imprimimos en España atriles NFC con
+            Somos <strong>nfctap.tech</strong>. Diseñamos e imprimimos en España atriles NFC con
             <strong>tu marca</strong> y chips que abren lo que tú elijas: tu web, Google reseñas,
             Instagram, WhatsApp o el enlace que necesites.
           </p>
@@ -93,7 +93,7 @@ export function nfctapOutreachText(v: OutreachVars) {
 
   return `${name}: una pieza con tu logo que el cliente toca y entra
 
-Somos NFCTap. Diseñamos e imprimimos en España atriles NFC con tu marca y chips que abren tu web, Google, Instagram, WhatsApp o el enlace que necesites.
+Somos nfctap.tech. Diseñamos e imprimimos en España atriles NFC con tu marca y chips que abren tu web, Google, Instagram, WhatsApp o el enlace que necesites.
 
 ${webBit}
 Lo encargas en la web en menos de 2 minutos (logo + 1–3 chips + pago). Fabricación y envío en unos 2 días.

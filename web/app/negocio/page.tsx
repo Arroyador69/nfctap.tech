@@ -17,10 +17,11 @@ export default function NegocioPage() {
           Tu logo en la barra. El cliente toca y entra.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-7 text-[#5c564c]">
-          Como Markos Peluqueros o Freddo&apos;s: subes el logo, eliges 1–3 chips y pegas los
-          enlaces. Lo imprimimos y lo enviamos a tu local. Base{" "}
-          <strong>{unicaPrice(2)} €</strong> con 2 chips · 1 chip {unicaPrice(1)} € · 3 chips{" "}
-          {unicaPrice(3)} € (+{PRICE.unica.extra} € el tercero).
+          Somos <strong>nfctap.tech</strong>. Misma pieza que Markos o Freddo&apos;s: solo cambia
+          tu logo en el círculo. Eliges 1–3 chips (web, Google, Instagram, WhatsApp…) y lo
+          encargas en menos de 2 minutos. Base <strong>{unicaPrice(2)} €</strong> con 2 chips · 1
+          chip {unicaPrice(1)} € · 3 chips {unicaPrice(3)} € (+{PRICE.unica.extra} € el tercero).
+          Fabricación y envío en unos 2 días, España.
         </p>
       </section>
 
