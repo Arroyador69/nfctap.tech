@@ -59,9 +59,10 @@ out tags 45;
   ];
 }
 
-async function fetchOverpass(query: string, timeoutMs = 24_000): Promise<unknown[]> {
+async function fetchOverpass(query: string, timeoutMs = 14_000): Promise<unknown[]> {
   let lastErr: unknown;
-  for (const endpoint of OVERPASS_ENDPOINTS) {
+  // Máx. 2 mirrors (si fallan, no quemar el cron entero).
+  for (const endpoint of OVERPASS_ENDPOINTS.slice(0, 2)) {
     try {
       const res = await fetch(endpoint, {
         method: "POST",

@@ -32,14 +32,13 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: true, skipped: true, reason: "queue_full", queue: before });
   }
 
-  // osmOnly=1: solo emails ya en OSM (rápido, para rellenar stock).
-  // Por defecto: OSM + scrape web limitado.
+  // osmOnly=1: solo emails ya en OSM (rápido). Default: 3 ciudades + scrape corto.
   const result = await discoverIntoQueue({
     targetQueued: 1000,
-    maxPlaces: osmOnly ? 8 : 4,
+    maxPlaces: osmOnly ? 5 : 3,
     waveIndex: Number.isFinite(waveParam) ? waveParam : day.waves + before.queued,
     fetchWebEmails: !osmOnly,
-    maxWebFetches: osmOnly ? 0 : 35,
+    maxWebFetches: osmOnly ? 0 : 28,
   });
 
   return NextResponse.json({
