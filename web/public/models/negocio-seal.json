@@ -1,0 +1,10 @@
+{
+  "x": 0.0,
+  "y": 0.142946,
+  "z": -0.062308,
+  "r": 0.02784,
+  "seal_d_mm": 58.0,
+  "seal_cy_mm": 138.946,
+  "note": "logo_pad node + estos mm; normal cara \u2248 +Z en GLB",
+  "glb": "negocio.glb"
+}
