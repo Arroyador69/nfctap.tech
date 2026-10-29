@@ -110,18 +110,18 @@ export async function GET(req: Request) {
     });
   }
 
-  // Discover ligero solo si la cola está seca (el cron discover rellena el grueso)
+  // Discover ligero solo si la cola está seca (el cron discover rellena el grueso).
+  // En dry-run no discover: responde rápido para métricas.
   const qBefore = queueCounts((await loadQueue()).leads);
   let discover = null as Awaited<ReturnType<typeof discoverIntoQueue>> | null;
-  // Si ya hay cola, no discover aquí (lo hace el cron discover). Evita timeout.
-  if (needRefill(qBefore.queued, 40)) {
+  if (!dry && needRefill(qBefore.queued, 40)) {
     try {
       discover = await discoverIntoQueue({
         targetQueued: 120,
         maxPlaces: 2,
         waveIndex: day.waves,
-        fetchWebEmails: !dry,
-        maxWebFetches: dry ? 0 : 25,
+        fetchWebEmails: true,
+        maxWebFetches: 20,
       });
     } catch (e) {
       console.error("discover", e);

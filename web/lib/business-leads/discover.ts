@@ -189,9 +189,12 @@ export async function discoverIntoQueue(opts?: {
   const batch: Parameters<typeof enqueueLeads>[0] = [];
   const seen = new Set<string>();
   let webFetches = 0;
+  const deadline = Date.now() + 110_000; // cabe en maxDuration 300 con margen
 
-  for (const place of places) {
+  placeLoop: for (const place of places) {
+    if (Date.now() > deadline) break;
     for (const query of overpassQueries(place)) {
+      if (Date.now() > deadline) break placeLoop;
       const elements = await fetchOverpass(query);
       const hits = elementsToHits(elements, place.name);
       osmHits += hits.length;
@@ -210,11 +213,11 @@ export async function discoverIntoQueue(opts?: {
 
       if (fetchWeb) {
         for (const hit of hits) {
-          if (webFetches >= maxWeb) break;
+          if (Date.now() > deadline || webFetches >= maxWeb) break;
           if (hit.email || !hit.website) continue;
           const email = await emailFromWebsite(hit.website);
           webFetches++;
-          await new Promise((r) => setTimeout(r, 120));
+          await new Promise((r) => setTimeout(r, 80));
           if (!email || seen.has(email)) continue;
           seen.add(email);
           batch.push({
@@ -226,9 +229,8 @@ export async function discoverIntoQueue(opts?: {
           });
         }
       }
-      if (webFetches >= maxWeb && batch.length > 80) break;
     }
-    await new Promise((r) => setTimeout(r, 250));
+    await new Promise((r) => setTimeout(r, 150));
   }
 
   const { added, skipped, queued, persistOk } = await enqueueLeads(batch);
