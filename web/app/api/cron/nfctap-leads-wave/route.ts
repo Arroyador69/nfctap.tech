@@ -58,6 +58,29 @@ export async function GET(req: Request) {
   const force = url.searchParams.get("force") === "1"; // permite fuera de ventana (arranque manual)
   const hour = madridHourNow();
 
+  // Reparación one-shot contador día (tras migrar Blob): ?setSent=200
+  const setSent = Number(url.searchParams.get("setSent") || "");
+  if (force && Number.isFinite(setSent) && setSent >= 0 && setSent <= NFC_LEADS_DAILY_HARD_CAP) {
+    const { madridDate } = await import("@/lib/business-leads/stats");
+    const { put } = await import("@vercel/blob");
+    const date = madridDate();
+    const next = {
+      date,
+      sent: setSent,
+      failed: 0,
+      waves: Math.ceil(setSent / NFC_LEADS_WAVE_MAX),
+      lastWaveAt: new Date().toISOString(),
+      lastPlace: "seed_counter",
+    };
+    await put(`nfctap-outreach-day-${date}.json`, JSON.stringify(next), {
+      access: "private",
+      addRandomSuffix: false,
+      allowOverwrite: true,
+      contentType: "application/json",
+    });
+    return NextResponse.json({ ok: true, seeded: next });
+  }
+
   const sales = await salesGoalReached();
   if (sales.stop) {
     await notifyTelegram(
