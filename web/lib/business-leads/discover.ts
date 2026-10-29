@@ -1,88 +1,112 @@
 /**
- * Descubre emails públicos de negocios locales vía OpenStreetMap (Overpass).
- * Cualquier tipo: hostelería, belleza, salud, tienda, oficina, hotel…
- * Solo tags email / contact:email / website con mailto — sin inventar correos.
+ * Descubre emails públicos de negocios locales.
+ * Fuente: OSM Map API (bbox) — Overpass público va a timeout.
+ * Cualquier negocio con email/web público · sin inventar correos.
  */
 
-import { extractEmailsFromText, isPlausiblePublicEmail, normalizeEmail, normalizeUrl } from "./emails";
-import { placesForWave, type PlaceCoord, NFC_PLACES } from "./places";
-import { enqueueLeads } from "./queue";
+import {
+  extractEmailsFromText,
+  isPlausiblePublicEmail,
+  normalizeEmail,
+  normalizeUrl,
+} from "./emails";
+import { NFC_PLACES, type PlaceCoord } from "./places";
+import { enqueueLeads, loadQueue, queueCounts } from "./queue";
 
 const UA =
-  "NFCTapLeadsBot/1.0 (+https://nfctap.tech; osm-business-discovery; contact=contacto@nfctap.tech)";
+  "NFCTapLeadsBot/1.0 (+https://nfctap.tech; osm-map-discovery; contact=contacto@nfctap.tech)";
 
-const OVERPASS = [
-  "https://overpass.kumi.systems/api/interpreter",
-  "https://lz4.overpass-api.de/api/interpreter",
-  "https://overpass-api.de/api/interpreter",
-];
-
-function queryAround(c: PlaceCoord) {
-  const r = Math.min(c.radiusM ?? 12000, 16000);
-  return `
-[out:json][timeout:22];
-(
-  nwr(around:${r},${c.lat},${c.lon})["email"];
-  nwr(around:${r},${c.lat},${c.lon})["contact:email"];
-  nwr(around:${r},${c.lat},${c.lon})["amenity"~"^(cafe|restaurant|bar|fast_food|clinic|dentist|doctors|pharmacy|bank|fuel)$"]["website"];
-  nwr(around:${r},${c.lat},${c.lon})["shop"]["website"];
-  nwr(around:${r},${c.lat},${c.lon})["tourism"~"^(hotel|guest_house|hostel|motel)$"]["website"];
-  nwr(around:${r},${c.lat},${c.lon})["office"]["website"];
-  nwr(around:${r},${c.lat},${c.lon})["craft"]["website"];
-);
-out tags 80;
-`.trim();
-}
-
-async function fetchOverpass(query: string): Promise<unknown[]> {
-  for (const endpoint of OVERPASS) {
-    try {
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "User-Agent": UA,
-          Accept: "application/json",
-        },
-        body: "data=" + encodeURIComponent(query),
-        signal: AbortSignal.timeout(20_000),
-      });
-      if (!res.ok) continue;
-      const j = (await res.json()) as { elements?: unknown[] };
-      return Array.isArray(j.elements) ? j.elements : [];
-    } catch {
-      /* next mirror */
-    }
-  }
-  return [];
-}
-
-type OsmEl = {
-  tags?: Record<string, string>;
+type OsmHit = {
+  name: string;
+  email: string;
+  website: string;
+  city: string;
 };
 
-function pickEmail(tags: Record<string, string>): string {
-  for (const k of ["email", "contact:email", "contact:mail"]) {
-    const raw = (tags[k] || "").split(/[;,\/\s]+/)[0] || "";
-    const e = normalizeEmail(raw);
-    if (isPlausiblePublicEmail(e)) return e;
-  }
-  return "";
+function bboxesAround(c: PlaceCoord): Array<[number, number, number, number]> {
+  // lonW, latS, lonE, latN — cajas ~1,5 km (API OSM aguanta)
+  const d = 0.014;
+  const offsets = [
+    [0, 0],
+    [d, 0],
+    [-d, 0],
+    [0, d],
+    [0, -d],
+    [d, d],
+    [-d, -d],
+  ] as const;
+  return offsets.map(([ox, oy]) => {
+    const lon = c.lon + ox;
+    const lat = c.lat + oy;
+    const h = 0.012;
+    return [lon - h, lat - h, lon + h, lat + h];
+  });
 }
 
-function pickWebsite(tags: Record<string, string>): string {
-  return normalizeUrl(tags.website || tags["contact:website"] || tags["contact:facebook"] || "");
+async function fetchBbox(bbox: [number, number, number, number]): Promise<string> {
+  const [w, s, e, n] = bbox;
+  const url = `https://api.openstreetmap.org/api/0.6/map?bbox=${w},${s},${e},${n}`;
+  const res = await fetch(url, {
+    headers: { "User-Agent": UA, Accept: "application/xml" },
+    signal: AbortSignal.timeout(25_000),
+  });
+  if (!res.ok) return "";
+  return res.text();
+}
+
+/** Parseo ligero de tags en XML OSM (node/way). */
+function parseOsmXml(xml: string, city: string): OsmHit[] {
+  const hits: OsmHit[] = [];
+  // trozos por <node …>…</node> y <way …>…</way>
+  const blocks = xml.split(/<(?:node|way)\s/).slice(1);
+  for (const block of blocks) {
+    const chunk = block.slice(0, 4000);
+    const name = tagVal(chunk, "name");
+    const emailRaw = tagVal(chunk, "email") || tagVal(chunk, "contact:email");
+    const website = normalizeUrl(
+      tagVal(chunk, "website") || tagVal(chunk, "contact:website") || "",
+    );
+    const email = emailRaw ? normalizeEmail(emailRaw.split(/[;,\/\s]+/)[0] || "") : "";
+    if (!name && !email && !website) continue;
+    // solo con señal comercial
+    const amenity = tagVal(chunk, "amenity") || tagVal(chunk, "shop") || tagVal(chunk, "tourism") || tagVal(chunk, "office") || tagVal(chunk, "craft");
+    if (!email && !website) continue;
+    if (!amenity && !email) continue;
+    hits.push({
+      name: (name || "Negocio local").slice(0, 60),
+      email: isPlausiblePublicEmail(email) ? email : "",
+      website,
+      city,
+    });
+  }
+  return hits;
+}
+
+function tagVal(chunk: string, key: string): string {
+  const re = new RegExp(`k="${escapeRe(key)}"\\s+v="([^"]*)"`, "i");
+  const m = chunk.match(re);
+  if (!m) return "";
+  return m[1]
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .trim();
+}
+
+function escapeRe(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 async function emailFromWebsite(url: string): Promise<string> {
   try {
     const res = await fetch(url, {
       headers: { "User-Agent": UA, Accept: "text/html" },
-      signal: AbortSignal.timeout(8_000),
+      signal: AbortSignal.timeout(7_000),
       redirect: "follow",
     });
     if (!res.ok) return "";
-    const html = (await res.text()).slice(0, 180_000);
+    const html = (await res.text()).slice(0, 160_000);
     const emails = extractEmailsFromText(html);
     return emails[0] || "";
   } catch {
@@ -100,8 +124,7 @@ export type DiscoverResult = {
 };
 
 /**
- * Rellena la cola hasta `targetQueued` (p. ej. 1000 = hoy 500 + mañana 500).
- * `waveIndex` rota las zonas.
+ * Rellena cola. Prioriza Costa del Sol y luego resto de NFC_PLACES.
  */
 export async function discoverIntoQueue(opts?: {
   targetQueued?: number;
@@ -109,55 +132,71 @@ export async function discoverIntoQueue(opts?: {
   waveIndex?: number;
   fetchWebEmails?: boolean;
 }): Promise<DiscoverResult> {
-  const maxPlaces = opts?.maxPlaces ?? 12;
-  void opts?.targetQueued; // la cola acumula; el caller decide cuándo parar
-  const waveIndex = opts?.waveIndex ?? 0;
+  const target = opts?.targetQueued ?? 1000;
+  const maxPlaces = opts?.maxPlaces ?? 10;
   const fetchWeb = opts?.fetchWebEmails !== false;
+  const start = (opts?.waveIndex || 0) % NFC_PLACES.length;
 
-  const places = placesForWave(waveIndex, maxPlaces);
-  // Si hace falta más cobertura, sigue la lista completa
-  const all = [...places];
-  for (const p of NFC_PLACES) {
-    if (all.length >= maxPlaces) break;
-    if (!all.some((x) => x.name === p.name)) all.push(p);
+  const places: PlaceCoord[] = [];
+  for (let i = 0; i < NFC_PLACES.length && places.length < maxPlaces; i++) {
+    places.push(NFC_PLACES[(start + i) % NFC_PLACES.length]);
+  }
+
+  const currentQueued = queueCounts((await loadQueue()).leads).queued;
+  if (currentQueued >= target) {
+    return {
+      places: places.map((p) => p.name),
+      osmHits: 0,
+      withEmail: 0,
+      added: 0,
+      skipped: 0,
+      queued: currentQueued,
+    };
   }
 
   let osmHits = 0;
   const batch: Parameters<typeof enqueueLeads>[0] = [];
-  const seenEmail = new Set<string>();
+  const seen = new Set<string>();
+  let webFetches = 0;
 
-  for (const place of all) {
-    const elements = await fetchOverpass(queryAround(place));
-    osmHits += elements.length;
+  for (const place of places) {
+    if (batch.length + currentQueued >= target) break;
 
-    for (const raw of elements) {
-      const el = raw as OsmEl;
-      const tags = el.tags || {};
-      const name = (tags.name || tags["name:es"] || "").trim().slice(0, 60);
-      let email = pickEmail(tags);
-      const website = pickWebsite(tags);
-
-      if (!email && fetchWeb && website) {
-        email = await emailFromWebsite(website);
-        // ritmo suave hacia webs
-        await new Promise((r) => setTimeout(r, 250));
+    for (const bbox of bboxesAround(place)) {
+      if (batch.length + currentQueued >= target) break;
+      let xml = "";
+      try {
+        xml = await fetchBbox(bbox);
+      } catch {
+        continue;
       }
-      if (!email || seenEmail.has(email)) continue;
-      seenEmail.add(email);
+      if (!xml) continue;
+      const hits = parseOsmXml(xml, place.name);
+      osmHits += hits.length;
 
-      batch.push({
-        email,
-        businessName: name || "Negocio local",
-        city: place.name,
-        websiteUrl: website || undefined,
-        source: pickEmail(tags) ? "osm" : "web",
-      });
+      for (const hit of hits) {
+        let email = hit.email;
+        if (!email && fetchWeb && hit.website && webFetches < 80) {
+          email = await emailFromWebsite(hit.website);
+          webFetches++;
+          await new Promise((r) => setTimeout(r, 200));
+        }
+        if (!email || seen.has(email)) continue;
+        seen.add(email);
+        batch.push({
+          email,
+          businessName: hit.name,
+          city: place.name,
+          websiteUrl: hit.website || undefined,
+          source: hit.email ? "osm" : "web",
+        });
+      }
     }
   }
 
   const { added, skipped, queued } = await enqueueLeads(batch);
   return {
-    places: all.map((p) => p.name),
+    places: places.map((p) => p.name),
     osmHits,
     withEmail: batch.length,
     added,
@@ -166,7 +205,6 @@ export async function discoverIntoQueue(opts?: {
   };
 }
 
-/** ¿Hace falta rellenar para tener margen hoy+mañana? */
 export function needRefill(queued: number, min = 1000) {
   return queued < min;
 }
