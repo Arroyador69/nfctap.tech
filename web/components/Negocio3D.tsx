@@ -13,7 +13,7 @@ import { Canvas } from "@react-three/fiber";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
 
-const MODEL = "/models/negocio.glb?v=1";
+const MODEL = "/models/negocio.glb?v=2";
 useGLTF.preload(MODEL, true);
 
 /** Coords de `disenos/generar_negocio_web.py` → negocio-seal.json */
@@ -33,15 +33,16 @@ export function Negocio3D({ bodyColor, accentColor, logoDataUrl = "" }: Props) {
       onContextMenu={(e) => e.preventDefault()}
     >
       <Canvas
-        camera={{ position: [0.28, 0.16, 0.48], fov: 30 }}
+        camera={{ position: [0.02, 0.1, 0.42], fov: 32 }}
         gl={{ antialias: true }}
         dpr={[1, 1.75]}
         style={{ touchAction: "none" }}
       >
         <color attach="background" args={["#f3eee4"]} />
-        <ambientLight intensity={1.05} />
-        <spotLight position={[1.8, 3.2, 2.4]} intensity={1.15} angle={0.45} penumbra={0.9} />
-        <directionalLight position={[-1.6, 2.0, 1.8]} intensity={0.45} />
+        <ambientLight intensity={1.25} />
+        <spotLight position={[1.8, 3.2, 2.4]} intensity={1.35} angle={0.45} penumbra={0.9} />
+        <directionalLight position={[-1.2, 2.2, 2.4]} intensity={0.7} />
+        <directionalLight position={[0.4, 1.2, 2.8]} intensity={0.55} />
         <Suspense fallback={null}>
           <Piece bodyColor={bodyColor} accentColor={accentColor} logoDataUrl={logoDataUrl} />
         </Suspense>
@@ -50,12 +51,12 @@ export function Negocio3D({ bodyColor, accentColor, logoDataUrl = "" }: Props) {
           enablePan={false}
           enableZoom
           autoRotate
-          autoRotateSpeed={0.45}
+          autoRotateSpeed={0.35}
           minDistance={0.26}
           maxDistance={1.0}
-          minPolarAngle={0.3}
-          maxPolarAngle={Math.PI / 2 + 0.05}
-          target={[0, 0.03, 0]}
+          minPolarAngle={0.35}
+          maxPolarAngle={Math.PI / 2 + 0.02}
+          target={[0, 0.04, 0]}
         />
         <ContactShadows position={[0, -0.02, 0]} opacity={0.22} scale={0.9} blur={2.4} />
       </Canvas>
@@ -143,9 +144,11 @@ function Piece({ bodyColor, accentColor, logoDataUrl }: Props) {
       metalness: 0.02,
       transparent: Boolean(logoTex),
       depthWrite: true,
+      side: THREE.DoubleSide,
     });
-    const logoDisc = new THREE.Mesh(new THREE.CircleGeometry(seat.r, 64), logoMat);
-    logoDisc.position.set(seat.x, seat.y, seat.z + 0.0009);
+    const logoDisc = new THREE.Mesh(new THREE.CircleGeometry(Math.max(seat.r, 0.02), 64), logoMat);
+    logoDisc.position.set(seat.x, seat.y, seat.z + 0.0012);
+    logoDisc.renderOrder = 2;
     clone.add(logoDisc);
 
     wrap.add(clone);

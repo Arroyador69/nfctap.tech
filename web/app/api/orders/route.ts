@@ -415,7 +415,7 @@ export async function POST(req: Request) {
       email: normalized.email,
       name: normalized.name,
       successUrl: `${origin}/pedido/ok?id=${id}&checkout_id={CHECKOUT_ID}`,
-      returnUrl: `${origin}/carrito`,
+      returnUrl: kind === "unica" ? `${origin}/negocio` : `${origin}/carrito`,
       productEuros,
       shippingEuros: shippingPrice,
       totalEuros: order.total,

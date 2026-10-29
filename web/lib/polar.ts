@@ -12,29 +12,29 @@ const WIFI_ENV = "POLAR_PRODUCT_WIFI_1";
 const UNICA_ENV = "POLAR_PRODUCT_UNICA_1";
 
 export function polarHasToken() {
-  return Boolean(process.env.POLAR_ACCESS_TOKEN);
+  return Boolean(envTrim("POLAR_ACCESS_TOKEN"));
 }
 
 export function polarReady() {
-  return Boolean(polarHasToken() && PRODUCT_ENV.every((k) => process.env[k]));
+  return Boolean(polarHasToken() && PRODUCT_ENV.every((k) => envTrim(k)));
 }
 
 export function polarUnicaReady() {
-  return Boolean(polarHasToken() && process.env[UNICA_ENV]);
+  return Boolean(polarHasToken() && envTrim(UNICA_ENV));
 }
 
 export function polarMissing() {
   const missing: string[] = [];
-  if (!process.env.POLAR_ACCESS_TOKEN) missing.push("POLAR_ACCESS_TOKEN");
+  if (!envTrim("POLAR_ACCESS_TOKEN")) missing.push("POLAR_ACCESS_TOKEN");
   for (const k of PRODUCT_ENV) {
-    if (!process.env[k]) missing.push(k);
+    if (!envTrim(k)) missing.push(k);
   }
-  if (!process.env.POLAR_WEBHOOK_SECRET) missing.push("POLAR_WEBHOOK_SECRET");
+  if (!envTrim("POLAR_WEBHOOK_SECRET")) missing.push("POLAR_WEBHOOK_SECRET");
   return missing;
 }
 
 export function polarWifiReady() {
-  return Boolean(polarReady() && process.env[WIFI_ENV]);
+  return Boolean(polarReady() && envTrim(WIFI_ENV));
 }
 
 export function polarProductSlot(kind: ProductKind, qty: number) {
@@ -57,10 +57,17 @@ function polarBase() {
 
 function polarHeaders() {
   return {
-    Authorization: `Bearer ${process.env.POLAR_ACCESS_TOKEN}`,
+    Authorization: `Bearer ${envTrim("POLAR_ACCESS_TOKEN")}`,
     "Content-Type": "application/json",
     "Polar-Version": "2026-10",
   };
+}
+
+/** Vercel a veces guarda el valor con comillas → Polar 4xx y «No se pudo abrir el pago». */
+function envTrim(key: string) {
+  const raw = process.env[key];
+  if (!raw) return "";
+  return raw.trim().replace(/^["']|["']$/g, "");
 }
 
 /** IP real del comprador (Vercel / proxy). Polar la usa para mostrar Bizum en España. */
@@ -102,12 +109,12 @@ export async function createPolarCheckout(input: {
   } else if (!polarReady()) {
     return null;
   }
-  if (input.kind === "wifi" && !process.env[WIFI_ENV]) {
+  if (input.kind === "wifi" && !envTrim(WIFI_ENV)) {
     console.error(`Polar: falta ${WIFI_ENV}`);
     return null;
   }
 
-  const productId = process.env[productEnvKey(input.kind, input.qty)];
+  const productId = envTrim(productEnvKey(input.kind, input.qty));
   if (!productId) {
     console.error(`Polar: falta ${productEnvKey(input.kind, input.qty)}`);
     return null;
