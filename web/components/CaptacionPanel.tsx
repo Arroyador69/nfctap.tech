@@ -1,5 +1,6 @@
 "use client";
 
+import { NFC_TEST_CITIES } from "@/lib/business-leads/places";
 import { useState } from "react";
 
 export function CaptacionPanel({
@@ -7,15 +8,20 @@ export function CaptacionPanel({
   salesStop,
   lastWaveAt,
   lastPlace,
+  queued = 0,
 }: {
   defaultTo: string;
   salesStop: boolean;
   lastWaveAt?: string;
   lastPlace?: string;
+  queued?: number;
 }) {
   const [to, setTo] = useState(defaultTo);
-  const [busy, setBusy] = useState<"mail" | "tg" | "both" | null>(null);
+  const [city, setCity] = useState("Fuengirola");
+  const [businessName, setBusinessName] = useState("");
+  const [busy, setBusy] = useState<"mail" | "tg" | "both" | "discover" | null>(null);
   const [log, setLog] = useState("");
+  const [queueN, setQueueN] = useState(queued);
 
   async function run(mode: "mail" | "tg" | "both") {
     setBusy(mode);
@@ -26,6 +32,8 @@ export function CaptacionPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           to: to.trim(),
+          city,
+          businessName: businessName.trim() || undefined,
           mail: mode === "mail" || mode === "both",
           telegram: mode === "tg" || mode === "both",
         }),
@@ -38,12 +46,36 @@ export function CaptacionPanel({
     setBusy(null);
   }
 
+  async function discover() {
+    setBusy("discover");
+    setLog("Descubriendo emails públicos (OSM)… puede tardar 1–2 min.");
+    try {
+      const res = await fetch("/api/admin/outreach-discover", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetQueued: 1000, maxPlaces: 12, fetchWebEmails: true }),
+      });
+      const data = await res.json();
+      if (data.queue?.queued != null) setQueueN(data.queue.queued);
+      setLog(JSON.stringify(data, null, 2));
+    } catch (e) {
+      setLog(e instanceof Error ? e.message : "Error de red");
+    }
+    setBusy(null);
+  }
+
   return (
     <div className="rounded-[24px] border border-[#e6ddd0] bg-white p-5">
-      <h2 className="text-lg font-semibold">Pruebas (antes de oleadas)</h2>
+      <h2 className="text-lg font-semibold">Pruebas + cola</h2>
       <p className="mt-1 text-sm text-[#6f675c]">
-        1) Mail a ti · 2) Ping Telegram · 3) Solo entonces encender cron de oleadas.
+        El asunto lleva la <strong>ciudad del lead</strong> (cámbiala abajo y verás que cambia).
+        Sin «Café de prueba»: el titular es «Tu logo en la barra» para cualquier negocio.
         {salesStop ? " Hoy ya hay ≥10 ventas: no hace falta oleada." : null}
+      </p>
+
+      <p className="mt-3 text-sm font-medium text-[#1c1915]">
+        Cola lista: <span className="tabular-nums">{queueN}</span> · objetivo ≥1000 (500 hoy + 500
+        mañana)
       </p>
 
       <label className="mt-4 block text-sm font-medium">
@@ -54,6 +86,32 @@ export function CaptacionPanel({
           type="email"
           placeholder="tu@email.com"
           className="mt-2 w-full rounded-xl border border-[#e6ddd0] px-3 py-2"
+        />
+      </label>
+
+      <label className="mt-3 block text-sm font-medium">
+        Ciudad del mail (cambia y prueba)
+        <select
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+          className="mt-2 w-full rounded-xl border border-[#e6ddd0] px-3 py-2"
+        >
+          {NFC_TEST_CITIES.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="mt-3 block text-sm font-medium">
+        Nombre del negocio (opcional)
+        <input
+          value={businessName}
+          onChange={(e) => setBusinessName(e.target.value)}
+          placeholder="Vacío = genérico · o «Clínica Sol», «Hotel Mar»…"
+          className="mt-2 w-full rounded-xl border border-[#e6ddd0] px-3 py-2"
+          maxLength={48}
         />
       </label>
 
@@ -76,11 +134,11 @@ export function CaptacionPanel({
         </button>
         <button
           type="button"
-          disabled={Boolean(busy) || !to.includes("@")}
-          onClick={() => run("both")}
-          className="rounded-full bg-white px-4 py-2 text-sm ring-1 ring-[#e6ddd0] disabled:opacity-40"
+          disabled={Boolean(busy)}
+          onClick={() => void discover()}
+          className="rounded-full bg-[#b0892c] px-4 py-2 text-sm text-white disabled:opacity-40"
         >
-          {busy === "both" ? "Enviando…" : "Mail + Telegram"}
+          {busy === "discover" ? "Buscando…" : "Rellenar cola (~1000)"}
         </button>
       </div>
 
@@ -92,20 +150,18 @@ export function CaptacionPanel({
       )}
 
       {log ? (
-        <pre className="mt-4 max-h-48 overflow-auto rounded-xl bg-[#f7f3eb] p-3 text-xs text-[#1c1915]">
+        <pre className="mt-4 max-h-56 overflow-auto rounded-xl bg-[#f7f3eb] p-3 text-xs text-[#1c1915]">
           {log}
         </pre>
       ) : null}
 
       <div className="mt-5 rounded-xl bg-[#f7f3eb] p-3 text-xs leading-5 text-[#5c564c]">
-        <p className="font-medium text-[#1c1915]">Telegram · bot NFCTap</p>
-        <ol className="mt-1 list-decimal space-y-1 pl-4">
-          <li>Telegram → @BotFather → /newbot → nombre tipo NFCTap Oleadas</li>
-          <li>Copia el token → Vercel: TELEGRAM_BOT_TOKEN</li>
-          <li>Escríbele al bot, luego abre https://api.telegram.org/botTOKEN/getUpdates</li>
-          <li>Copia tu chat.id → Vercel: TELEGRAM_CHAT_ID</li>
-          <li>Redeploy y pulsa «Probar Telegram» aquí</li>
-        </ol>
+        <p className="font-medium text-[#1c1915]">Oleadas (automático)</p>
+        <ul className="mt-1 list-disc space-y-1 pl-4">
+          <li>Cron laboral 8–16 Madrid · 50 mails/oleada · tope 500/día</li>
+          <li>Si hay ≥10 ventas /negocio → STOP ese día</li>
+          <li>RGPD: emails públicos · baja one-click · art. 6.1.f interés legítimo B2B</li>
+        </ul>
       </div>
     </div>
   );

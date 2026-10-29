@@ -1,7 +1,9 @@
 import { BRAND, SOCIALS, unicaPrice } from "@/lib/catalog";
 
 export type OutreachVars = {
-  businessName: string;
+  /** Nombre real del negocio (OSM). Vacío → copy genérico sin “Café de prueba”. */
+  businessName?: string;
+  /** Ciudad del lead — siempre la del sitio, nunca fija. */
   city: string;
   websiteUrl?: string;
   heroImageUrl?: string;
@@ -14,19 +16,26 @@ const FREDDOS = `${BRAND.url}/stock/freddos.jpg`;
 const MARKOS = `${BRAND.url}/stock/markos.jpg`;
 const CTA = `${BRAND.url}/negocio`;
 
-const SOCIAL_LINKS = [
-  ...SOCIALS,
-  // YouTube canónico
-].map((s) =>
-  s.id === "youtube"
-    ? { ...s, href: "https://www.youtube.com/@NFCTap" }
-    : s,
+const SOCIAL_LINKS = SOCIALS.map((s) =>
+  s.id === "youtube" ? { ...s, href: "https://www.youtube.com/@NFCTap" } : s,
 );
 
-/** HTML cold email · conversión /negocio · RGPD · otros servicios cortos. */
+function displayName(v: OutreachVars) {
+  const n = (v.businessName || "").trim();
+  if (!n || /^hola$/i.test(n) || /^tu negocio$/i.test(n) || /^café de prueba$/i.test(n)) {
+    return "";
+  }
+  return n.slice(0, 48);
+}
+
+function displayCity(v: OutreachVars) {
+  return (v.city || "").trim() || "tu zona";
+}
+
+/** HTML cold email · cualquier tipo de negocio · ciudad del lead · RGPD. */
 export function nfctapOutreachHtml(v: OutreachVars) {
-  const name = v.businessName?.trim() || "Hola";
-  const city = v.city?.trim() || "tu zona";
+  const name = displayName(v);
+  const city = displayCity(v);
   const price = unicaPrice(2);
   const hero = v.heroImageUrl || FREDDOS;
   const second = v.secondImageUrl || MARKOS;
@@ -36,7 +45,10 @@ export function nfctapOutreachHtml(v: OutreachVars) {
     `mailto:${BRAND.email}?subject=${encodeURIComponent("baja")}&body=${encodeURIComponent("Quiero darme de baja de los emails de NFCTap.")}`;
   const webLine = web
     ? `Hemos visto <a href="${escapeAttr(web)}" style="color:#1c1915;">${escapeHtml(displayHost(web))}</a>.`
-    : `Contacto público de tu negocio en ${escapeHtml(city)}.`;
+    : `Contacto público de un negocio en ${escapeHtml(city)}.`;
+  const greet = name
+    ? `<strong>${escapeHtml(name)}</strong> · `
+    : "";
 
   const socialHtml = SOCIAL_LINKS.map(
     (s) =>
@@ -54,12 +66,13 @@ export function nfctapOutreachHtml(v: OutreachVars) {
         </td></tr>
         <tr><td style="padding:28px 28px 4px;">
           <p style="margin:0;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:#b0892c;">nfctap.tech · ${escapeHtml(city)}</p>
-          <h1 style="margin:12px 0 0;font-size:24px;line-height:1.3;font-weight:700;">
-            ${escapeHtml(name)}: tu logo en la barra. El cliente toca y entra.
+          <h1 style="margin:12px 0 0;font-size:26px;line-height:1.25;font-weight:700;">
+            Tu logo en la barra.<br />El cliente toca y entra.
           </h1>
           <p style="margin:16px 0 0;font-size:16px;line-height:1.55;color:#5c564c;">
-            Somos <strong>nfctap.tech</strong>. Fabricamos en España atriles NFC con tu marca:
-            web, Google, Instagram, WhatsApp o el enlace que necesites.
+            ${greet}Somos <strong>nfctap.tech</strong>. Fabricamos en España una pieza NFC con tu marca
+            para <strong>cualquier negocio</strong>: peluquería, hotel, clínica, tienda, oficina, bar o el que sea.
+            El cliente acerca el móvil y abre web, Google, Instagram, WhatsApp o el enlace que elijas.
             ${webLine}
             Encargo en <strong>menos de 2 minutos</strong> · fabricación y envío en <strong>unos 2 días</strong>.
             Desde <strong>${price} €</strong> con 2 chips.
@@ -83,7 +96,8 @@ export function nfctapOutreachHtml(v: OutreachVars) {
         </td></tr>
         <tr><td style="padding:8px 28px 28px;font-size:12px;color:#a39a8c;line-height:1.55;">
           NFCTap · España · <a href="${BRAND.url}" style="color:#8a8173;">${BRAND.domain}</a><br />
-          Te escribimos por el email público de ${escapeHtml(name)} (${escapeHtml(city)}).
+          Te escribimos por un email de contacto público${name ? ` de ${escapeHtml(name)}` : ""} en ${escapeHtml(city)}.
+          Base legal: interés legítimo (art. 6.1.f RGPD) · prospección B2B con datos públicos.
           Si no quieres más mensajes:
           <a href="${escapeAttr(optOut)}" style="color:#1c1915;font-weight:600;">darse de baja</a>
           · responde «baja» ·
@@ -97,20 +111,21 @@ export function nfctapOutreachHtml(v: OutreachVars) {
 }
 
 export function nfctapOutreachText(v: OutreachVars) {
-  const name = v.businessName?.trim() || "Hola";
-  const city = v.city?.trim() || "tu zona";
+  const name = displayName(v);
+  const city = displayCity(v);
   const price = unicaPrice(2);
   const web = normalizeWeb(v.websiteUrl);
-  const optOut =
-    v.optOutUrl?.trim() || `mailto:${BRAND.email}?subject=baja`;
+  const optOut = v.optOutUrl?.trim() || `mailto:${BRAND.email}?subject=baja`;
   const webBit = web
     ? `Hemos visto ${displayHost(web)}.`
     : `Contacto público en ${city}.`;
   const socials = SOCIAL_LINKS.map((s) => `${s.label}: ${s.href}`).join("\n");
+  const who = name ? `${name} · ` : "";
 
-  return `${name}: tu logo en la barra. El cliente toca y entra.
+  return `Tu logo en la barra. El cliente toca y entra.
 
-Somos nfctap.tech. Atriles NFC con tu marca (web, Google, Instagram, WhatsApp…).
+${who}Somos nfctap.tech (${city}). Pieza NFC con tu marca para cualquier negocio
+(peluquería, hotel, clínica, tienda, oficina, bar…).
 ${webBit}
 Encargo en menos de 2 minutos · envío en unos 2 días. Desde ${price} € con 2 chips.
 
@@ -120,15 +135,15 @@ Otros servicios (web, redes, app): ${BRAND.email}
 
 ${socials}
 
-Baja (RGPD): ${optOut}
+Baja (RGPD · interés legítimo B2B): ${optOut}
 O responde «baja». Aviso legal: ${BRAND.url}/legal`;
 }
 
 export function nfctapOutreachSubject(v: OutreachVars) {
-  const name = v.businessName?.trim() || "Tu negocio";
-  const city = v.city?.trim();
-  if (city) return `${name} (${city}): tu logo en la barra, el cliente toca y entra`;
-  return `${name}: tu logo en la barra, el cliente toca y entra`;
+  const name = displayName(v);
+  const city = displayCity(v);
+  if (name) return `${name} (${city}): tu logo en la barra`;
+  return `${city}: tu logo en la barra. El cliente toca y entra`;
 }
 
 function normalizeWeb(raw?: string) {

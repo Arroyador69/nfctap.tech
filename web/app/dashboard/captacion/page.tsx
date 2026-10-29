@@ -10,6 +10,7 @@ import {
 } from "@/lib/business-leads/constants";
 import { salesGoalReached } from "@/lib/business-leads/sales";
 import { getDayStats } from "@/lib/business-leads/stats";
+import { loadQueue, queueCounts } from "@/lib/business-leads/queue";
 import { polarUnicaReady } from "@/lib/polar";
 import { redirect } from "next/navigation";
 
@@ -19,7 +20,12 @@ export const metadata = { title: "Captación · Dashboard" };
 export default async function CaptacionPage() {
   if (!(await isAdmin())) redirect("/dashboard/login");
 
-  const [stats, sales] = await Promise.all([getDayStats(), salesGoalReached()]);
+  const [stats, sales, qFile] = await Promise.all([
+    getDayStats(),
+    salesGoalReached(),
+    loadQueue(),
+  ]);
+  const queue = queueCounts(qFile.leads);
   const resendKey = Boolean(process.env.RESEND_API_KEY?.trim());
   const resendFrom =
     process.env.RESEND_FROM?.trim() || "NFCTap <hola@nfctap.tech> (fallback)";
@@ -45,7 +51,7 @@ export default async function CaptacionPage() {
           value={`${sales.count}/${sales.goal}`}
           warn={sales.stop}
         />
-        <Stat label="Fallos hoy" value={String(stats.failed)} />
+        <Stat label="Cola queued" value={String(queue.queued)} />
       </div>
 
       <div className="mt-8 grid gap-4 lg:grid-cols-2">
@@ -77,6 +83,7 @@ export default async function CaptacionPage() {
           salesStop={sales.stop}
           lastWaveAt={stats.lastWaveAt}
           lastPlace={stats.lastPlace}
+          queued={queue.queued}
         />
       </div>
     </div>

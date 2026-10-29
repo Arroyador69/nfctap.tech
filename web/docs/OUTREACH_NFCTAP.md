@@ -71,12 +71,12 @@ Código: `lib/business-leads/constants.ts`, `template.ts`, `send-resend.ts`.
 
 ## 4. Mail (conversión)
 
-- **Ciudad:** siempre la del negocio lead (Fuengirola primero en cola, luego resto España)
-- **Hero + segunda foto:** producto real (`/stock/freddos.jpg`, `/stock/markos.jpg`) · sin nombrar locales
-- Menciona web del negocio si la tenemos · firma **nfctap.tech**
-- CTA «Encargar en 2 minutos» → `/negocio` (80 € · 2 chips · +chips)
-- Rapidez: pedido &lt;2 min · fabricación/envío ~2 días · taller España
-- Código: `lib/business-leads/template.ts`
+- **Titular fijo:** «Tu logo en la barra. El cliente toca y entra.» (vale para peluquería, hotel, clínica, tienda, oficina…)
+- **Ciudad:** siempre la del lead (`nfctap.tech · Fuengirola` / Málaga / …) — cambia en la prueba de captación
+- **Nombre:** solo si OSM trae nombre real; nunca «Café de prueba»
+- **Hero + segunda foto:** producto real (`/stock/freddos.jpg`, `/markos.jpg`) · sin nombrar locales
+- CTA → `/negocio` · RGPD art. 6.1.f + baja `/api/outreach/opt-out`
+- Código: `lib/business-leads/template.ts` · cola Blob · discover Overpass
 
 ## 5. Descubrir emails
 

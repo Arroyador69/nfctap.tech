@@ -25,7 +25,7 @@ export const NFC_LEADS_CAMPAIGN = "nfctap_local_es";
 
 export const NFC_LEADS_EMAIL_TYPE = "nfctap_business_outreach";
 
-/** Prioridad geográfica. */
+/** Prioridad geográfica (cola discover empieza aquí). */
 export const NFC_SEED_PLACES = [
   "Fuengirola",
   "Mijas",
@@ -33,9 +33,16 @@ export const NFC_SEED_PLACES = [
   "Torremolinos",
   "Málaga",
   "Marbella",
+  "Sevilla",
+  "Granada",
+  "Madrid",
+  "Barcelona",
 ] as const;
 
-/** Tipos de negocio (Overpass / OSM / directorios). */
+/**
+ * Tipos de negocio (cualquier local con email/web público).
+ * Hostelería, belleza, salud, tienda, oficina, hotel…
+ */
 export const NFC_BUSINESS_TYPES = [
   "cafe",
   "restaurant",
@@ -44,4 +51,9 @@ export const NFC_BUSINESS_TYPES = [
   "beauty",
   "hotel",
   "fast_food",
+  "clinic",
+  "dentist",
+  "shop",
+  "office",
+  "craft",
 ] as const;
