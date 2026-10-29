@@ -10,6 +10,12 @@ import * as THREE from "three";
 const MODEL = "/models/markos-negocio.glb";
 useGLTF.preload(MODEL, true);
 
+/**
+ * Sello circular en el GLB (metros, espacio modelo sin transformar).
+ * Cara del logo ≈ plano XY en z≈-0.061 · centro (0, 0.152).
+ */
+const SEAL = { x: 0, y: 0.152, z: -0.0608, r: 0.0215 };
+
 type Props = {
   bodyColor: BodyColor;
   accentColor: AccentColor;
@@ -24,7 +30,7 @@ export function Negocio3D({ bodyColor, accentColor, logoDataUrl = "" }: Props) {
       onContextMenu={(e) => e.preventDefault()}
     >
       <Canvas
-        camera={{ position: [0.32, 0.2, 0.52], fov: 32 }}
+        camera={{ position: [0.28, 0.16, 0.48], fov: 30 }}
         gl={{ antialias: true, preserveDrawingBuffer: false }}
         dpr={[1, 1.75]}
         style={{ touchAction: "none" }}
@@ -42,19 +48,19 @@ export function Negocio3D({ bodyColor, accentColor, logoDataUrl = "" }: Props) {
           enablePan={false}
           enableZoom
           autoRotate={!logoDataUrl}
-          autoRotateSpeed={0.45}
+          autoRotateSpeed={0.4}
           rotateSpeed={0.65}
           zoomSpeed={0.65}
-          minDistance={0.28}
-          maxDistance={1.1}
-          minPolarAngle={0.25}
-          maxPolarAngle={Math.PI / 2 + 0.15}
-          target={[0, 0.02, 0]}
+          minDistance={0.26}
+          maxDistance={1.0}
+          minPolarAngle={0.3}
+          maxPolarAngle={Math.PI / 2 + 0.05}
+          target={[0, 0.03, 0]}
         />
         <ContactShadows position={[0, -0.02, 0]} opacity={0.22} scale={0.9} blur={2.4} />
       </Canvas>
       <p className="pointer-events-none absolute bottom-3 left-0 right-0 text-center text-[11px] text-[#8a8173]">
-        Arrastra para girar · el logo va en el círculo de arriba
+        Arrastra para girar · sube el logo al círculo de arriba
       </p>
     </div>
   );
@@ -67,6 +73,14 @@ function Piece({ bodyColor, accentColor, logoDataUrl }: Props) {
 
   const { scene, badge } = useMemo(() => {
     const clone = gltf.scene.clone(true);
+
+    // Bounds ANTES de mover (espacio modelo)
+    const rawBox = new THREE.Box3().setFromObject(clone);
+    const rawSize = new THREE.Vector3();
+    const rawCenter = new THREE.Vector3();
+    rawBox.getSize(rawSize);
+    rawBox.getCenter(rawCenter);
+
     clone.traverse((obj) => {
       const mesh = obj as THREE.Mesh;
       if (!mesh.isMesh) return;
@@ -80,29 +94,20 @@ function Piece({ bodyColor, accentColor, logoDataUrl }: Props) {
       mesh.material = std;
     });
 
-    const box = new THREE.Box3().setFromObject(clone);
-    const size = new THREE.Vector3();
-    const center = new THREE.Vector3();
-    box.getSize(size);
-    box.getCenter(center);
-    clone.position.sub(center);
-
-    const maxDim = Math.max(size.x, size.y, size.z) || 1;
+    clone.position.sub(rawCenter);
+    const maxDim = Math.max(rawSize.x, rawSize.y, rawSize.z) || 1;
     const s = 0.22 / maxDim;
     clone.scale.setScalar(s);
 
-    const halfY = (size.y * s) / 2;
-    const halfZ = (size.z * s) / 2;
-    const halfX = (size.x * s) / 2;
-    const radius = Math.min(halfX, halfY) * 0.42;
+    // Misma transformación para el sello (hacia la cámara = +Z tras centrar)
+    const badgePos: [number, number, number] = [
+      (SEAL.x - rawCenter.x) * s,
+      (SEAL.y - rawCenter.y) * s,
+      (SEAL.z - rawCenter.z) * s + 0.0008,
+    ];
+    const radius = SEAL.r * s;
 
-    return {
-      scene: clone,
-      badge: {
-        position: [0, halfY * 0.78, halfZ + 0.0018] as [number, number, number],
-        radius,
-      },
-    };
+    return { scene: clone, badge: { position: badgePos, radius } };
   }, [gltf.scene, bodyHex, accentHex]);
 
   return (
@@ -130,21 +135,37 @@ function LogoBadge({
   logoDataUrl: string;
   rimHex: string;
 }) {
+  // Disco en el plano del sello Markos (lo tapa por completo).
+  const r = radius * 1.12;
   return (
     <group position={position}>
-      <mesh position={[0, 0, -0.0005]} renderOrder={2}>
-        <circleGeometry args={[radius * 1.12, 64]} />
-        <meshStandardMaterial color="#0e0e10" roughness={0.85} metalness={0.02} depthWrite />
+      <mesh position={[0, 0, 0]} renderOrder={10}>
+        <circleGeometry args={[r, 64]} />
+        <meshStandardMaterial
+          color="#0e0e10"
+          roughness={0.88}
+          metalness={0.02}
+          polygonOffset
+          polygonOffsetFactor={-4}
+          polygonOffsetUnits={-4}
+        />
       </mesh>
-      <mesh position={[0, 0, -0.0002]} renderOrder={3}>
-        <ringGeometry args={[radius * 0.94, radius * 1.1, 64]} />
-        <meshStandardMaterial color={rimHex} roughness={0.55} metalness={0.05} />
+      <mesh position={[0, 0, 0.00015]} renderOrder={11}>
+        <ringGeometry args={[r * 0.9, r, 64]} />
+        <meshStandardMaterial
+          color={rimHex}
+          roughness={0.55}
+          metalness={0.04}
+          polygonOffset
+          polygonOffsetFactor={-5}
+          polygonOffsetUnits={-5}
+        />
       </mesh>
-      <Suspense fallback={<PlaceholderDisc radius={radius * 0.94} />}>
+      <Suspense fallback={<PlaceholderDisc radius={r * 0.9} />}>
         {logoDataUrl ? (
-          <LogoDisc url={logoDataUrl} radius={radius * 0.94} />
+          <LogoDisc url={logoDataUrl} radius={r * 0.9} />
         ) : (
-          <PlaceholderDisc radius={radius * 0.94} />
+          <PlaceholderDisc radius={r * 0.9} />
         )}
       </Suspense>
     </group>
@@ -161,9 +182,16 @@ function LogoDisc({ url, radius }: { url: string; radius: number }) {
     return t;
   }, [loaded]);
   return (
-    <mesh position={[0, 0, 0]} renderOrder={4}>
+    <mesh position={[0, 0, 0.00025]} renderOrder={12}>
       <circleGeometry args={[radius, 64]} />
-      <meshStandardMaterial map={map} roughness={0.62} metalness={0.02} />
+      <meshStandardMaterial
+        map={map}
+        roughness={0.6}
+        metalness={0.02}
+        polygonOffset
+        polygonOffsetFactor={-6}
+        polygonOffsetUnits={-6}
+      />
     </mesh>
   );
 }
@@ -171,9 +199,16 @@ function LogoDisc({ url, radius }: { url: string; radius: number }) {
 function PlaceholderDisc({ radius }: { radius: number }) {
   const map = usePlaceholderTexture();
   return (
-    <mesh position={[0, 0, 0]} renderOrder={4}>
+    <mesh position={[0, 0, 0.00025]} renderOrder={12}>
       <circleGeometry args={[radius, 64]} />
-      <meshStandardMaterial map={map} roughness={0.75} metalness={0.02} />
+      <meshStandardMaterial
+        map={map}
+        roughness={0.75}
+        metalness={0.02}
+        polygonOffset
+        polygonOffsetFactor={-6}
+        polygonOffsetUnits={-6}
+      />
     </mesh>
   );
 }
@@ -187,13 +222,13 @@ function usePlaceholderTexture() {
     g.fillStyle = "#141416";
     g.fillRect(0, 0, 512, 512);
     g.fillStyle = "#f4f1ea";
-    g.font = "600 42px Georgia, serif";
+    g.font = "600 40px Georgia, serif";
     g.textAlign = "center";
     g.textBaseline = "middle";
-    g.fillText("Tu logo", 256, 240);
-    g.font = "28px Georgia, serif";
+    g.fillText("Tu logo", 256, 248);
+    g.font = "26px Georgia, serif";
     g.fillStyle = "#8a8173";
-    g.fillText("súbelo aquí", 256, 295);
+    g.fillText("súbelo abajo", 256, 300);
     const t = new THREE.CanvasTexture(c);
     t.colorSpace = THREE.SRGBColorSpace;
     return t;
