@@ -70,7 +70,7 @@ export function NegocioOrder({
     setTried(true);
     setError("");
     if (!logoDataUrl) {
-      setError("Sube el logo arriba, en el círculo de la vista previa.");
+      setError("Sube el logo arriba, en el visor 3D.");
       return;
     }
     for (let i = 0; i < chips; i++) {
@@ -132,7 +132,7 @@ export function NegocioOrder({
       <div className="rounded-[28px] border border-[#e6ddd0] bg-white p-6 sm:p-8">
         <h2 className="text-2xl font-semibold">Encargar el tuyo</h2>
         <p className="mt-2 text-sm text-[#6f675c]">
-          El logo ya se ve en la vista previa. Elige chips, pega enlaces y paga. Base{" "}
+          El logo ya se ve en el 3D. Elige chips, pega enlaces y paga. Base{" "}
           {euros(unicaPrice(2))} con 2 chips · +{euros(15)} el tercero · 1 chip{" "}
           {euros(unicaPrice(1))}.
         </p>
