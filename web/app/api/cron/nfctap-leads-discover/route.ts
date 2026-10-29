@@ -33,11 +33,10 @@ export async function GET(req: Request) {
 
   const result = await discoverIntoQueue({
     targetQueued: 1000,
-    maxPlaces: 4,
+    maxPlaces: 6,
     waveIndex: Number.isFinite(waveParam) ? waveParam : day.waves + before.queued,
     fetchWebEmails: true,
-    maxWebFetches: 40,
-    bboxesPerPlace: 3,
+    maxWebFetches: 70,
   });
 
   return NextResponse.json({

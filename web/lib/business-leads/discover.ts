@@ -1,6 +1,6 @@
 /**
- * Descubre emails públicos vía OSM Map API (bbox).
- * Diseñado para caber en cron: pocas cajas + pocos scrapes web.
+ * Descubre emails públicos de negocios locales vía Overpass (OSM).
+ * Qualquier amenity/shop/tourism/office/craft con email o website.
  */
 
 import {
@@ -13,7 +13,14 @@ import { NFC_PLACES, type PlaceCoord } from "./places";
 import { enqueueLeads, loadQueue, queueCounts } from "./queue";
 
 const UA =
-  "NFCTapLeadsBot/1.0 (+https://nfctap.tech; osm-map-discovery; contact=contacto@nfctap.tech)";
+  "NFCTapLeadsBot/1.0 (+https://nfctap.tech; osm-overpass; contact=contacto@nfctap.tech)";
+
+const OVERPASS_ENDPOINTS = [
+  "https://overpass.kumi.systems/api/interpreter",
+  "https://lz4.overpass-api.de/api/interpreter",
+  "https://overpass.osm.ch/api/interpreter",
+  "https://overpass-api.de/api/interpreter",
+];
 
 type OsmHit = {
   name: string;
@@ -22,55 +29,106 @@ type OsmHit = {
   city: string;
 };
 
-function bboxesAround(c: PlaceCoord, n = 3): Array<[number, number, number, number]> {
-  const d = 0.015;
-  const offsets = [
-    [0, 0],
-    [d, 0],
-    [-d, 0],
-    [0, d],
-    [0, -d],
-  ].slice(0, n) as Array<[number, number]>;
-  return offsets.map(([ox, oy]) => {
-    const lon = c.lon + ox;
-    const lat = c.lat + oy;
-    const h = 0.013;
-    return [lon - h, lat - h, lon + h, lat + h];
-  });
+function overpassQueries(c: PlaceCoord): string[] {
+  const r = Math.min(c.radiusM ?? 12000, 18000);
+  const lat = c.lat;
+  const lon = c.lon;
+  // Queries ligeras (timeout público). Varios tags = más cobertura negocios.
+  return [
+    `
+[out:json][timeout:22];
+(
+  nwr(around:${r},${lat},${lon})["amenity"~"^(cafe|restaurant|bar|fast_food|pub|biergarten|ice_cream|food_court)$"]["website"];
+  nwr(around:${r},${lat},${lon})["amenity"~"^(cafe|restaurant|bar|fast_food|pub)$"]["email"];
+  nwr(around:${r},${lat},${lon})["amenity"~"^(cafe|restaurant|bar|fast_food)$"]["contact:website"];
+  nwr(around:${r},${lat},${lon})["amenity"~"^(cafe|restaurant|bar)$"]["contact:email"];
+);
+out tags 60;
+`.trim(),
+    `
+[out:json][timeout:22];
+(
+  nwr(around:${r},${lat},${lon})["amenity"~"^(hairdresser|beauty_salon|clinic|dentist|doctors|pharmacy|veterinary)$"]["website"];
+  nwr(around:${r},${lat},${lon})["amenity"~"^(hairdresser|beauty_salon|clinic|dentist)$"]["email"];
+  nwr(around:${r},${lat},${lon})["amenity"~"^(hairdresser|beauty_salon|clinic|dentist)$"]["contact:website"];
+  nwr(around:${r},${lat},${lon})["shop"~"^(hairdresser|beauty|cosmetics|clothes|bakery|butcher|convenience|supermarket|florist|jewelry|optician)$"]["website"];
+);
+out tags 60;
+`.trim(),
+    `
+[out:json][timeout:22];
+(
+  nwr(around:${r},${lat},${lon})["tourism"~"^(hotel|guest_house|hostel|motel|apartment)$"]["website"];
+  nwr(around:${r},${lat},${lon})["tourism"~"^(hotel|guest_house|hostel)$"]["email"];
+  nwr(around:${r},${lat},${lon})["office"]["website"];
+  nwr(around:${r},${lat},${lon})["craft"]["website"];
+  nwr(around:${r},${lat},${lon})["shop"]["email"];
+  nwr(around:${r},${lat},${lon})["office"]["email"];
+);
+out tags 50;
+`.trim(),
+  ];
 }
 
-async function fetchBbox(bbox: [number, number, number, number]): Promise<string> {
-  const [w, s, e, n] = bbox;
-  const url = `https://api.openstreetmap.org/api/0.6/map?bbox=${w},${s},${e},${n}`;
-  const res = await fetch(url, {
-    headers: { "User-Agent": UA, Accept: "application/xml" },
-    signal: AbortSignal.timeout(20_000),
-  });
-  if (!res.ok) return "";
-  return res.text();
-}
-
-function parseOsmXml(xml: string, city: string): OsmHit[] {
-  const hits: OsmHit[] = [];
-  const blocks = xml.split(/<(?:node|way)\s/).slice(1);
-  for (const block of blocks) {
-    const chunk = block.slice(0, 3500);
-    const name = tagVal(chunk, "name");
-    const emailRaw = tagVal(chunk, "email") || tagVal(chunk, "contact:email");
-    const website = normalizeUrl(
-      tagVal(chunk, "website") || tagVal(chunk, "contact:website") || "",
+async function fetchOverpass(query: string, timeoutMs = 24_000): Promise<unknown[]> {
+  let lastErr: unknown;
+  for (const endpoint of OVERPASS_ENDPOINTS) {
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent": UA,
+          Accept: "application/json",
+        },
+        body: "data=" + encodeURIComponent(query),
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      if (!res.ok) {
+        lastErr = new Error(`overpass ${res.status}`);
+        continue;
+      }
+      const j = (await res.json()) as { elements?: unknown[] };
+      return Array.isArray(j.elements) ? j.elements : [];
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  if (lastErr) {
+    console.warn(
+      "[discover] overpass skip",
+      lastErr instanceof Error ? lastErr.message : String(lastErr),
     );
-    const email = emailRaw ? normalizeEmail(emailRaw.split(/[;,\/\s]+/)[0] || "") : "";
+  }
+  return [];
+}
+
+function tagsOf(el: unknown): Record<string, string> {
+  if (!el || typeof el !== "object") return {};
+  const t = (el as { tags?: Record<string, string> }).tags;
+  return t && typeof t === "object" ? t : {};
+}
+
+function elementsToHits(elements: unknown[], city: string): OsmHit[] {
+  const hits: OsmHit[] = [];
+  for (const el of elements) {
+    const tags = tagsOf(el);
+    const name = (tags.name || tags["name:es"] || "Negocio local").slice(0, 60);
+    const emailRaw =
+      tags.email || tags["contact:email"] || tags["contact:e-mail"] || "";
+    const website = normalizeUrl(
+      tags.website || tags["contact:website"] || tags["contact:facebook"] || "",
+    );
+    // Skip pure social if no real site/email
+    const email = emailRaw
+      ? normalizeEmail(emailRaw.split(/[;,/\s]+/)[0] || "")
+      : "";
     if (!email && !website) continue;
-    const amenity =
-      tagVal(chunk, "amenity") ||
-      tagVal(chunk, "shop") ||
-      tagVal(chunk, "tourism") ||
-      tagVal(chunk, "office") ||
-      tagVal(chunk, "craft");
-    if (!amenity && !email) continue;
+    if (website && /facebook\.com|instagram\.com|twitter\.com|x\.com/i.test(website) && !email) {
+      continue;
+    }
     hits.push({
-      name: (name || "Negocio local").slice(0, 60),
+      name,
       email: isPlausiblePublicEmail(email) ? email : "",
       website,
       city,
@@ -79,32 +137,35 @@ function parseOsmXml(xml: string, city: string): OsmHit[] {
   return hits;
 }
 
-function tagVal(chunk: string, key: string): string {
-  const re = new RegExp(`k="${escapeRe(key)}"\\s+v="([^"]*)"`, "i");
-  const m = chunk.match(re);
-  if (!m) return "";
-  return m[1]
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, '"')
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .trim();
-}
-
-function escapeRe(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 async function emailFromWebsite(url: string): Promise<string> {
   try {
     const res = await fetch(url, {
       headers: { "User-Agent": UA, Accept: "text/html" },
-      signal: AbortSignal.timeout(6_000),
+      signal: AbortSignal.timeout(7_000),
       redirect: "follow",
     });
     if (!res.ok) return "";
-    const html = (await res.text()).slice(0, 140_000);
-    return extractEmailsFromText(html)[0] || "";
+    const html = (await res.text()).slice(0, 160_000);
+    // Prefer /contacto pages if homepage has none — one hop
+    let email = extractEmailsFromText(html)[0] || "";
+    if (!email) {
+      const base = url.replace(/\/$/, "");
+      for (const path of ["/contacto", "/contact", "/contacto/", "/about"]) {
+        try {
+          const r2 = await fetch(base + path, {
+            headers: { "User-Agent": UA, Accept: "text/html" },
+            signal: AbortSignal.timeout(5_000),
+            redirect: "follow",
+          });
+          if (!r2.ok) continue;
+          email = extractEmailsFromText((await r2.text()).slice(0, 120_000))[0] || "";
+          if (email) break;
+        } catch {
+          /* next */
+        }
+      }
+    }
+    return email;
   } catch {
     return "";
   }
@@ -117,10 +178,12 @@ export type DiscoverResult = {
   added: number;
   skipped: number;
   queued: number;
+  persistOk?: boolean;
 };
 
 /**
- * Un lote pequeño (para cron). Llama varias veces al día hasta ~1000 en cola.
+ * Un lote (para cron). Varias llamadas/día hasta ~1000 en cola.
+ * Cubre hostelería, belleza, salud, tiendas, hoteles, oficinas…
  */
 export async function discoverIntoQueue(opts?: {
   targetQueued?: number;
@@ -128,13 +191,11 @@ export async function discoverIntoQueue(opts?: {
   waveIndex?: number;
   fetchWebEmails?: boolean;
   maxWebFetches?: number;
-  bboxesPerPlace?: number;
 }): Promise<DiscoverResult> {
   const target = opts?.targetQueued ?? 1000;
-  const maxPlaces = opts?.maxPlaces ?? 3;
+  const maxPlaces = opts?.maxPlaces ?? 5;
   const fetchWeb = opts?.fetchWebEmails !== false;
-  const maxWeb = opts?.maxWebFetches ?? 35;
-  const boxes = opts?.bboxesPerPlace ?? 3;
+  const maxWeb = opts?.maxWebFetches ?? 55;
   const start = (opts?.waveIndex || 0) % NFC_PLACES.length;
 
   const places: PlaceCoord[] = [];
@@ -160,18 +221,11 @@ export async function discoverIntoQueue(opts?: {
   let webFetches = 0;
 
   for (const place of places) {
-    for (const bbox of bboxesAround(place, boxes)) {
-      let xml = "";
-      try {
-        xml = await fetchBbox(bbox);
-      } catch {
-        continue;
-      }
-      if (!xml) continue;
-      const hits = parseOsmXml(xml, place.name);
+    for (const query of overpassQueries(place)) {
+      const elements = await fetchOverpass(query);
+      const hits = elementsToHits(elements, place.name);
       osmHits += hits.length;
 
-      // 1) emails ya en OSM
       for (const hit of hits) {
         if (!hit.email || seen.has(hit.email)) continue;
         seen.add(hit.email);
@@ -184,14 +238,13 @@ export async function discoverIntoQueue(opts?: {
         });
       }
 
-      // 2) scrape limitado de webs sin email
       if (fetchWeb) {
         for (const hit of hits) {
           if (webFetches >= maxWeb) break;
           if (hit.email || !hit.website) continue;
           const email = await emailFromWebsite(hit.website);
           webFetches++;
-          await new Promise((r) => setTimeout(r, 180));
+          await new Promise((r) => setTimeout(r, 120));
           if (!email || seen.has(email)) continue;
           seen.add(email);
           batch.push({
@@ -203,10 +256,12 @@ export async function discoverIntoQueue(opts?: {
           });
         }
       }
+      if (webFetches >= maxWeb && batch.length > 80) break;
     }
+    await new Promise((r) => setTimeout(r, 250));
   }
 
-  const { added, skipped, queued } = await enqueueLeads(batch);
+  const { added, skipped, queued, persistOk } = await enqueueLeads(batch);
   return {
     places: places.map((p) => p.name),
     osmHits,
@@ -214,6 +269,7 @@ export async function discoverIntoQueue(opts?: {
     added,
     skipped,
     queued,
+    persistOk,
   };
 }
 

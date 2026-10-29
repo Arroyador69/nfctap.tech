@@ -3,7 +3,7 @@
   "crons": [
     {
       "path": "/api/cron/nfctap-leads-discover",
-      "schedule": "15 7-16 * * 1-5"
+      "schedule": "0,30 7-16 * * 1-5"
     },
     {
       "path": "/api/cron/nfctap-leads-wave",

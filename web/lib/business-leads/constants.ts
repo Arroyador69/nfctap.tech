@@ -33,8 +33,10 @@ export const NFC_SEED_PLACES = [
   "Torremolinos",
   "Málaga",
   "Marbella",
+  "Estepona",
   "Sevilla",
   "Granada",
+  "Valencia",
   "Madrid",
   "Barcelona",
 ] as const;
@@ -56,4 +58,6 @@ export const NFC_BUSINESS_TYPES = [
   "shop",
   "office",
   "craft",
+  "pharmacy",
+  "pub",
 ] as const;

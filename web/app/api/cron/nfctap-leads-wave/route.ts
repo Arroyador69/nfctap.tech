@@ -114,15 +114,14 @@ export async function GET(req: Request) {
   const qBefore = queueCounts((await loadQueue()).leads);
   let discover = null as Awaited<ReturnType<typeof discoverIntoQueue>> | null;
   // Si ya hay cola, no discover aquí (lo hace el cron discover). Evita timeout.
-  if (needRefill(qBefore.queued, 30)) {
+  if (needRefill(qBefore.queued, 40)) {
     try {
       discover = await discoverIntoQueue({
-        targetQueued: 80,
-        maxPlaces: 1,
+        targetQueued: 120,
+        maxPlaces: 2,
         waveIndex: day.waves,
         fetchWebEmails: !dry,
-        maxWebFetches: dry ? 0 : 12,
-        bboxesPerPlace: 2,
+        maxWebFetches: dry ? 0 : 25,
       });
     } catch (e) {
       console.error("discover", e);
