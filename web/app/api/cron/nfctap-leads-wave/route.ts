@@ -83,16 +83,18 @@ export async function GET(req: Request) {
     });
   }
 
-  // Cola automática (hoy 500 + margen mañana)
+  // Discover ligero solo si la cola está seca (el cron discover rellena el grueso)
   const qBefore = queueCounts((await loadQueue()).leads);
   let discover = null as Awaited<ReturnType<typeof discoverIntoQueue>> | null;
-  if (needRefill(qBefore.queued, 1000)) {
+  if (needRefill(qBefore.queued, 80)) {
     try {
       discover = await discoverIntoQueue({
-        targetQueued: 1000,
-        maxPlaces: dry ? 4 : 14,
+        targetQueued: 200,
+        maxPlaces: 2,
         waveIndex: day.waves,
         fetchWebEmails: !dry,
+        maxWebFetches: dry ? 0 : 20,
+        bboxesPerPlace: 2,
       });
     } catch (e) {
       console.error("discover", e);

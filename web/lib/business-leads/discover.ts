@@ -1,7 +1,6 @@
 /**
- * Descubre emails públicos de negocios locales.
- * Fuente: OSM Map API (bbox) — Overpass público va a timeout.
- * Cualquier negocio con email/web público · sin inventar correos.
+ * Descubre emails públicos vía OSM Map API (bbox).
+ * Diseñado para caber en cron: pocas cajas + pocos scrapes web.
  */
 
 import {
@@ -23,22 +22,19 @@ type OsmHit = {
   city: string;
 };
 
-function bboxesAround(c: PlaceCoord): Array<[number, number, number, number]> {
-  // lonW, latS, lonE, latN — cajas ~1,5 km (API OSM aguanta)
-  const d = 0.014;
+function bboxesAround(c: PlaceCoord, n = 3): Array<[number, number, number, number]> {
+  const d = 0.015;
   const offsets = [
     [0, 0],
     [d, 0],
     [-d, 0],
     [0, d],
     [0, -d],
-    [d, d],
-    [-d, -d],
-  ] as const;
+  ].slice(0, n) as Array<[number, number]>;
   return offsets.map(([ox, oy]) => {
     const lon = c.lon + ox;
     const lat = c.lat + oy;
-    const h = 0.012;
+    const h = 0.013;
     return [lon - h, lat - h, lon + h, lat + h];
   });
 }
@@ -48,29 +44,30 @@ async function fetchBbox(bbox: [number, number, number, number]): Promise<string
   const url = `https://api.openstreetmap.org/api/0.6/map?bbox=${w},${s},${e},${n}`;
   const res = await fetch(url, {
     headers: { "User-Agent": UA, Accept: "application/xml" },
-    signal: AbortSignal.timeout(25_000),
+    signal: AbortSignal.timeout(20_000),
   });
   if (!res.ok) return "";
   return res.text();
 }
 
-/** Parseo ligero de tags en XML OSM (node/way). */
 function parseOsmXml(xml: string, city: string): OsmHit[] {
   const hits: OsmHit[] = [];
-  // trozos por <node …>…</node> y <way …>…</way>
   const blocks = xml.split(/<(?:node|way)\s/).slice(1);
   for (const block of blocks) {
-    const chunk = block.slice(0, 4000);
+    const chunk = block.slice(0, 3500);
     const name = tagVal(chunk, "name");
     const emailRaw = tagVal(chunk, "email") || tagVal(chunk, "contact:email");
     const website = normalizeUrl(
       tagVal(chunk, "website") || tagVal(chunk, "contact:website") || "",
     );
     const email = emailRaw ? normalizeEmail(emailRaw.split(/[;,\/\s]+/)[0] || "") : "";
-    if (!name && !email && !website) continue;
-    // solo con señal comercial
-    const amenity = tagVal(chunk, "amenity") || tagVal(chunk, "shop") || tagVal(chunk, "tourism") || tagVal(chunk, "office") || tagVal(chunk, "craft");
     if (!email && !website) continue;
+    const amenity =
+      tagVal(chunk, "amenity") ||
+      tagVal(chunk, "shop") ||
+      tagVal(chunk, "tourism") ||
+      tagVal(chunk, "office") ||
+      tagVal(chunk, "craft");
     if (!amenity && !email) continue;
     hits.push({
       name: (name || "Negocio local").slice(0, 60),
@@ -102,13 +99,12 @@ async function emailFromWebsite(url: string): Promise<string> {
   try {
     const res = await fetch(url, {
       headers: { "User-Agent": UA, Accept: "text/html" },
-      signal: AbortSignal.timeout(7_000),
+      signal: AbortSignal.timeout(6_000),
       redirect: "follow",
     });
     if (!res.ok) return "";
-    const html = (await res.text()).slice(0, 160_000);
-    const emails = extractEmailsFromText(html);
-    return emails[0] || "";
+    const html = (await res.text()).slice(0, 140_000);
+    return extractEmailsFromText(html)[0] || "";
   } catch {
     return "";
   }
@@ -124,17 +120,21 @@ export type DiscoverResult = {
 };
 
 /**
- * Rellena cola. Prioriza Costa del Sol y luego resto de NFC_PLACES.
+ * Un lote pequeño (para cron). Llama varias veces al día hasta ~1000 en cola.
  */
 export async function discoverIntoQueue(opts?: {
   targetQueued?: number;
   maxPlaces?: number;
   waveIndex?: number;
   fetchWebEmails?: boolean;
+  maxWebFetches?: number;
+  bboxesPerPlace?: number;
 }): Promise<DiscoverResult> {
   const target = opts?.targetQueued ?? 1000;
-  const maxPlaces = opts?.maxPlaces ?? 10;
+  const maxPlaces = opts?.maxPlaces ?? 3;
   const fetchWeb = opts?.fetchWebEmails !== false;
+  const maxWeb = opts?.maxWebFetches ?? 35;
+  const boxes = opts?.bboxesPerPlace ?? 3;
   const start = (opts?.waveIndex || 0) % NFC_PLACES.length;
 
   const places: PlaceCoord[] = [];
@@ -160,10 +160,7 @@ export async function discoverIntoQueue(opts?: {
   let webFetches = 0;
 
   for (const place of places) {
-    if (batch.length + currentQueued >= target) break;
-
-    for (const bbox of bboxesAround(place)) {
-      if (batch.length + currentQueued >= target) break;
+    for (const bbox of bboxesAround(place, boxes)) {
       let xml = "";
       try {
         xml = await fetchBbox(bbox);
@@ -174,22 +171,37 @@ export async function discoverIntoQueue(opts?: {
       const hits = parseOsmXml(xml, place.name);
       osmHits += hits.length;
 
+      // 1) emails ya en OSM
       for (const hit of hits) {
-        let email = hit.email;
-        if (!email && fetchWeb && hit.website && webFetches < 80) {
-          email = await emailFromWebsite(hit.website);
-          webFetches++;
-          await new Promise((r) => setTimeout(r, 200));
-        }
-        if (!email || seen.has(email)) continue;
-        seen.add(email);
+        if (!hit.email || seen.has(hit.email)) continue;
+        seen.add(hit.email);
         batch.push({
-          email,
+          email: hit.email,
           businessName: hit.name,
           city: place.name,
           websiteUrl: hit.website || undefined,
-          source: hit.email ? "osm" : "web",
+          source: "osm",
         });
+      }
+
+      // 2) scrape limitado de webs sin email
+      if (fetchWeb) {
+        for (const hit of hits) {
+          if (webFetches >= maxWeb) break;
+          if (hit.email || !hit.website) continue;
+          const email = await emailFromWebsite(hit.website);
+          webFetches++;
+          await new Promise((r) => setTimeout(r, 180));
+          if (!email || seen.has(email)) continue;
+          seen.add(email);
+          batch.push({
+            email,
+            businessName: hit.name,
+            city: place.name,
+            websiteUrl: hit.website,
+            source: "web",
+          });
+        }
       }
     }
   }
@@ -205,6 +217,6 @@ export async function discoverIntoQueue(opts?: {
   };
 }
 
-export function needRefill(queued: number, min = 1000) {
+export function needRefill(queued: number, min = 800) {
   return queued < min;
 }
