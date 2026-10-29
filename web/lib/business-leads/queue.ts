@@ -1,5 +1,5 @@
 /**
- * Cola de leads en Vercel Blob (private, como el store de pedidos).
+ * Cola de leads en Vercel Blob via get/put (API actual).
  */
 
 export type BusinessLead = {
@@ -27,33 +27,30 @@ function blobOk() {
 async function readJson<T>(key: string, fallback: T): Promise<T> {
   if (!blobOk()) return fallback;
   try {
-    const { list } = await import("@vercel/blob");
-    const { blobs } = await list({ prefix: key, limit: 8 });
-    const hit =
-      blobs.find((b) => b.pathname === key) ||
-      blobs.find((b) => b.pathname.endsWith(key)) ||
-      blobs[0];
-    if (!hit) return fallback;
-    const res = await fetch(hit.url);
-    if (!res.ok) return fallback;
-    return (await res.json()) as T;
+    const { get } = await import("@vercel/blob");
+    const result = await get(key, { access: "private", useCache: false });
+    if (!result || result.statusCode !== 200 || !result.stream) return fallback;
+    const text = await new Response(result.stream).text();
+    if (!text) return fallback;
+    return JSON.parse(text) as T;
   } catch (e) {
-    console.error("queue read", key, e);
+    const msg = e instanceof Error ? e.message : String(e);
+    if (!/not found|404/i.test(msg)) console.error("queue read", key, msg.slice(0, 200));
     return fallback;
   }
 }
 
 async function writeJson(key: string, data: unknown) {
-  if (!blobOk()) {
-    throw new Error("Falta BLOB_READ_WRITE_TOKEN");
-  }
+  if (!blobOk()) throw new Error("Falta BLOB_READ_WRITE_TOKEN");
   const { put } = await import("@vercel/blob");
-  await put(key, JSON.stringify(data), {
+  const body = JSON.stringify(data);
+  const blob = await put(key, body, {
     access: "private",
     addRandomSuffix: false,
     allowOverwrite: true,
     contentType: "application/json",
   });
+  return blob;
 }
 
 export async function loadQueue(): Promise<QueueFile> {
@@ -63,11 +60,6 @@ export async function loadQueue(): Promise<QueueFile> {
 export async function saveQueue(leads: BusinessLead[]) {
   const file: QueueFile = { leads, updatedAt: new Date().toISOString() };
   await writeJson(QUEUE_KEY, file);
-  // verificar
-  const check = await loadQueue();
-  if (check.leads.length < leads.length) {
-    console.error("queue persist mismatch", { wrote: leads.length, read: check.leads.length });
-  }
   return file;
 }
 
@@ -91,7 +83,7 @@ export function queueCounts(leads: BusinessLead[]) {
 
 export async function enqueueLeads(
   incoming: Omit<BusinessLead, "id" | "status" | "createdAt">[],
-): Promise<{ added: number; skipped: number; queued: number }> {
+): Promise<{ added: number; skipped: number; queued: number; persistOk: boolean }> {
   const file = await loadQueue();
   const opt = await loadOptOut();
   const seen = new Set(file.leads.map((l) => l.email.toLowerCase()));
@@ -115,7 +107,13 @@ export async function enqueueLeads(
   }
   await saveQueue(file.leads);
   const verified = await loadQueue();
-  return { added, skipped, queued: queueCounts(verified.leads).queued };
+  const queued = queueCounts(verified.leads).queued;
+  return {
+    added,
+    skipped,
+    queued,
+    persistOk: verified.leads.length >= file.leads.length,
+  };
 }
 
 export async function takeQueued(n: number): Promise<BusinessLead[]> {
