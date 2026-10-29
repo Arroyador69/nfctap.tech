@@ -1,6 +1,7 @@
 /**
  * Backfill opens/clicks/bounces desde la API de Resend (como Delfín sync).
  * Sirve para mails ya enviados cuando el webhook no estaba conectado.
+ * Respeta el rate limit de Resend (10 req/s) con pausa + retry 429.
  */
 
 import { loadQueue, saveQueue, type BusinessLead } from "./queue";
@@ -19,6 +20,10 @@ function resendKey() {
 function toAddress(to: ResendListItem["to"]): string {
   if (Array.isArray(to)) return (to[0] || "").toLowerCase();
   return (to || "").toLowerCase();
+}
+
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 function applyEvent(lead: BusinessLead, lastEvent: string, at: string): boolean {
@@ -48,9 +53,40 @@ function applyEvent(lead: BusinessLead, lastEvent: string, at: string): boolean 
   return changed;
 }
 
+async function fetchEmailsPage(
+  key: string,
+  after: string | undefined,
+  attempt = 0,
+): Promise<{ rows: ResendListItem[]; hasMore: boolean; error?: string }> {
+  const qs = new URLSearchParams({ limit: "100" });
+  if (after) qs.set("after", after);
+  const res = await fetch(`https://api.resend.com/emails?${qs}`, {
+    headers: { Authorization: `Bearer ${key}`, Accept: "application/json" },
+    signal: AbortSignal.timeout(20_000),
+  });
+  if (res.status === 429 && attempt < 4) {
+    const retryAfter = Number(res.headers.get("retry-after") || "") || 1 + attempt;
+    await sleep(Math.max(1000, retryAfter * 1000));
+    return fetchEmailsPage(key, after, attempt + 1);
+  }
+  if (!res.ok) {
+    const msg = await res.text();
+    return {
+      rows: [],
+      hasMore: false,
+      error: msg.slice(0, 200) || `Resend HTTP ${res.status}`,
+    };
+  }
+  const body = (await res.json()) as {
+    data?: ResendListItem[];
+    has_more?: boolean;
+  };
+  return { rows: body.data || [], hasMore: Boolean(body.has_more) };
+}
+
 /**
  * Lista emails recientes en Resend y marca opens/clicks en la cola.
- * maxPages: cada página ≤100 (Resend).
+ * maxPages: cada página ≤100 (Resend). Pausa ~200ms entre páginas.
  */
 export async function syncEngagementFromResend(opts?: {
   maxPages?: number;
@@ -95,39 +131,23 @@ export async function syncEngagementFromResend(opts?: {
   });
 
   const withResendId = byId.size;
-  const maxPages = Math.min(Math.max(opts?.maxPages ?? 10, 1), 20);
+  // Por defecto pocas páginas: evita 429 si hay otras llamadas a Resend.
+  const maxPages = Math.min(Math.max(opts?.maxPages ?? 8, 1), 15);
   let after: string | undefined;
   let checked = 0;
   let updated = 0;
   let opened = 0;
   let clicked = 0;
   let bounced = 0;
+  let lastError: string | undefined;
 
   for (let page = 0; page < maxPages; page++) {
-    const qs = new URLSearchParams({ limit: "100" });
-    if (after) qs.set("after", after);
-    const res = await fetch(`https://api.resend.com/emails?${qs}`, {
-      headers: { Authorization: `Bearer ${key}`, Accept: "application/json" },
-      signal: AbortSignal.timeout(20_000),
-    });
-    if (!res.ok) {
-      const msg = await res.text();
-      return {
-        ok: false,
-        checked,
-        updated,
-        opened,
-        clicked,
-        bounced,
-        withResendId,
-        error: msg.slice(0, 200) || `Resend HTTP ${res.status}`,
-      };
+    if (page > 0) await sleep(220); // < 5 req/s, margen bajo el límite 10/s
+    const { rows, hasMore, error } = await fetchEmailsPage(key, after);
+    if (error) {
+      lastError = error;
+      break;
     }
-    const body = (await res.json()) as {
-      data?: ResendListItem[];
-      has_more?: boolean;
-    };
-    const rows = body.data || [];
     if (!rows.length) break;
 
     for (const row of rows) {
@@ -152,7 +172,7 @@ export async function syncEngagementFromResend(opts?: {
       }
     }
 
-    if (!body.has_more) break;
+    if (!hasMore) break;
     after = rows[rows.length - 1]?.id;
     if (!after) break;
   }
@@ -160,12 +180,13 @@ export async function syncEngagementFromResend(opts?: {
   if (updated > 0) await saveQueue(file.leads);
 
   return {
-    ok: true,
+    ok: !lastError || updated > 0 || checked > 0,
     checked,
     updated,
     opened,
     clicked,
     bounced,
     withResendId,
+    error: lastError,
   };
 }

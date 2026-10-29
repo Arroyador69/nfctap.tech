@@ -46,11 +46,17 @@ export function CaptacionPanel({
       const res = await fetch("/api/admin/sync-engagement", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ maxPages: 15 }),
+        body: JSON.stringify({ maxPages: 8 }),
       });
       const data = await res.json();
       setLog(JSON.stringify(data, null, 2));
-      router.refresh();
+      if (data?.ok) router.refresh();
+      else if (String(data?.error || "").includes("429")) {
+        setLog(
+          JSON.stringify(data, null, 2) +
+            "\n\nResend rate limit. Espera ~20 s y pulsa Sync otra vez.",
+        );
+      }
     } catch (e) {
       setLog(e instanceof Error ? e.message : "Error de red");
     }

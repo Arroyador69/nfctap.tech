@@ -22,9 +22,9 @@ export async function POST(req: Request) {
   }
   const body = (await req.json().catch(() => ({}))) as { maxPages?: number };
   const result = await syncEngagementFromResend({
-    maxPages: typeof body.maxPages === "number" ? body.maxPages : 15,
+    maxPages: typeof body.maxPages === "number" ? body.maxPages : 8,
   });
-  return NextResponse.json(result, { status: result.ok ? 200 : 500 });
+  return NextResponse.json(result, { status: result.ok ? 200 : 429 });
 }
 
 /** GET ?secret= — mismo sync (para lanzarlo ya desde cron/curl). */
@@ -33,9 +33,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
   const url = new URL(req.url);
-  const maxPages = Number(url.searchParams.get("maxPages") || "15");
+  const maxPages = Number(url.searchParams.get("maxPages") || "8");
   const result = await syncEngagementFromResend({
-    maxPages: Number.isFinite(maxPages) ? maxPages : 15,
+    maxPages: Number.isFinite(maxPages) ? maxPages : 8,
   });
-  return NextResponse.json(result, { status: result.ok ? 200 : 500 });
+  return NextResponse.json(result, { status: result.ok ? 200 : 429 });
 }
