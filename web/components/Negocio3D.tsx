@@ -4,17 +4,11 @@ import { ACCENT_HEX, BODY_COLORS } from "@/lib/catalog";
 import type { AccentColor, BodyColor } from "@/lib/types";
 import { ContactShadows, OrbitControls, useGLTF } from "@react-three/drei";
 import { Canvas, useLoader } from "@react-three/fiber";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useLayoutEffect, useMemo, useState } from "react";
 import * as THREE from "three";
 
 const MODEL = "/models/markos-negocio.glb";
 useGLTF.preload(MODEL, true);
-
-/**
- * Sello circular en el GLB (metros, espacio modelo sin transformar).
- * Cara del logo ≈ plano XY en z≈-0.061 · centro (0, 0.152).
- */
-const SEAL = { x: 0, y: 0.152, z: -0.0608, r: 0.0215 };
 
 type Props = {
   bodyColor: BodyColor;
@@ -60,7 +54,7 @@ export function Negocio3D({ bodyColor, accentColor, logoDataUrl = "" }: Props) {
         <ContactShadows position={[0, -0.02, 0]} opacity={0.22} scale={0.9} blur={2.4} />
       </Canvas>
       <p className="pointer-events-none absolute bottom-3 left-0 right-0 text-center text-[11px] text-[#8a8173]">
-        Arrastra para girar · sube el logo al círculo de arriba
+        Arrastra para girar · el logo va en el círculo de arriba
       </p>
     </div>
   );
@@ -70,147 +64,113 @@ function Piece({ bodyColor, accentColor, logoDataUrl }: Props) {
   const gltf = useGLTF(MODEL, true);
   const bodyHex = BODY_COLORS.find((c) => c.id === bodyColor)?.hex ?? "#141416";
   const accentHex = ACCENT_HEX[accentColor] ?? ACCENT_HEX.blanco;
+  const placeholder = usePlaceholderTexture();
 
-  const { scene, badge } = useMemo(() => {
+  const scene = useMemo(() => {
     const clone = gltf.scene.clone(true);
-
-    // Bounds ANTES de mover (espacio modelo)
-    const rawBox = new THREE.Box3().setFromObject(clone);
-    const rawSize = new THREE.Vector3();
-    const rawCenter = new THREE.Vector3();
-    rawBox.getSize(rawSize);
-    rawBox.getCenter(rawCenter);
 
     clone.traverse((obj) => {
       const mesh = obj as THREE.Mesh;
-      if (!mesh.isMesh) return;
+      if (!mesh.isMesh || !mesh.geometry) return;
+      const name = `${mesh.name} ${mesh.parent?.name ?? ""}`.toLowerCase();
       const matSrc = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
       const std = (matSrc as THREE.MeshStandardMaterial).clone();
-      const key = `${mesh.name} ${mesh.parent?.name ?? ""} ${std.name}`.toLowerCase();
-      const accentMat = key.includes("blanco");
+
+      if (name.includes("logo_pad")) {
+        ensureCircleUv(mesh.geometry);
+        std.color = new THREE.Color("#ffffff");
+        std.map = placeholder;
+        std.metalness = 0.02;
+        std.roughness = 0.65;
+        std.needsUpdate = true;
+        mesh.material = std;
+        mesh.renderOrder = 5;
+        return;
+      }
+
+      const accentMat = name.includes("blanco");
       std.color = new THREE.Color(accentMat ? accentHex : bodyHex);
+      std.map = null;
       std.metalness = 0.04;
       std.roughness = 0.7;
       mesh.material = std;
     });
 
-    clone.position.sub(rawCenter);
-    const maxDim = Math.max(rawSize.x, rawSize.y, rawSize.z) || 1;
-    const s = 0.22 / maxDim;
-    clone.scale.setScalar(s);
-
-    // Misma transformación para el sello (hacia la cámara = +Z tras centrar)
-    const badgePos: [number, number, number] = [
-      (SEAL.x - rawCenter.x) * s,
-      (SEAL.y - rawCenter.y) * s,
-      (SEAL.z - rawCenter.z) * s + 0.0008,
-    ];
-    const radius = SEAL.r * s;
-
-    return { scene: clone, badge: { position: badgePos, radius } };
-  }, [gltf.scene, bodyHex, accentHex]);
+    const box = new THREE.Box3().setFromObject(clone);
+    const size = new THREE.Vector3();
+    const center = new THREE.Vector3();
+    box.getSize(size);
+    box.getCenter(center);
+    clone.position.sub(center);
+    const maxDim = Math.max(size.x, size.y, size.z) || 1;
+    clone.scale.setScalar(0.22 / maxDim);
+    return clone;
+  }, [gltf.scene, bodyHex, accentHex, placeholder]);
 
   return (
     <group>
       <primitive object={scene} />
-      <LogoBadge
-        key={logoDataUrl || "empty"}
-        position={badge.position}
-        radius={badge.radius}
-        logoDataUrl={logoDataUrl || ""}
-        rimHex={accentHex}
-      />
+      {logoDataUrl ? (
+        <Suspense fallback={null}>
+          <ApplyLogo scene={scene} url={logoDataUrl} />
+        </Suspense>
+      ) : (
+        <ApplyMap scene={scene} map={placeholder} />
+      )}
     </group>
   );
 }
 
-function LogoBadge({
-  position,
-  radius,
-  logoDataUrl,
-  rimHex,
-}: {
-  position: [number, number, number];
-  radius: number;
-  logoDataUrl: string;
-  rimHex: string;
-}) {
-  // Disco en el plano del sello Markos (lo tapa por completo).
-  const r = radius * 1.12;
-  return (
-    <group position={position}>
-      <mesh position={[0, 0, 0]} renderOrder={10}>
-        <circleGeometry args={[r, 64]} />
-        <meshStandardMaterial
-          color="#0e0e10"
-          roughness={0.88}
-          metalness={0.02}
-          polygonOffset
-          polygonOffsetFactor={-4}
-          polygonOffsetUnits={-4}
-        />
-      </mesh>
-      <mesh position={[0, 0, 0.00015]} renderOrder={11}>
-        <ringGeometry args={[r * 0.9, r, 64]} />
-        <meshStandardMaterial
-          color={rimHex}
-          roughness={0.55}
-          metalness={0.04}
-          polygonOffset
-          polygonOffsetFactor={-5}
-          polygonOffsetUnits={-5}
-        />
-      </mesh>
-      <Suspense fallback={<PlaceholderDisc radius={r * 0.9} />}>
-        {logoDataUrl ? (
-          <LogoDisc url={logoDataUrl} radius={r * 0.9} />
-        ) : (
-          <PlaceholderDisc radius={r * 0.9} />
-        )}
-      </Suspense>
-    </group>
-  );
-}
-
-function LogoDisc({ url, radius }: { url: string; radius: number }) {
+function ApplyLogo({ scene, url }: { scene: THREE.Object3D; url: string }) {
   const loaded = useLoader(THREE.TextureLoader, url);
   const map = useMemo(() => {
     const t = loaded.clone();
     t.colorSpace = THREE.SRGBColorSpace;
     t.anisotropy = 8;
+    t.flipY = true;
     t.needsUpdate = true;
     return t;
   }, [loaded]);
-  return (
-    <mesh position={[0, 0, 0.00025]} renderOrder={12}>
-      <circleGeometry args={[radius, 64]} />
-      <meshStandardMaterial
-        map={map}
-        roughness={0.6}
-        metalness={0.02}
-        polygonOffset
-        polygonOffsetFactor={-6}
-        polygonOffsetUnits={-6}
-      />
-    </mesh>
-  );
+  return <ApplyMap scene={scene} map={map} />;
 }
 
-function PlaceholderDisc({ radius }: { radius: number }) {
-  const map = usePlaceholderTexture();
-  return (
-    <mesh position={[0, 0, 0.00025]} renderOrder={12}>
-      <circleGeometry args={[radius, 64]} />
-      <meshStandardMaterial
-        map={map}
-        roughness={0.75}
-        metalness={0.02}
-        polygonOffset
-        polygonOffsetFactor={-6}
-        polygonOffsetUnits={-6}
-      />
-    </mesh>
-  );
+function ApplyMap({ scene, map }: { scene: THREE.Object3D; map: THREE.Texture }) {
+  useLayoutEffect(() => {
+    scene.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      const name = `${mesh.name} ${mesh.parent?.name ?? ""}`.toLowerCase();
+      if (!name.includes("logo_pad")) return;
+      const mat = mesh.material as THREE.MeshStandardMaterial;
+      mat.map = map;
+      mat.color = new THREE.Color("#ffffff");
+      mat.needsUpdate = true;
+    });
+  }, [scene, map]);
+  return null;
+}
+
+function ensureCircleUv(geometry: THREE.BufferGeometry) {
+  if (geometry.getAttribute("uv")) return;
+  const pos = geometry.getAttribute("position");
+  const uvs = new Float32Array(pos.count * 2);
+  let minX = Infinity,
+    maxX = -Infinity,
+    minY = Infinity,
+    maxY = -Infinity;
+  for (let i = 0; i < pos.count; i++) {
+    minX = Math.min(minX, pos.getX(i));
+    maxX = Math.max(maxX, pos.getX(i));
+    minY = Math.min(minY, pos.getY(i));
+    maxY = Math.max(maxY, pos.getY(i));
+  }
+  const sx = maxX - minX || 1;
+  const sy = maxY - minY || 1;
+  for (let i = 0; i < pos.count; i++) {
+    uvs[i * 2] = (pos.getX(i) - minX) / sx;
+    uvs[i * 2 + 1] = (pos.getY(i) - minY) / sy;
+  }
+  geometry.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
 }
 
 function usePlaceholderTexture() {
@@ -221,6 +181,11 @@ function usePlaceholderTexture() {
     const g = c.getContext("2d")!;
     g.fillStyle = "#141416";
     g.fillRect(0, 0, 512, 512);
+    g.strokeStyle = "#f4f1ea";
+    g.lineWidth = 8;
+    g.beginPath();
+    g.arc(256, 256, 230, 0, Math.PI * 2);
+    g.stroke();
     g.fillStyle = "#f4f1ea";
     g.font = "600 40px Georgia, serif";
     g.textAlign = "center";

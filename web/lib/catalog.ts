@@ -21,7 +21,7 @@ export const BRAND = {
 export const SOCIALS = [
   { id: "instagram", label: "Instagram", href: "https://www.instagram.com/nfctap.tech/" },
   { id: "tiktok", label: "TikTok", href: "https://www.tiktok.com/@nfctap.tech" },
-  { id: "youtube", label: "YouTube", href: "https://www.youtube.com/@nfctap" },
+  { id: "youtube", label: "YouTube", href: "https://www.youtube.com/@NFCTap" },
   { id: "facebook", label: "Facebook", href: "https://www.facebook.com/profile.php?id=61594394069652" },
 ] as const;
 

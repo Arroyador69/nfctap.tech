@@ -27,6 +27,10 @@ export async function sendNfctapOutreach(
     process.env.SMTP_FROM_OUTREACH?.trim() ||
     `NFCTap <hola@${BRAND.domain}>`;
 
+  const optOut =
+    vars.optOutUrl?.trim() ||
+    `mailto:${BRAND.email}?subject=${encodeURIComponent("baja")}`;
+
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -40,6 +44,10 @@ export async function sendNfctapOutreach(
       subject: nfctapOutreachSubject(vars),
       html: nfctapOutreachHtml(vars),
       text: nfctapOutreachText(vars),
+      headers: {
+        "List-Unsubscribe": `<${optOut}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      },
       tags: [{ name: "campaign", value: "nfctap_local_es" }],
     }),
   });

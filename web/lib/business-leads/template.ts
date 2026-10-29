@@ -1,23 +1,29 @@
-import { BRAND, unicaPrice } from "@/lib/catalog";
+import { BRAND, SOCIALS, unicaPrice } from "@/lib/catalog";
 
 export type OutreachVars = {
-  /** Nombre del negocio (saludo). */
   businessName: string;
-  /** Ciudad / zona del lead — siempre la del negocio al que escribimos. */
   city: string;
-  /** Web pública del negocio, si la tenemos. */
   websiteUrl?: string;
-  /** Override hero (pieza en barra). */
   heroImageUrl?: string;
-  /** Segunda foto de producto. */
   secondImageUrl?: string;
+  /** URL de baja RGPD (si no, mailto). */
+  optOutUrl?: string;
 };
 
 const FREDDOS = `${BRAND.url}/stock/freddos.jpg`;
 const MARKOS = `${BRAND.url}/stock/markos.jpg`;
 const CTA = `${BRAND.url}/negocio`;
 
-/** HTML cold email · conversión → /negocio (80 € · 2 chips). Sin nombres personales. */
+const SOCIAL_LINKS = [
+  ...SOCIALS,
+  // YouTube canónico
+].map((s) =>
+  s.id === "youtube"
+    ? { ...s, href: "https://www.youtube.com/@NFCTap" }
+    : s,
+);
+
+/** HTML cold email · conversión /negocio · RGPD · otros servicios cortos. */
 export function nfctapOutreachHtml(v: OutreachVars) {
   const name = v.businessName?.trim() || "Hola";
   const city = v.city?.trim() || "tu zona";
@@ -25,9 +31,17 @@ export function nfctapOutreachHtml(v: OutreachVars) {
   const hero = v.heroImageUrl || FREDDOS;
   const second = v.secondImageUrl || MARKOS;
   const web = normalizeWeb(v.websiteUrl);
+  const optOut =
+    v.optOutUrl?.trim() ||
+    `mailto:${BRAND.email}?subject=${encodeURIComponent("baja")}&body=${encodeURIComponent("Quiero darme de baja de los emails de NFCTap.")}`;
   const webLine = web
-    ? `Hemos visto <a href="${escapeAttr(web)}" style="color:#1c1915;">${escapeHtml(displayHost(web))}</a> y creemos que encaja con lo que hacemos.`
-    : `Te escribimos porque encontramos el contacto público de tu negocio en ${escapeHtml(city)}.`;
+    ? `Hemos visto <a href="${escapeAttr(web)}" style="color:#1c1915;">${escapeHtml(displayHost(web))}</a>.`
+    : `Contacto público de tu negocio en ${escapeHtml(city)}.`;
+
+  const socialHtml = SOCIAL_LINKS.map(
+    (s) =>
+      `<a href="${escapeAttr(s.href)}" style="color:#1c1915;text-decoration:underline;margin-right:12px;">${escapeHtml(s.label)}</a>`,
+  ).join("");
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -36,44 +50,44 @@ export function nfctapOutreachHtml(v: OutreachVars) {
     <tr><td align="center">
       <table role="presentation" width="560" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border-radius:20px;overflow:hidden;border:1px solid #e6ddd0;">
         <tr><td>
-          <img src="${escapeAttr(hero)}" alt="Pieza NFC con logo en la barra — NFCTap" width="560" style="display:block;width:100%;height:auto;border:0;" />
+          <img src="${escapeAttr(hero)}" alt="Pieza NFC con logo — NFCTap" width="560" style="display:block;width:100%;height:auto;border:0;" />
         </td></tr>
         <tr><td style="padding:28px 28px 4px;">
-          <p style="margin:0;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:#b0892c;">NFCTap · ${escapeHtml(city)}</p>
-          <h1 style="margin:12px 0 0;font-size:26px;line-height:1.28;font-weight:700;">
-            ${escapeHtml(name)}: una pieza con tu logo que el cliente toca y entra
+          <p style="margin:0;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:#b0892c;">nfctap.tech · ${escapeHtml(city)}</p>
+          <h1 style="margin:12px 0 0;font-size:24px;line-height:1.3;font-weight:700;">
+            ${escapeHtml(name)}: tu logo en la barra. El cliente toca y entra.
           </h1>
           <p style="margin:16px 0 0;font-size:16px;line-height:1.55;color:#5c564c;">
-            Somos <strong>nfctap.tech</strong>. Diseñamos e imprimimos en España atriles NFC con
-            <strong>tu marca</strong> y chips que abren lo que tú elijas: tu web, Google reseñas,
-            Instagram, WhatsApp o el enlace que necesites.
-          </p>
-          <p style="margin:14px 0 0;font-size:16px;line-height:1.55;color:#5c564c;">
+            Somos <strong>nfctap.tech</strong>. Fabricamos en España atriles NFC con tu marca:
+            web, Google, Instagram, WhatsApp o el enlace que necesites.
             ${webLine}
-            En la web lo encargas en <strong>menos de 2 minutos</strong>: subes el logo, eliges
-            1–3 chips y pagas. Lo fabricamos y lo enviamos en <strong>unos 2 días</strong>.
+            Encargo en <strong>menos de 2 minutos</strong> · fabricación y envío en <strong>unos 2 días</strong>.
+            Desde <strong>${price} €</strong> con 2 chips.
           </p>
-          <p style="margin:14px 0 0;font-size:16px;line-height:1.55;color:#5c564c;">
-            Base <strong>${price} €</strong> con 2 chips · puedes añadir más. Sin intermediarios:
-            te hemos contactado nosotros para que sea fácil.
-          </p>
-          <p style="margin:24px 0 0;">
-            <a href="${CTA}" style="display:inline-block;background:#1c1915;color:#f6f1e7;text-decoration:none;padding:14px 26px;border-radius:999px;font-size:15px;font-weight:600;letter-spacing:0.02em;">
+          <p style="margin:22px 0 0;">
+            <a href="${CTA}" style="display:inline-block;background:#1c1915;color:#f6f1e7;text-decoration:none;padding:14px 26px;border-radius:999px;font-size:15px;font-weight:600;">
               Encargar en 2 minutos
             </a>
           </p>
-          <p style="margin:10px 0 0;font-size:13px;color:#8a8173;">
-            ${BRAND.url}/negocio · desde ${price} € · envío España
+          <p style="margin:18px 0 0;font-size:14px;line-height:1.5;color:#6f675c;">
+            Otros servicios (web, redes, app móvil):
+            <a href="mailto:${BRAND.email}?subject=${encodeURIComponent("Otros servicios NFCTap")}" style="color:#1c1915;">póngase en contacto</a>
+            · ${BRAND.email}
           </p>
         </td></tr>
-        <tr><td style="padding:20px 28px 8px;">
-          <p style="margin:0 0 10px;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#b0892c;">Así queda en local</p>
-          <img src="${escapeAttr(second)}" alt="Pieza NFC con logo — NFCTap" width="504" style="display:block;width:100%;max-width:504px;height:auto;border:0;border-radius:14px;" />
+        <tr><td style="padding:16px 28px 8px;">
+          <img src="${escapeAttr(second)}" alt="Pieza NFC — NFCTap" width="504" style="display:block;width:100%;max-width:504px;height:auto;border:0;border-radius:14px;" />
         </td></tr>
-        <tr><td style="padding:16px 28px 28px;font-size:12px;color:#a39a8c;line-height:1.5;">
-          NFCTap · taller en España · ${BRAND.email}<br />
-          Contacto de ${escapeHtml(name)} en ${escapeHtml(city)}. Si no quieres más mensajes: responde «baja» o
-          <a href="${BRAND.url}/legal" style="color:#8a8173;">aviso legal</a>.
+        <tr><td style="padding:12px 28px 8px;font-size:13px;color:#5c564c;">
+          ${socialHtml}
+        </td></tr>
+        <tr><td style="padding:8px 28px 28px;font-size:12px;color:#a39a8c;line-height:1.55;">
+          NFCTap · España · <a href="${BRAND.url}" style="color:#8a8173;">${BRAND.domain}</a><br />
+          Te escribimos por el email público de ${escapeHtml(name)} (${escapeHtml(city)}).
+          Si no quieres más mensajes:
+          <a href="${escapeAttr(optOut)}" style="color:#1c1915;font-weight:600;">darse de baja</a>
+          · responde «baja» ·
+          <a href="${BRAND.url}/legal" style="color:#8a8173;">aviso legal / RGPD</a>.
         </td></tr>
       </table>
     </td></tr>
@@ -87,23 +101,27 @@ export function nfctapOutreachText(v: OutreachVars) {
   const city = v.city?.trim() || "tu zona";
   const price = unicaPrice(2);
   const web = normalizeWeb(v.websiteUrl);
+  const optOut =
+    v.optOutUrl?.trim() || `mailto:${BRAND.email}?subject=baja`;
   const webBit = web
-    ? `Hemos visto ${displayHost(web)} y creemos que encaja.`
-    : `Contacto público de tu negocio en ${city}.`;
+    ? `Hemos visto ${displayHost(web)}.`
+    : `Contacto público en ${city}.`;
+  const socials = SOCIAL_LINKS.map((s) => `${s.label}: ${s.href}`).join("\n");
 
-  return `${name}: una pieza con tu logo que el cliente toca y entra
+  return `${name}: tu logo en la barra. El cliente toca y entra.
 
-Somos nfctap.tech. Diseñamos e imprimimos en España atriles NFC con tu marca y chips que abren tu web, Google, Instagram, WhatsApp o el enlace que necesites.
-
+Somos nfctap.tech. Atriles NFC con tu marca (web, Google, Instagram, WhatsApp…).
 ${webBit}
-Lo encargas en la web en menos de 2 minutos (logo + 1–3 chips + pago). Fabricación y envío en unos 2 días.
+Encargo en menos de 2 minutos · envío en unos 2 días. Desde ${price} € con 2 chips.
 
-Desde ${price} € con 2 chips. Puedes añadir más.
+Encargar: ${CTA}
 
-Encargar en 2 minutos: ${CTA}
+Otros servicios (web, redes, app): ${BRAND.email}
 
-NFCTap · ${BRAND.email} · ${city}
-Baja: responde «baja».`;
+${socials}
+
+Baja (RGPD): ${optOut}
+O responde «baja». Aviso legal: ${BRAND.url}/legal`;
 }
 
 export function nfctapOutreachSubject(v: OutreachVars) {
