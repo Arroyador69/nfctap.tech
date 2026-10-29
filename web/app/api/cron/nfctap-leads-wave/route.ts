@@ -59,8 +59,12 @@ export async function GET(req: Request) {
   const hour = madridHourNow();
 
   // Reparación one-shot contador día (tras migrar Blob): ?setSent=200
-  const setSent = Number(url.searchParams.get("setSent") || "");
-  if (force && Number.isFinite(setSent) && setSent >= 0 && setSent <= NFC_LEADS_DAILY_HARD_CAP) {
+  const setSentRaw = url.searchParams.get("setSent");
+  if (force && setSentRaw != null && setSentRaw !== "") {
+    const setSent = Number(setSentRaw);
+    if (!Number.isFinite(setSent) || setSent < 0 || setSent > NFC_LEADS_DAILY_HARD_CAP) {
+      return NextResponse.json({ error: "setSent inválido" }, { status: 400 });
+    }
     const { madridDate } = await import("@/lib/business-leads/stats");
     const { put } = await import("@vercel/blob");
     const date = madridDate();
