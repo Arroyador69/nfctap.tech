@@ -2,6 +2,7 @@ import {
   NFC_LEADS_DAILY_HARD_CAP,
   NFC_LEADS_WAVES_PER_DAY,
 } from "@/lib/business-leads/constants";
+import { loadQueue, queueCounts } from "@/lib/business-leads/queue";
 import { salesGoalReached } from "@/lib/business-leads/sales";
 import { getDayStats } from "@/lib/business-leads/stats";
 import { dailyTelegramDigest, notifyTelegram } from "@/lib/business-leads/telegram";
@@ -9,6 +10,7 @@ import {
   madridHourNow,
   telegramSlotForHour,
 } from "@/lib/business-leads/wave-schedule";
+import { loadWebsiteStock, stockCounts } from "@/lib/business-leads/website-stock";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -43,7 +45,14 @@ export async function GET(req: Request) {
     });
   }
 
-  const [day, sales] = await Promise.all([getDayStats(), salesGoalReached()]);
+  const [day, sales, qFile, stockFile] = await Promise.all([
+    getDayStats(),
+    salesGoalReached(),
+    loadQueue(),
+    loadWebsiteStock(),
+  ]);
+  const queue = queueCounts(qFile.leads);
+  const stock = stockCounts(stockFile.items);
   const text = dailyTelegramDigest({
     slot,
     dayTotal: day.sent,
@@ -53,7 +62,17 @@ export async function GET(req: Request) {
     waves: day.waves,
     wavesPerDay: NFC_LEADS_WAVES_PER_DAY,
     place: day.lastPlace,
+    queued: queue.queued,
+    stockPending: stock.pending,
   });
   const tg = await notifyTelegram(text);
-  return NextResponse.json({ ok: tg.ok, slot, telegram: tg, day, sales });
+  return NextResponse.json({
+    ok: tg.ok,
+    slot,
+    telegram: tg,
+    day,
+    sales,
+    queue,
+    stock,
+  });
 }

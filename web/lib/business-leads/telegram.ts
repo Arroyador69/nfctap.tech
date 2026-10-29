@@ -62,6 +62,10 @@ export function dailyTelegramDigest(input: {
   waves: number;
   wavesPerDay: number;
   place?: string;
+  /** Cola lista para mañana / siguientes oleadas */
+  queued?: number;
+  /** Webs pendientes de scrapear email */
+  stockPending?: number;
 }) {
   const stop = input.salesToday >= input.salesGoal;
   const title =
@@ -71,17 +75,26 @@ export function dailyTelegramDigest(input: {
         ? "NFCTap · progreso tarde (16:00)"
         : "NFCTap · cierre día (21:00)";
 
+  const queueLine =
+    input.queued != null
+      ? `Cola mails: ${input.queued}${input.queued >= 500 ? " ✓" : " (objetivo ≥500)"}`
+      : "";
+  const stockLine =
+    input.stockPending != null ? `Stock webs pending: ${input.stockPending}` : "";
+
   return [
     title,
     `Mails hoy: ${input.dayTotal}/${input.dayCap}`,
     `Oleadas: ${input.waves}/${input.wavesPerDay}`,
     `Ventas /negocio: ${input.salesToday}/${input.salesGoal}${stop ? " → STOP (meta ok)" : " · seguimos"}`,
+    queueLine,
+    stockLine,
     input.place ? `Última zona: ${input.place}` : "",
     stop
       ? "No hace falta más oleada hoy."
       : input.slot === "close"
-        ? "Fin de ventana. Mañana seguimos si no hay meta."
-        : "Próximas oleadas según cron.",
+        ? "Fin de ventana. Mañana: harvest→extract→oleadas 08:00."
+        : "Próximas oleadas según cron (o tope día).",
   ]
     .filter(Boolean)
     .join("\n");
