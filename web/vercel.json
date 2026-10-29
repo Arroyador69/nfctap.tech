@@ -3,7 +3,7 @@
   "crons": [
     {
       "path": "/api/cron/nfctap-leads-wave",
-      "schedule": "0 8-16 * * 1-5"
+      "schedule": "0 8-17 * * 1-5"
     },
     {
       "path": "/api/cron/nfctap-telegram-digest",

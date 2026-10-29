@@ -38,9 +38,9 @@ export default async function CaptacionPage() {
       <DashboardNav />
       <h1 className="font-[family-name:var(--font-display)] text-3xl">Captación clientes</h1>
       <p className="mt-2 max-w-2xl text-sm text-[#6f675c]">
-        Cold email → <code>/negocio</code> · meta <strong>≥ {NFC_SALES_DAILY_GOAL} ventas/día</strong> ·
-        tope {NFC_LEADS_DAILY_HARD_CAP} mails ({NFC_LEADS_WAVES_PER_DAY}×{NFC_LEADS_WAVE_MAX}).
-        Misma idea que el panel de propietarios de Delfín, aquí negocios locales.
+        Todo va solo por cron → <code>/negocio</code> · meta{" "}
+        <strong>≥ {NFC_SALES_DAILY_GOAL} ventas/día</strong> · tope {NFC_LEADS_DAILY_HARD_CAP} mails (
+        {NFC_LEADS_WAVES_PER_DAY}×{NFC_LEADS_WAVE_MAX}). No hace falta pulsar botones para enviar.
       </p>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -79,7 +79,6 @@ export default async function CaptacionPage() {
         </div>
 
         <CaptacionPanel
-          defaultTo=""
           salesStop={sales.stop}
           lastWaveAt={stats.lastWaveAt}
           lastPlace={stats.lastPlace}

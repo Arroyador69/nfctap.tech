@@ -40,7 +40,10 @@ export async function POST(req: Request) {
 
   if (wantMail) {
     if (!to || !to.includes("@")) {
-      return NextResponse.json({ error: "Indica un email válido en `to`" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Para probar mail indica `to`. Las oleadas reales van solas por cron." },
+        { status: 400 },
+      );
     }
     const from =
       process.env.RESEND_FROM?.trim() ||

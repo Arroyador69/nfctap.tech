@@ -4,17 +4,32 @@ import {
   NFC_LEADS_WAVE_MAX,
   NFC_SALES_DAILY_GOAL,
 } from "@/lib/business-leads/constants";
-import { salesGoalReached } from "@/lib/business-leads/sales";
-import { bumpDayStats, getDayStats } from "@/lib/business-leads/stats";
-import { notifyTelegram } from "@/lib/business-leads/telegram";
-import { sendNfctapOutreach } from "@/lib/business-leads/send-resend";
-import { loadOptOut, loadQueue, markLead, queueCounts, takeQueued } from "@/lib/business-leads/queue";
 import { discoverIntoQueue, needRefill } from "@/lib/business-leads/discover";
+import {
+  loadOptOut,
+  loadQueue,
+  markLead,
+  queueCounts,
+  takeQueued,
+} from "@/lib/business-leads/queue";
+import { salesGoalReached } from "@/lib/business-leads/sales";
+import { sendNfctapOutreach } from "@/lib/business-leads/send-resend";
+import { bumpDayStats, getDayStats } from "@/lib/business-leads/stats";
+import { notifyTelegram, waveTelegramMessage } from "@/lib/business-leads/telegram";
+import {
+  expectedSentByNow,
+  madridHourNow,
+  WAVE_HOUR_END,
+  WAVE_HOUR_START,
+} from "@/lib/business-leads/wave-schedule";
 import { BRAND } from "@/lib/catalog";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
+
+/** ~1,8 s/mail → ~150 mails caben en 5 min con margen discover. */
+const MAX_PER_INVOKE = 150;
 
 function authorized(req: Request) {
   const url = new URL(req.url);
@@ -28,8 +43,10 @@ function authorized(req: Request) {
 }
 
 /**
- * Oleada: hasta 50 mails · tope 500/día · STOP si ≥10 ventas /negocio.
- * Ciudad y nombre salen de cada lead (no hay “Café de prueba”).
+ * Oleadas automáticas (no tocar dashboard):
+ * - Rellena cola si hace falta (~1000 = hoy+mañana)
+ * - Catch-up al ritmo horario (no ráfaga 500)
+ * - STOP si ≥10 ventas /negocio o tope 500
  */
 export async function GET(req: Request) {
   if (!authorized(req)) {
@@ -38,6 +55,8 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const dry = url.searchParams.get("dry") === "1";
+  const force = url.searchParams.get("force") === "1"; // permite fuera de ventana (arranque manual)
+  const hour = madridHourNow();
 
   const sales = await salesGoalReached();
   if (sales.stop) {
@@ -49,36 +68,51 @@ export async function GET(req: Request) {
 
   const day = await getDayStats();
   if (day.sent >= NFC_LEADS_DAILY_HARD_CAP) {
-    await notifyTelegram(`NFCTap · tope día ${day.sent}/${NFC_LEADS_DAILY_HARD_CAP} mails`);
-    return NextResponse.json({ ok: true, stopped: true, reason: "daily_cap", day });
+    return NextResponse.json({ ok: true, stopped: true, reason: "daily_cap", day, sales });
   }
 
-  // Mantener margen hoy + mañana (~1000 en cola)
-  const qFile = await loadQueue();
-  const counts = queueCounts(qFile.leads);
+  if (!force && (hour < WAVE_HOUR_START || hour > WAVE_HOUR_END)) {
+    return NextResponse.json({
+      ok: true,
+      skipped: true,
+      reason: "outside_window",
+      hourMadrid: hour,
+      window: `${WAVE_HOUR_START}–${WAVE_HOUR_END}`,
+      day,
+      sales,
+    });
+  }
+
+  // Cola automática (hoy 500 + margen mañana)
+  const qBefore = queueCounts((await loadQueue()).leads);
   let discover = null as Awaited<ReturnType<typeof discoverIntoQueue>> | null;
-  if (needRefill(counts.queued, 1000)) {
+  if (needRefill(qBefore.queued, 1000)) {
     try {
       discover = await discoverIntoQueue({
         targetQueued: 1000,
-        maxPlaces: dry ? 4 : 10,
+        maxPlaces: dry ? 4 : 14,
         waveIndex: day.waves,
         fetchWebEmails: !dry,
       });
     } catch (e) {
+      console.error("discover", e);
       discover = {
         places: [],
         osmHits: 0,
         withEmail: 0,
         added: 0,
         skipped: 0,
-        queued: counts.queued,
+        queued: qBefore.queued,
       };
-      console.error("discover", e);
     }
   }
 
-  const room = Math.min(NFC_LEADS_WAVE_MAX, NFC_LEADS_DAILY_HARD_CAP - day.sent);
+  const expected = expectedSentByNow(hour);
+  const behind = Math.max(0, expected - day.sent);
+  // Si vamos al día (behind=0), igual enviamos 1 oleada de 50 en el tick del cron
+  const want = behind > 0 ? behind : NFC_LEADS_WAVE_MAX;
+  const room = Math.min(want, NFC_LEADS_DAILY_HARD_CAP - day.sent, MAX_PER_INVOKE);
+
   const opt = await loadOptOut();
   const batch = (await takeQueued(room)).filter((l) => !opt.has(l.email.toLowerCase()));
 
@@ -86,32 +120,38 @@ export async function GET(req: Request) {
     return NextResponse.json({
       ok: true,
       dry: true,
+      hourMadrid: hour,
+      expected,
+      behind,
       room,
       sales,
       day,
-      queue: counts,
+      queue: queueCounts((await loadQueue()).leads),
       discover,
-      sample: batch.slice(0, 5).map((l) => ({
+      sample: batch.slice(0, 3).map((l) => ({
         city: l.city,
         name: l.businessName,
         email: l.email.replace(/(^.).*(@.*$)/, "$1***$2"),
       })),
-      note: "dry=1 no envía. Quita dry o dry=0 para enviar.",
     });
   }
 
   if (!batch.length) {
     await bumpDayStats({ sent: 0, failed: 0, place: "empty_queue" });
+    await notifyTelegram(
+      `NFCTap · cola vacía a las ${hour}:00\nDiscover añadidos: ${discover?.added ?? 0}\nRevisa Resend/Blob si sigue 0.`,
+    );
     return NextResponse.json({
       ok: true,
       sent: 0,
-      note: "Cola vacía — lanza discover desde /dashboard/captacion",
+      note: "Cola vacía tras discover",
       sales,
       discover,
-      queue: counts,
+      queue: queueCounts((await loadQueue()).leads),
     });
   }
 
+  const firstWaveToday = day.sent === 0 && day.waves === 0;
   let sent = 0;
   let failed = 0;
   const cities = new Set<string>();
@@ -141,8 +181,30 @@ export async function GET(req: Request) {
   const place = [...cities].slice(0, 4).join(", ") || "—";
   const nextDay = await bumpDayStats({ sent, failed, place });
 
+  // Aviso corto al arrancar el día; los 3 digests van en el otro cron
+  if (firstWaveToday && sent > 0) {
+    await notifyTelegram(
+      [
+        "NFCTap · oleadas arrancadas (automático)",
+        waveTelegramMessage({
+          sent,
+          failed,
+          dayTotal: nextDay.sent,
+          dayCap: NFC_LEADS_DAILY_HARD_CAP,
+          salesToday: sales.count,
+          salesGoal: NFC_SALES_DAILY_GOAL,
+          place,
+        }),
+        "Telegram progreso: 12:00 · 16:00 · 21:00 Madrid",
+      ].join("\n"),
+    );
+  }
+
   return NextResponse.json({
     ok: true,
+    automatic: true,
+    hourMadrid: hour,
+    expected,
     sent,
     failed,
     place,
