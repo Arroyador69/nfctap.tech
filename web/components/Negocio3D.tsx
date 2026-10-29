@@ -7,8 +7,15 @@ import { Canvas, useLoader } from "@react-three/fiber";
 import { Suspense, useLayoutEffect, useMemo, useState } from "react";
 import * as THREE from "three";
 
-const MODEL = "/models/markos-negocio.glb";
+/** Cache-bust tras cada arreglo del logo. */
+const MODEL = "/models/markos-negocio.glb?v=5";
 useGLTF.preload(MODEL, true);
+
+/**
+ * Sello Markos en espacio del GLB (metros).
+ * El cover se añade como HIJO del modelo (mismas coords) y luego se centra/escala juntos.
+ */
+const SEAL = { x: 0, y: 0.152, z: -0.0592, r: 0.023 };
 
 type Props = {
   bodyColor: BodyColor;
@@ -54,7 +61,7 @@ export function Negocio3D({ bodyColor, accentColor, logoDataUrl = "" }: Props) {
         <ContactShadows position={[0, -0.02, 0]} opacity={0.22} scale={0.9} blur={2.4} />
       </Canvas>
       <p className="pointer-events-none absolute bottom-3 left-0 right-0 text-center text-[11px] text-[#8a8173]">
-        Arrastra para girar · el logo va en el círculo de arriba
+        Arrastra para girar · sube tu logo al círculo
       </p>
     </div>
   );
@@ -66,29 +73,17 @@ function Piece({ bodyColor, accentColor, logoDataUrl }: Props) {
   const accentHex = ACCENT_HEX[accentColor] ?? ACCENT_HEX.blanco;
   const placeholder = usePlaceholderTexture();
 
-  const scene = useMemo(() => {
+  const root = useMemo(() => {
+    const wrap = new THREE.Group();
     const clone = gltf.scene.clone(true);
 
     clone.traverse((obj) => {
       const mesh = obj as THREE.Mesh;
-      if (!mesh.isMesh || !mesh.geometry) return;
-      const name = `${mesh.name} ${mesh.parent?.name ?? ""}`.toLowerCase();
+      if (!mesh.isMesh) return;
       const matSrc = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
       const std = (matSrc as THREE.MeshStandardMaterial).clone();
-
-      if (name.includes("logo_pad")) {
-        ensureCircleUv(mesh.geometry);
-        std.color = new THREE.Color("#ffffff");
-        std.map = placeholder;
-        std.metalness = 0.02;
-        std.roughness = 0.65;
-        std.needsUpdate = true;
-        mesh.material = std;
-        mesh.renderOrder = 5;
-        return;
-      }
-
-      const accentMat = name.includes("blanco");
+      const key = `${mesh.name} ${mesh.parent?.name ?? ""} ${std.name}`.toLowerCase();
+      const accentMat = key.includes("blanco");
       std.color = new THREE.Color(accentMat ? accentHex : bodyHex);
       std.map = null;
       std.metalness = 0.04;
@@ -96,32 +91,88 @@ function Piece({ bodyColor, accentColor, logoDataUrl }: Props) {
       mesh.material = std;
     });
 
-    const box = new THREE.Box3().setFromObject(clone);
+    // Tapa del sello Markos + superficie de logo (espacio MODELO, hijo del clone)
+    const pad = buildLogoPad(placeholder, accentHex);
+    pad.name = "client_logo_pad";
+    pad.position.set(SEAL.x, SEAL.y, SEAL.z);
+    clone.add(pad);
+
+    wrap.add(clone);
+
+    const box = new THREE.Box3().setFromObject(wrap);
     const size = new THREE.Vector3();
     const center = new THREE.Vector3();
     box.getSize(size);
     box.getCenter(center);
-    clone.position.sub(center);
+    wrap.position.sub(center);
     const maxDim = Math.max(size.x, size.y, size.z) || 1;
-    clone.scale.setScalar(0.22 / maxDim);
-    return clone;
+    wrap.scale.setScalar(0.22 / maxDim);
+    return wrap;
   }, [gltf.scene, bodyHex, accentHex, placeholder]);
 
   return (
     <group>
-      <primitive object={scene} />
+      <primitive object={root} />
       {logoDataUrl ? (
         <Suspense fallback={null}>
-          <ApplyLogo scene={scene} url={logoDataUrl} />
+          <BindLogo root={root} url={logoDataUrl} />
         </Suspense>
       ) : (
-        <ApplyMap scene={scene} map={placeholder} />
+        <BindMap root={root} map={placeholder} />
       )}
     </group>
   );
 }
 
-function ApplyLogo({ scene, url }: { scene: THREE.Object3D; url: string }) {
+function buildLogoPad(placeholder: THREE.Texture, rimHex: string) {
+  const g = new THREE.Group();
+
+  // Base opaca gruesa que tapa tijeras/tipografía Markos
+  const base = new THREE.Mesh(
+    new THREE.CylinderGeometry(SEAL.r * 1.08, SEAL.r * 1.08, 0.004, 64),
+    new THREE.MeshStandardMaterial({
+      color: "#0e0e10",
+      roughness: 0.9,
+      metalness: 0.02,
+    }),
+  );
+  // Cylinder Y-up → rotar para que el eje mire a +Z (cara al cliente)
+  base.rotation.x = Math.PI / 2;
+  base.position.z = 0.001;
+  g.add(base);
+
+  // Aro acento
+  const rim = new THREE.Mesh(
+    new THREE.RingGeometry(SEAL.r * 0.92, SEAL.r * 1.06, 64),
+    new THREE.MeshStandardMaterial({
+      color: rimHex,
+      roughness: 0.55,
+      metalness: 0.05,
+      side: THREE.DoubleSide,
+    }),
+  );
+  rim.position.z = 0.0032;
+  g.add(rim);
+
+  // Cara del logo
+  const face = new THREE.Mesh(
+    new THREE.CircleGeometry(SEAL.r * 0.92, 64),
+    new THREE.MeshStandardMaterial({
+      map: placeholder,
+      color: "#ffffff",
+      roughness: 0.62,
+      metalness: 0.02,
+      side: THREE.DoubleSide,
+    }),
+  );
+  face.name = "logo_face";
+  face.position.z = 0.0034;
+  g.add(face);
+
+  return g;
+}
+
+function BindLogo({ root, url }: { root: THREE.Object3D; url: string }) {
   const loaded = useLoader(THREE.TextureLoader, url);
   const map = useMemo(() => {
     const t = loaded.clone();
@@ -131,46 +182,21 @@ function ApplyLogo({ scene, url }: { scene: THREE.Object3D; url: string }) {
     t.needsUpdate = true;
     return t;
   }, [loaded]);
-  return <ApplyMap scene={scene} map={map} />;
+  return <BindMap root={root} map={map} />;
 }
 
-function ApplyMap({ scene, map }: { scene: THREE.Object3D; map: THREE.Texture }) {
+function BindMap({ root, map }: { root: THREE.Object3D; map: THREE.Texture }) {
   useLayoutEffect(() => {
-    scene.traverse((obj) => {
+    root.traverse((obj) => {
+      if (obj.name !== "logo_face" || !(obj as THREE.Mesh).isMesh) return;
       const mesh = obj as THREE.Mesh;
-      if (!mesh.isMesh) return;
-      const name = `${mesh.name} ${mesh.parent?.name ?? ""}`.toLowerCase();
-      if (!name.includes("logo_pad")) return;
       const mat = mesh.material as THREE.MeshStandardMaterial;
       mat.map = map;
       mat.color = new THREE.Color("#ffffff");
       mat.needsUpdate = true;
     });
-  }, [scene, map]);
+  }, [root, map]);
   return null;
-}
-
-function ensureCircleUv(geometry: THREE.BufferGeometry) {
-  if (geometry.getAttribute("uv")) return;
-  const pos = geometry.getAttribute("position");
-  const uvs = new Float32Array(pos.count * 2);
-  let minX = Infinity,
-    maxX = -Infinity,
-    minY = Infinity,
-    maxY = -Infinity;
-  for (let i = 0; i < pos.count; i++) {
-    minX = Math.min(minX, pos.getX(i));
-    maxX = Math.max(maxX, pos.getX(i));
-    minY = Math.min(minY, pos.getY(i));
-    maxY = Math.max(maxY, pos.getY(i));
-  }
-  const sx = maxX - minX || 1;
-  const sy = maxY - minY || 1;
-  for (let i = 0; i < pos.count; i++) {
-    uvs[i * 2] = (pos.getX(i) - minX) / sx;
-    uvs[i * 2 + 1] = (pos.getY(i) - minY) / sy;
-  }
-  geometry.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
 }
 
 function usePlaceholderTexture() {
@@ -182,16 +208,16 @@ function usePlaceholderTexture() {
     g.fillStyle = "#141416";
     g.fillRect(0, 0, 512, 512);
     g.strokeStyle = "#f4f1ea";
-    g.lineWidth = 8;
+    g.lineWidth = 10;
     g.beginPath();
-    g.arc(256, 256, 230, 0, Math.PI * 2);
+    g.arc(256, 256, 220, 0, Math.PI * 2);
     g.stroke();
     g.fillStyle = "#f4f1ea";
-    g.font = "600 40px Georgia, serif";
+    g.font = "600 44px Georgia, serif";
     g.textAlign = "center";
     g.textBaseline = "middle";
-    g.fillText("Tu logo", 256, 248);
-    g.font = "26px Georgia, serif";
+    g.fillText("Tu logo", 256, 245);
+    g.font = "28px Georgia, serif";
     g.fillStyle = "#8a8173";
     g.fillText("súbelo abajo", 256, 300);
     const t = new THREE.CanvasTexture(c);

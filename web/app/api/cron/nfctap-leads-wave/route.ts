@@ -5,7 +5,7 @@ import {
 } from "@/lib/business-leads/constants";
 import { salesGoalReached } from "@/lib/business-leads/sales";
 import { bumpDayStats, getDayStats } from "@/lib/business-leads/stats";
-import { notifyTelegram, waveTelegramMessage } from "@/lib/business-leads/telegram";
+import { notifyTelegram } from "@/lib/business-leads/telegram";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -56,24 +56,15 @@ export async function GET(req: Request) {
   const dry = url.searchParams.get("dry") !== "0";
 
   if (dry) {
-    const msg = waveTelegramMessage({
-      sent: 0,
-      failed: 0,
-      dayTotal: day.sent,
-      dayCap: NFC_LEADS_DAILY_HARD_CAP,
-      salesToday: sales.count,
-      salesGoal: sales.goal,
-      place: "stub · sin cola aún",
-    });
-    const tg = await notifyTelegram(`${msg}\n(dry-run cron; room=${room})`);
+    // No spamear Telegram en cada cron horario: solo los 3 digest (12/16/21).
     return NextResponse.json({
       ok: true,
       dry: true,
       room,
       sales,
       day,
-      telegram: tg,
-      note: "Engancha discover+send cuando la cola esté lista. ?dry=0 reservado.",
+      telegram: { skipped: true, reason: "digest_only_3x_day" },
+      note: "Cola aún stub. Telegram progreso: cron nfctap-telegram-digest 12/16/21 Madrid.",
     });
   }
 

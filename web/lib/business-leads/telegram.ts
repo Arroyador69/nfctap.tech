@@ -1,7 +1,9 @@
 /**
- * Avisos de oleadas NFCTap → Telegram.
- * Env: TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID (tu chat o grupo).
+ * Avisos de oleadas NFCTap → Telegram (3/día como Delfín).
+ * Env: TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID
  */
+
+import type { TelegramSlot } from "./wave-schedule";
 
 export async function notifyTelegram(text: string): Promise<{ ok: boolean; error?: string }> {
   const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
@@ -45,6 +47,41 @@ export function waveTelegramMessage(input: {
     `Hoy: ${input.dayTotal}/${input.dayCap} mails`,
     `Ventas /negocio hoy: ${input.salesToday}/${input.salesGoal}${stop ? " → STOP oleadas" : ""}`,
     input.place ? `Zona: ${input.place}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+/** Resumen de los 3 hitos diarios (progreso / cierre). */
+export function dailyTelegramDigest(input: {
+  slot: TelegramSlot;
+  dayTotal: number;
+  dayCap: number;
+  salesToday: number;
+  salesGoal: number;
+  waves: number;
+  wavesPerDay: number;
+  place?: string;
+}) {
+  const stop = input.salesToday >= input.salesGoal;
+  const title =
+    input.slot === "morning"
+      ? "NFCTap · progreso mañana (12:00)"
+      : input.slot === "afternoon"
+        ? "NFCTap · progreso tarde (16:00)"
+        : "NFCTap · cierre día (21:00)";
+
+  return [
+    title,
+    `Mails hoy: ${input.dayTotal}/${input.dayCap}`,
+    `Oleadas: ${input.waves}/${input.wavesPerDay}`,
+    `Ventas /negocio: ${input.salesToday}/${input.salesGoal}${stop ? " → STOP (meta ok)" : " · seguimos"}`,
+    input.place ? `Última zona: ${input.place}` : "",
+    stop
+      ? "No hace falta más oleada hoy."
+      : input.slot === "close"
+        ? "Fin de ventana. Mañana seguimos si no hay meta."
+        : "Próximas oleadas según cron.",
   ]
     .filter(Boolean)
     .join("\n");
