@@ -1,4 +1,6 @@
-import { put, list } from "@vercel/blob";
+/**
+ * Cola de leads en Vercel Blob (private, como el store de pedidos).
+ */
 
 export type BusinessLead = {
   id: string;
@@ -13,27 +15,41 @@ export type BusinessLead = {
   error?: string;
 };
 
-const QUEUE_KEY = "outreach/business-leads-queue.json";
-const OPT_OUT_KEY = "outreach/opt-out-emails.json";
+const QUEUE_KEY = "nfctap-business-leads-queue.json";
+const OPT_OUT_KEY = "nfctap-opt-out-emails.json";
 
 type QueueFile = { leads: BusinessLead[]; updatedAt: string };
 
+function blobOk() {
+  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+}
+
 async function readJson<T>(key: string, fallback: T): Promise<T> {
+  if (!blobOk()) return fallback;
   try {
-    const { blobs } = await list({ prefix: key, limit: 5 });
-    const hit = blobs.find((b) => b.pathname === key || b.pathname.endsWith(key));
+    const { list } = await import("@vercel/blob");
+    const { blobs } = await list({ prefix: key, limit: 8 });
+    const hit =
+      blobs.find((b) => b.pathname === key) ||
+      blobs.find((b) => b.pathname.endsWith(key)) ||
+      blobs[0];
     if (!hit) return fallback;
     const res = await fetch(hit.url);
     if (!res.ok) return fallback;
     return (await res.json()) as T;
-  } catch {
+  } catch (e) {
+    console.error("queue read", key, e);
     return fallback;
   }
 }
 
 async function writeJson(key: string, data: unknown) {
-  await put(key, JSON.stringify(data, null, 2), {
-    access: "public",
+  if (!blobOk()) {
+    throw new Error("Falta BLOB_READ_WRITE_TOKEN");
+  }
+  const { put } = await import("@vercel/blob");
+  await put(key, JSON.stringify(data), {
+    access: "private",
     addRandomSuffix: false,
     allowOverwrite: true,
     contentType: "application/json",
@@ -46,10 +62,11 @@ export async function loadQueue(): Promise<QueueFile> {
 
 export async function saveQueue(leads: BusinessLead[]) {
   const file: QueueFile = { leads, updatedAt: new Date().toISOString() };
-  try {
-    await writeJson(QUEUE_KEY, file);
-  } catch {
-    /* blob opcional en local */
+  await writeJson(QUEUE_KEY, file);
+  // verificar
+  const check = await loadQueue();
+  if (check.leads.length < leads.length) {
+    console.error("queue persist mismatch", { wrote: leads.length, read: check.leads.length });
   }
   return file;
 }
@@ -72,7 +89,6 @@ export function queueCounts(leads: BusinessLead[]) {
   return { total: leads.length, queued, sent, failed };
 }
 
-/** Inserta leads nuevos (dedupe por email). */
 export async function enqueueLeads(
   incoming: Omit<BusinessLead, "id" | "status" | "createdAt">[],
 ): Promise<{ added: number; skipped: number; queued: number }> {
@@ -98,10 +114,10 @@ export async function enqueueLeads(
     added++;
   }
   await saveQueue(file.leads);
-  return { added, skipped, queued: queueCounts(file.leads).queued };
+  const verified = await loadQueue();
+  return { added, skipped, queued: queueCounts(verified.leads).queued };
 }
 
-/** Toma hasta `n` leads en cola (FIFO). */
 export async function takeQueued(n: number): Promise<BusinessLead[]> {
   const file = await loadQueue();
   return file.leads.filter((l) => l.status === "queued").slice(0, Math.max(0, n));
