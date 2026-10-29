@@ -5,11 +5,12 @@ import { NegocioViewer } from "@/components/NegocioViewer";
 import type { AccentColor, BodyColor } from "@/lib/types";
 import { useState } from "react";
 
-/** Visor 3D (logo en el círculo) + pedido. */
+/** Mockup con logo + 3D aleta + pedido. */
 export function NegocioShell() {
   const [bodyColor, setBody] = useState<BodyColor>("negro");
   const [accentColor, setAccent] = useState<AccentColor>("blanco");
   const [logoDataUrl, setLogo] = useState("");
+  const [line1, setLine1] = useState("");
 
   return (
     <>
@@ -21,9 +22,16 @@ export function NegocioShell() {
           onAccent={setAccent}
           logoDataUrl={logoDataUrl}
           onLogo={setLogo}
+          line1={line1}
         />
       </section>
-      <NegocioOrder bodyColor={bodyColor} accentColor={accentColor} logoDataUrl={logoDataUrl} />
+      <NegocioOrder
+        bodyColor={bodyColor}
+        accentColor={accentColor}
+        logoDataUrl={logoDataUrl}
+        line1={line1}
+        onLine1={setLine1}
+      />
     </>
   );
 }

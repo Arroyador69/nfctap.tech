@@ -21,15 +21,18 @@ export function NegocioOrder({
   bodyColor = "negro",
   accentColor = "blanco",
   logoDataUrl = "",
+  line1 = "",
+  onLine1,
 }: {
   bodyColor?: BodyColor;
   accentColor?: AccentColor;
   logoDataUrl?: string;
+  line1?: string;
+  onLine1?: (v: string) => void;
 }) {
   const [chips, setChips] = useState<1 | 2 | 3>(2);
   const [roles, setRoles] = useState<Role[]>(["google", "instagram", "otro"]);
   const [urls, setUrls] = useState(["", "", ""]);
-  const [line1, setLine1] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [tried, setTried] = useState(false);
@@ -155,7 +158,7 @@ export function NegocioOrder({
           Nombre en la pieza (opcional)
           <input
             value={line1}
-            onChange={(e) => setLine1(e.target.value)}
+            onChange={(e) => onLine1?.(e.target.value)}
             maxLength={22}
             className="mt-2 w-full rounded-xl border border-[#e6ddd0] px-3 py-2"
             placeholder="Tu negocio"
