@@ -2,8 +2,12 @@
   "framework": "nextjs",
   "crons": [
     {
-      "path": "/api/cron/nfctap-leads-discover",
-      "schedule": "0,30 7-16 * * 1-5"
+      "path": "/api/cron/nfctap-leads-harvest",
+      "schedule": "5,35 7-16 * * 1-5"
+    },
+    {
+      "path": "/api/cron/nfctap-leads-extract",
+      "schedule": "20,50 7-16 * * 1-5"
     },
     {
       "path": "/api/cron/nfctap-leads-wave",

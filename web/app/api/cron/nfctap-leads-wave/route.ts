@@ -4,7 +4,8 @@ import {
   NFC_LEADS_WAVE_MAX,
   NFC_SALES_DAILY_GOAL,
 } from "@/lib/business-leads/constants";
-import { discoverIntoQueue, needRefill } from "@/lib/business-leads/discover";
+import { extractEmailsFromStock } from "@/lib/business-leads/extract-batch";
+import { harvestWebsitesIntoStock } from "@/lib/business-leads/harvest-websites";
 import {
   loadOptOut,
   loadQueue,
@@ -12,6 +13,7 @@ import {
   queueCounts,
   takeQueued,
 } from "@/lib/business-leads/queue";
+import { loadWebsiteStock, stockCounts } from "@/lib/business-leads/website-stock";
 import { salesGoalReached } from "@/lib/business-leads/sales";
 import { sendNfctapOutreach } from "@/lib/business-leads/send-resend";
 import { bumpDayStats, getDayStats } from "@/lib/business-leads/stats";
@@ -110,29 +112,33 @@ export async function GET(req: Request) {
     });
   }
 
-  // Discover ligero solo si la cola está seca (el cron discover rellena el grueso).
-  // En dry-run no discover: responde rápido para métricas.
+  // Si la cola de mails está seca: harvest corto + extract (flujo 2 fases).
+  // En dry-run no: responde rápido para métricas.
   const qBefore = queueCounts((await loadQueue()).leads);
-  let discover = null as Awaited<ReturnType<typeof discoverIntoQueue>> | null;
-  if (!dry && needRefill(qBefore.queued, 40)) {
+  let refill = null as {
+    harvest?: Awaited<ReturnType<typeof harvestWebsitesIntoStock>>;
+    extract?: Awaited<ReturnType<typeof extractEmailsFromStock>>;
+  } | null;
+  if (!dry && qBefore.queued < 40) {
     try {
-      discover = await discoverIntoQueue({
+      const stock = stockCounts((await loadWebsiteStock()).items);
+      const harvest =
+        stock.pending < 30
+          ? await harvestWebsitesIntoStock({
+              waveIndex: day.waves,
+              maxCells: 3,
+              searchKeywords: 2,
+              targetPending: 200,
+            })
+          : undefined;
+      const extract = await extractEmailsFromStock({
+        maxPages: 25,
         targetQueued: 120,
-        maxPlaces: 2,
-        waveIndex: day.waves,
-        fetchWebEmails: true,
-        maxWebFetches: 20,
       });
+      refill = { harvest, extract };
     } catch (e) {
-      console.error("discover", e);
-      discover = {
-        places: [],
-        osmHits: 0,
-        withEmail: 0,
-        added: 0,
-        skipped: 0,
-        queued: qBefore.queued,
-      };
+      console.error("refill", e);
+      refill = {};
     }
   }
 
@@ -156,7 +162,7 @@ export async function GET(req: Request) {
       sales,
       day,
       queue: queueCounts((await loadQueue()).leads),
-      discover,
+      refill,
       sample: batch.slice(0, 3).map((l) => ({
         city: l.city,
         name: l.businessName,
@@ -168,14 +174,14 @@ export async function GET(req: Request) {
   if (!batch.length) {
     await bumpDayStats({ sent: 0, failed: 0, place: "empty_queue" });
     await notifyTelegram(
-      `NFCTap · cola vacía a las ${hour}:00\nDiscover añadidos: ${discover?.added ?? 0}\nRevisa Resend/Blob si sigue 0.`,
+      `NFCTap · cola vacía a las ${hour}:00\nExtract +${refill?.extract?.added ?? 0} · stock pending ${refill?.harvest?.stock?.pending ?? "—"}\nRevisa harvest/extract si sigue 0.`,
     );
     return NextResponse.json({
       ok: true,
       sent: 0,
-      note: "Cola vacía tras discover",
+      note: "Cola vacía tras refill",
       sales,
-      discover,
+      refill,
       queue: queueCounts((await loadQueue()).leads),
     });
   }
@@ -243,7 +249,7 @@ export async function GET(req: Request) {
     place,
     sales,
     day: nextDay,
-    discover,
+    refill,
     queue: queueCounts((await loadQueue()).leads),
   });
 }

@@ -1,6 +1,8 @@
-import { discoverIntoQueue, needRefill } from "@/lib/business-leads/discover";
+import { extractEmailsFromStock } from "@/lib/business-leads/extract-batch";
+import { harvestWebsitesIntoStock } from "@/lib/business-leads/harvest-websites";
 import { loadQueue, queueCounts } from "@/lib/business-leads/queue";
 import { getDayStats } from "@/lib/business-leads/stats";
+import { loadWebsiteStock, stockCounts } from "@/lib/business-leads/website-stock";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +19,13 @@ function authorized(req: Request) {
   return bearer === secret || q === secret || vercelCron;
 }
 
-/** Solo rellena cola (~1000). Separado del envío para no timeout. */
+/**
+ * Orquestador del flujo nuevo (2 fases):
+ * 1) harvest webs → stock
+ * 2) extract emails → cola envío
+ *
+ * Preferible usar crons separados harvest/extract; este queda por compatibilidad.
+ */
 export async function GET(req: Request) {
   if (!authorized(req)) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
@@ -25,27 +33,44 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const waveParam = Number(url.searchParams.get("wave") || "");
-  const osmOnly = url.searchParams.get("osmOnly") === "1";
+  const phase = url.searchParams.get("phase") || "both"; // harvest | extract | both
   const day = await getDayStats();
-  const before = queueCounts((await loadQueue()).leads);
-  if (!needRefill(before.queued, 1000)) {
-    return NextResponse.json({ ok: true, skipped: true, reason: "queue_full", queue: before });
+  const wave = Number.isFinite(waveParam)
+    ? waveParam
+    : day.waves + Math.floor(Date.now() / 600_000);
+
+  const before = {
+    queue: queueCounts((await loadQueue()).leads),
+    stock: stockCounts((await loadWebsiteStock()).items),
+  };
+
+  let harvest = null as Awaited<ReturnType<typeof harvestWebsitesIntoStock>> | null;
+  let extract = null as Awaited<ReturnType<typeof extractEmailsFromStock>> | null;
+
+  if (phase === "harvest" || phase === "both") {
+    harvest = await harvestWebsitesIntoStock({
+      waveIndex: wave,
+      maxCells: phase === "both" ? 5 : 7,
+      searchKeywords: phase === "both" ? 3 : 5,
+      targetPending: 1500,
+    });
   }
 
-  // osmOnly=1: sin scrape web. Default: mapa OSM + scrape webs (más emails nuevos).
-  const result = await discoverIntoQueue({
-    targetQueued: 1000,
-    maxPlaces: osmOnly ? 5 : 4,
-    waveIndex: Number.isFinite(waveParam) ? waveParam : day.waves + before.queued,
-    fetchWebEmails: !osmOnly,
-    maxWebFetches: osmOnly ? 0 : 50,
-    bboxesPerPlace: osmOnly ? 3 : 4,
-  });
+  if (phase === "extract" || phase === "both") {
+    extract = await extractEmailsFromStock({
+      maxPages: phase === "both" ? 30 : 45,
+      targetQueued: 1000,
+    });
+  }
 
   return NextResponse.json({
     ok: true,
+    flow: "harvest→extract",
+    wave,
     before,
-    ...result,
+    harvest,
+    extract,
     queue: queueCounts((await loadQueue()).leads),
+    stock: stockCounts((await loadWebsiteStock()).items),
   });
 }

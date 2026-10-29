@@ -17,6 +17,7 @@ import {
 } from "@/lib/business-leads/queue";
 import { salesGoalReached } from "@/lib/business-leads/sales";
 import { getDayStats } from "@/lib/business-leads/stats";
+import { loadWebsiteStock, stockCounts } from "@/lib/business-leads/website-stock";
 import { polarUnicaReady } from "@/lib/polar";
 import { redirect } from "next/navigation";
 
@@ -26,12 +27,14 @@ export const metadata = { title: "Captación · Dashboard" };
 export default async function CaptacionPage() {
   if (!(await isAdmin())) redirect("/dashboard/login");
 
-  const [stats, sales, qFile] = await Promise.all([
+  const [stats, sales, qFile, stockFile] = await Promise.all([
     getDayStats(),
     salesGoalReached(),
     loadQueue(),
+    loadWebsiteStock(),
   ]);
   const queue = queueCounts(qFile.leads);
+  const stock = stockCounts(stockFile.items);
   const today = todayEngagement(qFile.leads);
   const sentRows = recentSent(qFile.leads, 80);
   const queueTarget = 1000;
@@ -66,21 +69,30 @@ export default async function CaptacionPage() {
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#6f675c]">
           Meta <strong className="text-[#1c1915]">≥ {NFC_SALES_DAILY_GOAL} ventas /negocio</strong> ·
-          tope <strong className="text-[#1c1915]">{NFC_LEADS_DAILY_HARD_CAP} mails/día</strong> (
-          {NFC_LEADS_WAVES_PER_DAY}×{NFC_LEADS_WAVE_MAX}) · cron discover rellena cola · oleadas
-          08:00–17:00 Madrid · Telegram 12:00 · 16:00 · 21:00. Sin botones de envío: el cron lo hace.
+          tope <strong className="text-[#1c1915]">{NFC_LEADS_DAILY_HARD_CAP} mails/día</strong>. Flujo
+          nuevo: <strong>harvest webs</strong> (Fuengirola→Costa) → <strong>extract emails</strong> →
+          oleadas 08:00–17:00 · Telegram 12/16/21. Cualquier negocio con web (no solo vacacional).
         </p>
       </header>
 
-      <section className="mt-8 grid gap-4 md:grid-cols-3">
+      <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <BigCard
-          title="Cola lista (stock)"
+          title="Webs pendientes (fase A)"
+          value={stock.pending}
+          denom={1500}
+          pct={Math.min(100, Math.round((stock.pending / 1500) * 100))}
+          ok={stock.pending >= 100}
+          okLabel={stock.pending >= 100 ? "Stock OK" : "Hay que cosechar"}
+          hint={`Total webs ${stock.total} · con email ${stock.done} · sin mail ${stock.noEmail}`}
+        />
+        <BigCard
+          title="Cola mails (fase B)"
           value={queue.queued}
           denom={queueTarget}
           pct={queuePct}
           ok={queue.queued >= 200}
           okLabel={queue.queued >= 200 ? "OK para oleadas" : "Por debajo"}
-          hint={`Mails listos · descubiertos hoy ${today.discoveredToday} · total cola ${queue.total}`}
+          hint={`Listos para enviar · descubiertos hoy ${today.discoveredToday} · enviados hist. ${queue.sent}`}
         />
         <BigCard
           title="Ventas /negocio hoy (KPI)"
