@@ -1,15 +1,8 @@
-import { put, list } from "@vercel/blob";
+import type { DayStats } from "./types-day";
 
-export type DayStats = {
-  date: string; // YYYY-MM-DD Madrid
-  sent: number;
-  failed: number;
-  waves: number;
-  lastWaveAt?: string;
-  lastPlace?: string;
-};
+export type { DayStats };
 
-const PREFIX = "outreach/nfctap-day-";
+const PREFIX = "nfctap-outreach-day-";
 
 function madridDate(d = new Date()) {
   return new Intl.DateTimeFormat("en-CA", {
@@ -20,16 +13,39 @@ function madridDate(d = new Date()) {
   }).format(d);
 }
 
-export async function getDayStats(date = madridDate()): Promise<DayStats> {
+function blobOk() {
+  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+}
+
+async function readDay(date: string): Promise<DayStats> {
+  const empty: DayStats = { date, sent: 0, failed: 0, waves: 0 };
+  if (!blobOk()) return empty;
   try {
-    const { blobs } = await list({ prefix: `${PREFIX}${date}`, limit: 1 });
-    if (!blobs[0]) return { date, sent: 0, failed: 0, waves: 0 };
-    const res = await fetch(blobs[0].url);
-    if (!res.ok) return { date, sent: 0, failed: 0, waves: 0 };
-    return (await res.json()) as DayStats;
+    const { get } = await import("@vercel/blob");
+    const key = `${PREFIX}${date}.json`;
+    const result = await get(key, { access: "private", useCache: false });
+    if (!result || result.statusCode !== 200 || !result.stream) return empty;
+    const text = await new Response(result.stream).text();
+    if (!text) return empty;
+    return JSON.parse(text) as DayStats;
   } catch {
-    return { date, sent: 0, failed: 0, waves: 0 };
+    return empty;
   }
+}
+
+async function writeDay(stats: DayStats) {
+  if (!blobOk()) return;
+  const { put } = await import("@vercel/blob");
+  await put(`${PREFIX}${stats.date}.json`, JSON.stringify(stats), {
+    access: "private",
+    addRandomSuffix: false,
+    allowOverwrite: true,
+    contentType: "application/json",
+  });
+}
+
+export async function getDayStats(date = madridDate()): Promise<DayStats> {
+  return readDay(date);
 }
 
 export async function bumpDayStats(delta: {
@@ -38,7 +54,7 @@ export async function bumpDayStats(delta: {
   place?: string;
 }): Promise<DayStats> {
   const date = madridDate();
-  const cur = await getDayStats(date);
+  const cur = await readDay(date);
   const next: DayStats = {
     date,
     sent: cur.sent + (delta.sent || 0),
@@ -47,16 +63,7 @@ export async function bumpDayStats(delta: {
     lastWaveAt: new Date().toISOString(),
     lastPlace: delta.place || cur.lastPlace,
   };
-  try {
-    await put(`${PREFIX}${date}.json`, JSON.stringify(next, null, 2), {
-      access: "public",
-      addRandomSuffix: false,
-      allowOverwrite: true,
-      contentType: "application/json",
-    });
-  } catch {
-    /* blob opcional en local */
-  }
+  await writeDay(next);
   return next;
 }
 
