@@ -34,10 +34,17 @@ export async function GET(req: Request) {
 
   const result = await harvestWebsitesIntoStock({
     waveIndex: wave,
-    maxCells: 7,
-    searchKeywords: 5,
+    maxCells: 8,
+    searchKeywords: 6,
     targetPending: 1500,
+    enqueueOsmEmails: true,
   });
 
-  return NextResponse.json({ ok: true, wave, ...result });
+  return NextResponse.json({
+    ok: true,
+    wave,
+    ...result,
+    // alias para logs antiguos
+    added: result.websAdded,
+  });
 }

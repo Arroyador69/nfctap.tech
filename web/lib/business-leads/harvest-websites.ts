@@ -1,22 +1,26 @@
 /**
- * Fase A — cosecha webs de CUALQUIER negocio (no solo vacacional).
+ * Fase A — cosecha webs + emails OSM de CUALQUIER negocio.
  *
- * Fuentes rápidas:
  * 1) OSM Map API por celdas (anillos Fuengirola → Costa → ES)
- * 2) Photon (Komoot) por ciudad × keyword (restaurante, dentista, hotel…)
+ * 2) Nominatim por ciudad × keyword
  *
- * No scrapea emails aquí: solo mete URLs en website-stock.
+ * Emails ya en OSM/Nominatim → cola de envío directa.
+ * Webs sin email → stock para extract.
  */
 
 import { isBlockedOutreachHost } from "./blocked-hosts";
-import { normalizeUrl } from "./emails";
+import {
+  isPlausiblePublicEmail,
+  normalizeEmail,
+  normalizeUrl,
+} from "./emails";
 import { harvestCellsForWave, type HarvestCell } from "./place-rings";
+import { enqueueLeads, loadQueue, queueCounts } from "./queue";
 import { addWebsiteSources, loadWebsiteStock, stockCounts } from "./website-stock";
 
 const UA =
   "NFCTapHarvest/1.0 (+https://nfctap.tech; website-harvest; contact=contacto@nfctap.tech)";
 
-/** Keywords → muchos tipos (hostelería, salud, belleza, hotel, oficina…). */
 export const BUSINESS_KEYWORDS = [
   "restaurante",
   "café",
@@ -34,6 +38,14 @@ export const BUSINESS_KEYWORDS = [
   "inmobiliaria",
 ] as const;
 
+type Hit = {
+  url: string;
+  email: string;
+  name: string;
+  city: string;
+  kind: string;
+};
+
 function tagVal(chunk: string, key: string): string {
   const re = new RegExp(
     `k="${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"\\s+v="([^"]*)"`,
@@ -49,18 +61,21 @@ function tagVal(chunk: string, key: string): string {
     .trim();
 }
 
-function parseMapXml(
-  xml: string,
-  city: string,
-): Array<{ url: string; name: string; city: string; kind: string }> {
-  const out: Array<{ url: string; name: string; city: string; kind: string }> = [];
+function parseMapXml(xml: string, city: string): Hit[] {
+  const out: Hit[] = [];
   const blocks = xml.split(/<(?:node|way)\s/).slice(1);
   for (const block of blocks) {
     const chunk = block.slice(0, 4500);
     const website = normalizeUrl(
       tagVal(chunk, "website") || tagVal(chunk, "contact:website") || "",
     );
-    if (!website || isBlockedOutreachHost(website)) continue;
+    const emailRaw = tagVal(chunk, "email") || tagVal(chunk, "contact:email") || "";
+    const email = emailRaw
+      ? normalizeEmail(emailRaw.split(/[;,/\s]+/)[0] || "")
+      : "";
+    const okEmail = isPlausiblePublicEmail(email) ? email : "";
+    if (!website && !okEmail) continue;
+    if (website && isBlockedOutreachHost(website) && !okEmail) continue;
     const kind =
       tagVal(chunk, "amenity") ||
       tagVal(chunk, "shop") ||
@@ -69,9 +84,14 @@ function parseMapXml(
       tagVal(chunk, "craft") ||
       tagVal(chunk, "leisure") ||
       "business";
-    // Sin tipo de negocio y sin email en tags → igual queremos la web si hay name
     const name = tagVal(chunk, "name") || "Negocio local";
-    out.push({ url: website, name: name.slice(0, 80), city, kind });
+    out.push({
+      url: website && !isBlockedOutreachHost(website) ? website : "",
+      email: okEmail,
+      name: name.slice(0, 80),
+      city,
+      kind,
+    });
   }
   return out;
 }
@@ -91,27 +111,12 @@ async function fetchBbox(cell: HarvestCell): Promise<string> {
   return res.text();
 }
 
-type PhotonHit = {
-  properties?: {
-    name?: string;
-    city?: string;
-    country?: string;
-    osm_value?: string;
-    osm_key?: string;
-  };
-  // Photon a veces no trae website; usamos name+city para búsqueda limitada
-};
-
-/**
- * Nominatim (extratags=1): trae `website` de OSM en la búsqueda por texto.
- * 1 req/s · User-Agent obligatorio. Ideal para “restaurante Fuengirola”, “dentista Mijas”…
- */
 async function nominatimSearch(
   query: string,
   lat: number,
   lon: number,
-  limit = 20,
-): Promise<Array<{ url: string; name: string; city: string; kind: string }>> {
+  limit = 25,
+): Promise<Hit[]> {
   const u = new URL("https://nominatim.openstreetmap.org/search");
   u.searchParams.set("q", query);
   u.searchParams.set("format", "jsonv2");
@@ -119,8 +124,8 @@ async function nominatimSearch(
   u.searchParams.set("extratags", "1");
   u.searchParams.set("limit", String(limit));
   u.searchParams.set("countrycodes", "es");
-  u.searchParams.set("viewbox", `${lon - 0.12},${lat + 0.1},${lon + 0.12},${lat - 0.1}`);
-  u.searchParams.set("bounded", "1");
+  u.searchParams.set("viewbox", `${lon - 0.15},${lat + 0.12},${lon + 0.15},${lat - 0.12}`);
+  u.searchParams.set("bounded", "0");
   try {
     const res = await fetch(u.toString(), {
       headers: { "User-Agent": UA, Accept: "application/json" },
@@ -136,7 +141,7 @@ async function nominatimSearch(
       address?: { city?: string; town?: string; village?: string; municipality?: string };
     }>;
     if (!Array.isArray(rows)) return [];
-    const out: Array<{ url: string; name: string; city: string; kind: string }> = [];
+    const out: Hit[] = [];
     for (const row of rows) {
       const website = normalizeUrl(
         row.extratags?.website ||
@@ -144,7 +149,13 @@ async function nominatimSearch(
           row.extratags?.url ||
           "",
       );
-      if (!website || isBlockedOutreachHost(website)) continue;
+      const emailRaw =
+        row.extratags?.email || row.extratags?.["contact:email"] || "";
+      const email = emailRaw
+        ? normalizeEmail(emailRaw.split(/[;,/\s]+/)[0] || "")
+        : "";
+      const okEmail = isPlausiblePublicEmail(email) ? email : "";
+      if ((!website || isBlockedOutreachHost(website)) && !okEmail) continue;
       const city =
         row.address?.city ||
         row.address?.town ||
@@ -153,8 +164,12 @@ async function nominatimSearch(
         query.split(" ").slice(-1)[0] ||
         "";
       out.push({
-        url: website,
-        name: (row.name || row.display_name?.split(",")[0] || "Negocio local").slice(0, 80),
+        url: website && !isBlockedOutreachHost(website) ? website : "",
+        email: okEmail,
+        name: (row.name || row.display_name?.split(",")[0] || "Negocio local").slice(
+          0,
+          80,
+        ),
         city,
         kind: row.type || row.class || "business",
       });
@@ -169,99 +184,117 @@ export type HarvestResult = {
   cells: string[];
   mapHits: number;
   searchHits: number;
-  added: number;
+  emailsQueued: number;
+  websAdded: number;
   skipped: number;
   stock: ReturnType<typeof stockCounts>;
+  queue: ReturnType<typeof queueCounts>;
 };
 
-/**
- * Un tick de harvest: celdas OSM (Fuengirola primero) + Nominatim por keyword.
- * Objetivo: meter cientos de webs/día en stock sin scrapear emails.
- */
 export async function harvestWebsitesIntoStock(opts?: {
   waveIndex?: number;
   maxCells?: number;
   searchKeywords?: number;
   targetPending?: number;
+  /** También encola emails OSM/Nominatim directo (acelera cola mañana). */
+  enqueueOsmEmails?: boolean;
 }): Promise<HarvestResult> {
   const targetPending = opts?.targetPending ?? 1500;
   const maxCells = opts?.maxCells ?? 6;
   const searchKw = opts?.searchKeywords ?? 5;
   const wave = opts?.waveIndex ?? 0;
+  const enqueueOsm = opts?.enqueueOsmEmails !== false;
 
-  const before = stockCounts((await loadWebsiteStock()).items);
-  if (before.pending >= targetPending) {
-    return {
-      cells: [],
-      mapHits: 0,
-      searchHits: 0,
-      added: 0,
-      skipped: 0,
-      stock: before,
-    };
-  }
-
+  const beforeStock = stockCounts((await loadWebsiteStock()).items);
   const cells = harvestCellsForWave(wave, maxCells);
-  const batch: Array<{
+  const webBatch: Array<{
     url: string;
     name: string;
     city: string;
     kind: string;
     source: "osm_map" | "nominatim";
   }> = [];
+  const emailBatch: Parameters<typeof enqueueLeads>[0] = [];
+  const seenEmail = new Set<string>();
   let mapHits = 0;
   let searchHits = 0;
   const deadline = Date.now() + 110_000;
 
-  for (const cell of cells) {
-    if (Date.now() > deadline) break;
-    try {
-      const xml = await fetchBbox(cell);
-      if (xml) {
-        const hits = parseMapXml(xml, cell.name.split("·")[0] || cell.name);
-        mapHits += hits.length;
-        for (const h of hits) {
-          batch.push({ ...h, source: "osm_map" });
-        }
-      }
-    } catch {
-      /* next cell */
+  const pushHit = (h: Hit, source: "osm_map" | "nominatim") => {
+    if (h.email && enqueueOsm && !seenEmail.has(h.email)) {
+      seenEmail.add(h.email);
+      emailBatch.push({
+        email: h.email,
+        businessName: h.name,
+        city: h.city || "España",
+        websiteUrl: h.url || undefined,
+        source: source === "osm_map" ? "osm" : "web",
+      });
     }
-    await new Promise((r) => setTimeout(r, 100));
+    if (h.url) {
+      webBatch.push({
+        url: h.url,
+        name: h.name,
+        city: h.city,
+        kind: h.kind,
+        source,
+      });
+    }
+  };
+
+  if (beforeStock.pending < targetPending) {
+    for (const cell of cells) {
+      if (Date.now() > deadline) break;
+      try {
+        const xml = await fetchBbox(cell);
+        if (xml) {
+          const hits = parseMapXml(xml, cell.name.split("·")[0] || cell.name);
+          mapHits += hits.length;
+          for (const h of hits) pushHit(h, "osm_map");
+        }
+      } catch {
+        /* next */
+      }
+      await new Promise((r) => setTimeout(r, 90));
+    }
   }
 
-  // Nominatim: ciudad ancla + keywords rotadas (1 req/s)
   const anchor = cells[0] || harvestCellsForWave(0, 1)[0];
   const cityLabel = (anchor?.name || "Fuengirola").split("·")[0];
   const kwStart = wave % BUSINESS_KEYWORDS.length;
   for (let i = 0; i < searchKw; i++) {
     if (Date.now() > deadline) break;
     const kw = BUSINESS_KEYWORDS[(kwStart + i) % BUSINESS_KEYWORDS.length];
-    const hits = await nominatimSearch(
-      `${kw} ${cityLabel}`,
-      anchor.lat,
-      anchor.lon,
-      20,
-    );
+    const hits = await nominatimSearch(`${kw} ${cityLabel}`, anchor.lat, anchor.lon, 25);
     searchHits += hits.length;
     for (const h of hits) {
-      batch.push({
-        ...h,
-        city: h.city || cityLabel,
-        source: "nominatim",
-      });
+      pushHit({ ...h, city: h.city || cityLabel }, "nominatim");
     }
     await new Promise((r) => setTimeout(r, 1100));
   }
 
-  const { added, skipped, pending } = await addWebsiteSources(batch);
-  const stock = stockCounts((await loadWebsiteStock()).items);
+  let emailsQueued = 0;
+  if (emailBatch.length) {
+    const r = await enqueueLeads(emailBatch);
+    emailsQueued = r.added;
+  }
+
+  let websAdded = 0;
+  let skipped = 0;
+  if (webBatch.length && beforeStock.pending < targetPending) {
+    const r = await addWebsiteSources(webBatch);
+    websAdded = r.added;
+    skipped = r.skipped;
+  }
+
   return {
     cells: cells.map((c) => c.cellId),
     mapHits,
     searchHits,
-    added,
+    emailsQueued,
+    websAdded,
     skipped,
-    stock: { ...stock, pending },
+    stock: stockCounts((await loadWebsiteStock()).items),
+    queue: queueCounts((await loadQueue()).leads),
   };
 }
