@@ -69,36 +69,17 @@ function Piece({ bodyColor, accentColor, logoDataUrl }: Props) {
   const gltf = useGLTF(MODEL, true);
   const bodyHex = BODY_COLORS.find((c) => c.id === bodyColor)?.hex ?? "#141416";
   const accentHex = ACCENT_HEX[accentColor] ?? ACCENT_HEX.blanco;
-  const [logoTex, setLogoTex] = useState<THREE.Texture | null>(null);
-
-  useEffect(() => {
-    if (!logoDataUrl) {
-      setLogoTex(null);
-      return;
-    }
-    let disposed = false;
-    const loader = new THREE.TextureLoader();
-    loader.load(
-      logoDataUrl,
-      (tex) => {
-        if (disposed) {
-          tex.dispose();
-          return;
-        }
-        tex.colorSpace = THREE.SRGBColorSpace;
-        tex.anisotropy = 8;
-        tex.needsUpdate = true;
-        setLogoTex((prev) => {
-          prev?.dispose();
-          return tex;
-        });
-      },
-      undefined,
-      () => setLogoTex(null),
-    );
-    return () => {
-      disposed = true;
-    };
+  const [logoReady, setLogoReady] = useState(0);
+  const logoTex = useMemo(() => {
+    if (!logoDataUrl) return null;
+    const tex = new THREE.TextureLoader().load(logoDataUrl, () => {
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 8;
+      tex.needsUpdate = true;
+      setLogoReady((n) => n + 1);
+    });
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
   }, [logoDataUrl]);
 
   useEffect(() => {
@@ -172,7 +153,8 @@ function Piece({ bodyColor, accentColor, logoDataUrl }: Props) {
     wrap.position.sub(center);
     wrap.scale.setScalar(0.22 / (Math.max(size.x, size.y, size.z) || 1));
     return wrap;
-  }, [gltf.scene, bodyHex, accentHex, logoTex]);
+    // logoReady: rearmar cuando la textura termina de cargar
+  }, [gltf.scene, bodyHex, accentHex, logoTex, logoReady]);
 
   return <primitive object={root} />;
 }
