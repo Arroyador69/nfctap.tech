@@ -28,8 +28,8 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-/** ~1,8 s/mail → ~150 mails caben en 5 min con margen discover. */
-const MAX_PER_INVOKE = 150;
+/** ~1,8 s/mail → 50 mails ≈ 90 s; deja margen a discover ligero (<5 min). */
+const MAX_PER_INVOKE = 50;
 
 function authorized(req: Request) {
   const url = new URL(req.url);
@@ -86,14 +86,15 @@ export async function GET(req: Request) {
   // Discover ligero solo si la cola está seca (el cron discover rellena el grueso)
   const qBefore = queueCounts((await loadQueue()).leads);
   let discover = null as Awaited<ReturnType<typeof discoverIntoQueue>> | null;
-  if (needRefill(qBefore.queued, 80)) {
+  // Si ya hay cola, no discover aquí (lo hace el cron discover). Evita timeout.
+  if (needRefill(qBefore.queued, 30)) {
     try {
       discover = await discoverIntoQueue({
-        targetQueued: 200,
-        maxPlaces: 2,
+        targetQueued: 80,
+        maxPlaces: 1,
         waveIndex: day.waves,
         fetchWebEmails: !dry,
-        maxWebFetches: dry ? 0 : 20,
+        maxWebFetches: dry ? 0 : 12,
         bboxesPerPlace: 2,
       });
     } catch (e) {
