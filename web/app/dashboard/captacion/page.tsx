@@ -58,7 +58,8 @@ export default async function CaptacionPage() {
   const telegram =
     Boolean(process.env.TELEGRAM_BOT_TOKEN?.trim()) &&
     Boolean(process.env.TELEGRAM_CHAT_ID?.trim());
-  const webhookSecret = Boolean(process.env.RESEND_WEBHOOK_SECRET?.trim());
+  // El endpoint /api/webhook/resend está siempre listo; el secret solo si la URL lo lleva.
+  const webhookReady = true;
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-10">
@@ -179,16 +180,21 @@ export default async function CaptacionPage() {
             <Li ok={telegram}>Telegram (TOKEN + CHAT_ID)</Li>
             <Li ok={polarUnicaReady()}>Polar producto UNICA</Li>
             <Li ok={Boolean(process.env.BLOB_READ_WRITE_TOKEN)}>Blob (cola / stats)</Li>
-            <Li ok={webhookSecret}>
-              Webhook Resend (opens) · URL /api/webhook/resend
+            <Li ok={webhookReady}>
+              Webhook Resend (opens) · /api/webhook/resend
             </Li>
           </ul>
           <p className="mt-4 text-xs leading-5 text-[#8a8173]">
-            En Resend → Webhooks:{" "}
+            En Resend, barra izquierda → <strong>Webhooks</strong> (no Domains). Endpoint exacto:{" "}
             <code className="rounded bg-[#f7f3eb] px-1">https://nfctap.tech/api/webhook/resend</code>
-            {webhookSecret ? "?secret=…" : ""} · eventos{" "}
-            <code>email.opened</code>, <code>email.clicked</code>, <code>email.bounced</code>. Sin
-            webhook, la tabla muestra enviados pero no aperturas.
+            {" "}· eventos <code>email.opened</code>, <code>email.clicked</code>,{" "}
+            <code>email.bounced</code>. Si en Vercel tienes <code>RESEND_WEBHOOK_SECRET</code>, o
+            bórralo o pon el mismo valor en la URL como <code>?secret=…</code>. El secret Svix{" "}
+            <code>whsec_…</code> no va en Vercel con esta ruta.
+          </p>
+          <p className="mt-2 text-xs leading-5 text-[#8a8173]">
+            Tracking opens/clicks: en Domains → clic en <strong>nfctap.tech</strong> → pestaña{" "}
+            <strong>Configuration</strong> → Enable tracking metrics.
           </p>
           <p className="mt-2 text-xs text-[#8a8173]">
             Geografía: {NFC_SEED_PLACES.join(" → ")}.

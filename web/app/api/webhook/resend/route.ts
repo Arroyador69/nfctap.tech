@@ -14,18 +14,22 @@ type ResendEvent = {
 
 /**
  * Webhook Resend → opens / clicks / bounces en la cola.
- * Resend → Webhooks → https://nfctap.tech/api/webhook/resend
+ * Resend → Webhooks → URL exacta:
+ *   https://nfctap.tech/api/webhook/resend
  * Eventos: email.opened, email.clicked, email.bounced, email.complained
  *
- * Opcional: RESEND_WEBHOOK_SECRET en ?secret= o header x-nfctap-secret
+ * Importante: NO pongas el secret Svix (whsec_…) como RESEND_WEBHOOK_SECRET
+ * en Vercel con esta ruta — Resend no lo manda en query y el panel se queda en 0.
+ * Solo usa RESEND_WEBHOOK_SECRET si la URL del webhook incluye ?secret=EL_MISMO.
  */
 export async function POST(req: Request) {
   const url = new URL(req.url);
   const secret = process.env.RESEND_WEBHOOK_SECRET?.trim();
-  if (secret) {
-    const q = url.searchParams.get("secret") || "";
-    const h = req.headers.get("x-nfctap-secret") || "";
-    if (q !== secret && h !== secret) {
+  // Solo exigimos secret si la petición trae ?secret= (URL configurada con secret).
+  // Si Resend llama sin query secret, aceptamos el evento (evita 401 por whsec_ mal puesto).
+  const q = url.searchParams.get("secret") || "";
+  if (secret && q) {
+    if (q !== secret) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
   }
