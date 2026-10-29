@@ -14,6 +14,8 @@ Ritmo: **500 mails/día** (10 oleadas × 50), mismo patrón anti-burst que Delf�
 Página: https://nfctap.tech/negocio (visor 3D + Polar UNICA)  
 Fotos mail: `/public/stock/freddos.jpg`, `markos.jpg` (sin nombrar clientes)
 
+**Pago (2026-10-29):** Polar `POLAR_PRODUCT_UNICA_1` en Vercel + checkout `/api/orders` → URL `polar.sh/checkout/…` OK (80 € · 2 chips).
+
 ## 1. DNS Resend (hacer hoy)
 
 Estado apex (Porkbun / Zoho):
@@ -24,11 +26,8 @@ Estado apex (Porkbun / Zoho):
 
 Pasos:
 1. [resend.com](https://resend.com) → Domains → verifica `nfctap.tech` o mejor `send.nfctap.tech`
-2. Vercel Production:
-   - `RESEND_API_KEY=re_…` (**ahora está vacío en Vercel — hay que pegar la key real**)
-   - `RESEND_FROM=NFCTap <hola@nfctap.tech>` o `NFCTap <onboarding@send.nfctap.tech>` si usas subdominio
-3. Redeploy
-4. Prueba en **https://nfctap.tech/dashboard/captacion** → «Probar mail Resend»
+2. Vercel Production ya tiene `RESEND_API_KEY` + `RESEND_FROM` (comprobar en `/dashboard/captacion`)
+3. Prueba en **https://nfctap.tech/dashboard/captacion** → «Probar mail Resend»
 
 **No uses Zoho** para cold/bulk. Zoho = soporte 1-a-1 (`contacto@`).
 

@@ -19,12 +19,12 @@ export async function sendNfctapOutreach(
   to: string,
   vars: OutreachVars,
 ): Promise<SendResult> {
-  const key = process.env.RESEND_API_KEY?.trim();
+  const key = (process.env.RESEND_API_KEY || "").trim().replace(/^["']|["']$/g, "");
   if (!key) return { ok: false, error: "Falta RESEND_API_KEY" };
 
   const from =
-    process.env.RESEND_FROM?.trim() ||
-    process.env.SMTP_FROM_OUTREACH?.trim() ||
+    (process.env.RESEND_FROM || "").trim().replace(/^["']|["']$/g, "") ||
+    (process.env.SMTP_FROM_OUTREACH || "").trim().replace(/^["']|["']$/g, "") ||
     `NFCTap <hola@${BRAND.domain}>`;
 
   const optOut =
