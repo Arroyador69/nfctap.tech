@@ -23,6 +23,8 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
+  const url = new URL(req.url);
+  const waveParam = Number(url.searchParams.get("wave") || "");
   const day = await getDayStats();
   const before = queueCounts((await loadQueue()).leads);
   if (!needRefill(before.queued, 1000)) {
@@ -32,7 +34,7 @@ export async function GET(req: Request) {
   const result = await discoverIntoQueue({
     targetQueued: 1000,
     maxPlaces: 4,
-    waveIndex: day.waves + before.queued,
+    waveIndex: Number.isFinite(waveParam) ? waveParam : day.waves + before.queued,
     fetchWebEmails: true,
     maxWebFetches: 40,
     bboxesPerPlace: 3,
