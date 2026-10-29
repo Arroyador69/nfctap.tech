@@ -41,7 +41,9 @@ Pasos:
 ## 1c. Admin
 
 - Dashboard ya existe: `/dashboard` (password `DASHBOARD_PASSWORD`)
-- Captación: `/dashboard/captacion` (mails hoy, ventas, pruebas, estado Polar UNICA)
+- Captación: `/dashboard/captacion` — cola, mails enviados, abiertos/clicks (como Delfín), ventas, infra
+- **No** hay botón de oleada: solo cron `nfctap-leads-discover` + `nfctap-leads-wave`
+- Webhook Resend → `POST /api/webhook/resend` (opened / clicked / bounced) · opcional `RESEND_WEBHOOK_SECRET`
 - Panel clientes (otra cosa): `/panel` · superadmin `contacto@nfctap.tech`
 
 ## 2. Geografía

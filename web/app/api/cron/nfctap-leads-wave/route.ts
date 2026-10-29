@@ -200,7 +200,11 @@ export async function GET(req: Request) {
     cities.add(lead.city);
     if (r.ok) {
       sent++;
-      await markLead(lead.id, { status: "sent", sentAt: new Date().toISOString() });
+      await markLead(lead.id, {
+        status: "sent",
+        sentAt: new Date().toISOString(),
+        resendId: r.id || undefined,
+      });
     } else {
       failed++;
       await markLead(lead.id, { status: "failed", error: r.error });

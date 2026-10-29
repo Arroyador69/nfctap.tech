@@ -1,5 +1,5 @@
 /**
- * Cola de leads en Vercel Blob via get/put (API actual).
+ * Cola + historial de leads en Vercel Blob (get/put private).
  */
 
 export type BusinessLead = {
@@ -12,6 +12,11 @@ export type BusinessLead = {
   status: "queued" | "sent" | "failed" | "optout";
   createdAt: string;
   sentAt?: string;
+  /** id Resend (email_…) para webhooks open/click/bounce */
+  resendId?: string;
+  openedAt?: string;
+  clickedAt?: string;
+  bouncedAt?: string;
   error?: string;
 };
 
@@ -43,14 +48,12 @@ async function readJson<T>(key: string, fallback: T): Promise<T> {
 async function writeJson(key: string, data: unknown) {
   if (!blobOk()) throw new Error("Falta BLOB_READ_WRITE_TOKEN");
   const { put } = await import("@vercel/blob");
-  const body = JSON.stringify(data);
-  const blob = await put(key, body, {
+  await put(key, JSON.stringify(data), {
     access: "private",
     addRandomSuffix: false,
     allowOverwrite: true,
     contentType: "application/json",
   });
-  return blob;
 }
 
 export async function loadQueue(): Promise<QueueFile> {
@@ -78,7 +81,41 @@ export function queueCounts(leads: BusinessLead[]) {
   const queued = leads.filter((l) => l.status === "queued").length;
   const sent = leads.filter((l) => l.status === "sent").length;
   const failed = leads.filter((l) => l.status === "failed").length;
-  return { total: leads.length, queued, sent, failed };
+  const opened = leads.filter((l) => Boolean(l.openedAt)).length;
+  const clicked = leads.filter((l) => Boolean(l.clickedAt)).length;
+  const bounced = leads.filter((l) => Boolean(l.bouncedAt)).length;
+  return { total: leads.length, queued, sent, failed, opened, clicked, bounced };
+}
+
+export function madridDayKey(iso?: string) {
+  const d = iso ? new Date(iso) : new Date();
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Madrid",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
+/** Métricas de hoy (Madrid) desde la cola. */
+export function todayEngagement(leads: BusinessLead[]) {
+  const day = madridDayKey();
+  const sentToday = leads.filter(
+    (l) => l.status === "sent" && l.sentAt && madridDayKey(l.sentAt) === day,
+  );
+  const openedToday = sentToday.filter((l) => l.openedAt).length;
+  const clickedToday = sentToday.filter((l) => l.clickedAt).length;
+  const bouncedToday = sentToday.filter((l) => l.bouncedAt).length;
+  const discoveredToday = leads.filter((l) => madridDayKey(l.createdAt) === day).length;
+  return {
+    sentToday: sentToday.length,
+    openedToday,
+    clickedToday,
+    bouncedToday,
+    discoveredToday,
+    openRatePct:
+      sentToday.length > 0 ? Math.round((openedToday / sentToday.length) * 100) : 0,
+  };
 }
 
 export async function enqueueLeads(
@@ -107,11 +144,10 @@ export async function enqueueLeads(
   }
   await saveQueue(file.leads);
   const verified = await loadQueue();
-  const queued = queueCounts(verified.leads).queued;
   return {
     added,
     skipped,
-    queued,
+    queued: queueCounts(verified.leads).queued,
     persistOk: verified.leads.length >= file.leads.length,
   };
 }
@@ -121,13 +157,54 @@ export async function takeQueued(n: number): Promise<BusinessLead[]> {
   return file.leads.filter((l) => l.status === "queued").slice(0, Math.max(0, n));
 }
 
-export async function markLead(
-  id: string,
-  patch: Partial<Pick<BusinessLead, "status" | "sentAt" | "error">>,
-) {
+export type LeadPatch = Partial<
+  Pick<
+    BusinessLead,
+    "status" | "sentAt" | "error" | "resendId" | "openedAt" | "clickedAt" | "bouncedAt"
+  >
+>;
+
+export async function markLead(id: string, patch: LeadPatch) {
   const file = await loadQueue();
   const i = file.leads.findIndex((l) => l.id === id);
   if (i < 0) return;
   file.leads[i] = { ...file.leads[i], ...patch };
   await saveQueue(file.leads);
+}
+
+/** Actualiza por resendId (webhooks). Fallback: último enviado a ese email. */
+export async function markLeadByResendId(
+  resendId: string,
+  patch: LeadPatch,
+  toEmail?: string,
+) {
+  const file = await loadQueue();
+  let i = resendId ? file.leads.findIndex((l) => l.resendId === resendId) : -1;
+  if (i < 0 && toEmail) {
+    const want = toEmail.toLowerCase();
+    const candidates = file.leads
+      .map((l, idx) => ({ l, idx }))
+      .filter(({ l }) => l.email === want && l.status === "sent")
+      .sort((a, b) => (b.l.sentAt || "").localeCompare(a.l.sentAt || ""));
+    if (candidates[0]) i = candidates[0].idx;
+  }
+  if (i < 0) return false;
+  const cur = file.leads[i];
+  file.leads[i] = {
+    ...cur,
+    ...patch,
+    resendId: patch.resendId || cur.resendId || resendId || undefined,
+    openedAt: patch.openedAt || cur.openedAt,
+    clickedAt: patch.clickedAt || cur.clickedAt,
+    bouncedAt: patch.bouncedAt || cur.bouncedAt,
+  };
+  await saveQueue(file.leads);
+  return true;
+}
+
+export function recentSent(leads: BusinessLead[], limit = 40) {
+  return leads
+    .filter((l) => l.status === "sent" && l.sentAt)
+    .sort((a, b) => (b.sentAt || "").localeCompare(a.sentAt || ""))
+    .slice(0, limit);
 }

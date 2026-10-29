@@ -48,7 +48,12 @@ export async function sendNfctapOutreach(
         "List-Unsubscribe": `<${optOut}>`,
         "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
       },
-      tags: [{ name: "campaign", value: "nfctap_local_es" }],
+      tags: [
+        { name: "campaign", value: "nfctap_local_es" },
+        { name: "city", value: (vars.city || "es").slice(0, 40).replace(/[^a-zA-Z0-9_-]/g, "_") },
+      ],
+      // Opens/clicks → webhook /api/webhook/resend
+
     }),
   });
 
