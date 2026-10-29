@@ -25,18 +25,21 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const waveParam = Number(url.searchParams.get("wave") || "");
+  const osmOnly = url.searchParams.get("osmOnly") === "1";
   const day = await getDayStats();
   const before = queueCounts((await loadQueue()).leads);
   if (!needRefill(before.queued, 1000)) {
     return NextResponse.json({ ok: true, skipped: true, reason: "queue_full", queue: before });
   }
 
+  // osmOnly=1: solo emails ya en OSM (rápido, para rellenar stock).
+  // Por defecto: OSM + scrape web limitado.
   const result = await discoverIntoQueue({
     targetQueued: 1000,
-    maxPlaces: 6,
+    maxPlaces: osmOnly ? 8 : 4,
     waveIndex: Number.isFinite(waveParam) ? waveParam : day.waves + before.queued,
-    fetchWebEmails: true,
-    maxWebFetches: 70,
+    fetchWebEmails: !osmOnly,
+    maxWebFetches: osmOnly ? 0 : 35,
   });
 
   return NextResponse.json({

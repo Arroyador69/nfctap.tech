@@ -30,42 +30,31 @@ type OsmHit = {
 };
 
 function overpassQueries(c: PlaceCoord): string[] {
-  const r = Math.min(c.radiusM ?? 12000, 18000);
+  const r = Math.min(c.radiusM ?? 12000, 15000);
   const lat = c.lat;
   const lon = c.lon;
-  // Queries ligeras (timeout público). Varios tags = más cobertura negocios.
+  // 2 queries/ciudad (cabe en cron ~5 min). Hostelería + resto negocios.
   return [
     `
-[out:json][timeout:22];
+[out:json][timeout:18];
 (
-  nwr(around:${r},${lat},${lon})["amenity"~"^(cafe|restaurant|bar|fast_food|pub|biergarten|ice_cream|food_court)$"]["website"];
-  nwr(around:${r},${lat},${lon})["amenity"~"^(cafe|restaurant|bar|fast_food|pub)$"]["email"];
-  nwr(around:${r},${lat},${lon})["amenity"~"^(cafe|restaurant|bar|fast_food)$"]["contact:website"];
+  nwr(around:${r},${lat},${lon})["amenity"~"^(cafe|restaurant|bar|fast_food|pub|ice_cream)$"]["website"];
+  nwr(around:${r},${lat},${lon})["amenity"~"^(cafe|restaurant|bar|fast_food)$"]["email"];
+  nwr(around:${r},${lat},${lon})["amenity"~"^(cafe|restaurant|bar)$"]["contact:website"];
   nwr(around:${r},${lat},${lon})["amenity"~"^(cafe|restaurant|bar)$"]["contact:email"];
 );
-out tags 60;
+out tags 45;
 `.trim(),
     `
-[out:json][timeout:22];
+[out:json][timeout:18];
 (
-  nwr(around:${r},${lat},${lon})["amenity"~"^(hairdresser|beauty_salon|clinic|dentist|doctors|pharmacy|veterinary)$"]["website"];
-  nwr(around:${r},${lat},${lon})["amenity"~"^(hairdresser|beauty_salon|clinic|dentist)$"]["email"];
-  nwr(around:${r},${lat},${lon})["amenity"~"^(hairdresser|beauty_salon|clinic|dentist)$"]["contact:website"];
-  nwr(around:${r},${lat},${lon})["shop"~"^(hairdresser|beauty|cosmetics|clothes|bakery|butcher|convenience|supermarket|florist|jewelry|optician)$"]["website"];
-);
-out tags 60;
-`.trim(),
-    `
-[out:json][timeout:22];
-(
-  nwr(around:${r},${lat},${lon})["tourism"~"^(hotel|guest_house|hostel|motel|apartment)$"]["website"];
-  nwr(around:${r},${lat},${lon})["tourism"~"^(hotel|guest_house|hostel)$"]["email"];
+  nwr(around:${r},${lat},${lon})["amenity"~"^(hairdresser|beauty_salon|clinic|dentist|pharmacy)$"]["website"];
+  nwr(around:${r},${lat},${lon})["shop"~"^(hairdresser|beauty|clothes|bakery|florist|optician)$"]["website"];
+  nwr(around:${r},${lat},${lon})["tourism"~"^(hotel|guest_house|hostel)$"]["website"];
   nwr(around:${r},${lat},${lon})["office"]["website"];
-  nwr(around:${r},${lat},${lon})["craft"]["website"];
   nwr(around:${r},${lat},${lon})["shop"]["email"];
-  nwr(around:${r},${lat},${lon})["office"]["email"];
 );
-out tags 50;
+out tags 45;
 `.trim(),
   ];
 }
@@ -141,31 +130,11 @@ async function emailFromWebsite(url: string): Promise<string> {
   try {
     const res = await fetch(url, {
       headers: { "User-Agent": UA, Accept: "text/html" },
-      signal: AbortSignal.timeout(7_000),
+      signal: AbortSignal.timeout(5_000),
       redirect: "follow",
     });
     if (!res.ok) return "";
-    const html = (await res.text()).slice(0, 160_000);
-    // Prefer /contacto pages if homepage has none — one hop
-    let email = extractEmailsFromText(html)[0] || "";
-    if (!email) {
-      const base = url.replace(/\/$/, "");
-      for (const path of ["/contacto", "/contact", "/contacto/", "/about"]) {
-        try {
-          const r2 = await fetch(base + path, {
-            headers: { "User-Agent": UA, Accept: "text/html" },
-            signal: AbortSignal.timeout(5_000),
-            redirect: "follow",
-          });
-          if (!r2.ok) continue;
-          email = extractEmailsFromText((await r2.text()).slice(0, 120_000))[0] || "";
-          if (email) break;
-        } catch {
-          /* next */
-        }
-      }
-    }
-    return email;
+    return extractEmailsFromText((await res.text()).slice(0, 120_000))[0] || "";
   } catch {
     return "";
   }
@@ -193,9 +162,9 @@ export async function discoverIntoQueue(opts?: {
   maxWebFetches?: number;
 }): Promise<DiscoverResult> {
   const target = opts?.targetQueued ?? 1000;
-  const maxPlaces = opts?.maxPlaces ?? 5;
+  const maxPlaces = opts?.maxPlaces ?? 4;
   const fetchWeb = opts?.fetchWebEmails !== false;
-  const maxWeb = opts?.maxWebFetches ?? 55;
+  const maxWeb = opts?.maxWebFetches ?? 40;
   const start = (opts?.waveIndex || 0) % NFC_PLACES.length;
 
   const places: PlaceCoord[] = [];
