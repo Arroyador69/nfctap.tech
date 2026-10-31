@@ -15,7 +15,6 @@ export type OutreachVars = {
 const FREDDOS = `${BRAND.url}/stock/freddos.jpg`;
 const MARKOS = `${BRAND.url}/stock/markos.jpg`;
 const CTA = `${BRAND.url}/negocio`;
-const SENDER = "Alberto";
 
 const SOCIAL_LINKS = SOCIALS.map((s) =>
   s.id === "youtube" ? { ...s, href: "https://www.youtube.com/@NFCTap" } : s,
@@ -108,7 +107,7 @@ export function nfctapOutreachHtml(v: OutreachVars) {
             ${greet}
           </p>
           <p style="margin:12px 0 0;font-size:16px;line-height:1.55;color:#3f3a34;">
-            Soy <strong>${SENDER}</strong>, de <strong>nfctap.tech</strong>. ${webLine}
+            Somos <strong>nfctap.tech</strong>. ${webLine}
           </p>
           <p style="margin:14px 0 0;font-size:16px;line-height:1.55;color:#3f3a34;">
             Fabricamos un <strong>atril personalizado con el logo de tu negocio</strong>
@@ -140,7 +139,7 @@ export function nfctapOutreachHtml(v: OutreachVars) {
         </td></tr>
         <tr><td style="padding:10px 28px 26px;font-size:12px;color:#a39a8c;line-height:1.55;font-family:Arial,Helvetica,sans-serif;">
           Un saludo,<br />
-          <strong style="color:#5c564c;">${SENDER}</strong> · NFCTap · España ·
+          <strong style="color:#5c564c;">NFCTap</strong> · España ·
           <a href="${BRAND.url}" style="color:#8a8173;">${BRAND.domain}</a><br /><br />
           Te escribimos por un email de contacto público${name ? ` de ${escapeHtml(name)}` : ""} en ${escapeHtml(city)}.
           Base legal: interés legítimo (art. 6.1.f RGPD) · prospección B2B con datos públicos.
@@ -176,7 +175,7 @@ export function nfctapOutreachText(v: OutreachVars) {
   return `Crea tu pieza NFC en 1 minuto
 
 ${greet}
-Soy ${SENDER}, de nfctap.tech. ${webBit}
+Somos nfctap.tech. ${webBit}
 
 Fabricamos un atril personalizado con el logo de tu negocio y dentro van chips NFC (como el del pago sin contacto): el cliente acerca el móvil y abre tu web, Google, Instagram o WhatsApp — el enlace que tú elijas. Sin app. Sin QR borroso.
 
@@ -191,7 +190,7 @@ Si te encaja, en un minuto dejas el pedido. Si no, no pasa nada.
 ${socials}
 
 Un saludo,
-${SENDER} · NFCTap · ${BRAND.url}
+NFCTap · ${BRAND.url}
 
 Baja (RGPD · interés legítimo B2B): ${optOut}
 O responde «baja». Aviso legal: ${BRAND.url}/legal`;
