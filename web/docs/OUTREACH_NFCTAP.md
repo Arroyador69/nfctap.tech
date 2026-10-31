@@ -66,8 +66,8 @@ Cada envío: `city` + `businessName` (+ `websiteUrl` si hay) en `OutreachVars`.
 | Oleadas/día | 10 |
 | Cap día | **500** |
 | Delay | 1,8 s |
-| Ventana | 08:00–17:30 Madrid |
-| Stop | si ventas pagadas ≥ **5** ese día |
+| Ventana | 08:00–17:00 Madrid · **todos los días** (como Delfín) |
+| Stop | si ventas pagadas ≥ **10** ese día |
 
 Código: `lib/business-leads/constants.ts`, `template.ts`, `send-resend.ts`.
 
