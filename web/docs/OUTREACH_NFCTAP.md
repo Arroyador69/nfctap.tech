@@ -73,12 +73,14 @@ Código: `lib/business-leads/constants.ts`, `template.ts`, `send-resend.ts`.
 
 ## 4. Mail (conversión)
 
-- **Titular fijo:** «Tu logo en la barra. El cliente toca y entra.» (vale para peluquería, hotel, clínica, tienda, oficina…)
-- **Ciudad:** siempre la del lead (`nfctap.tech · Fuengirola` / Málaga / …) — cambia en la prueba de captación
-- **Nombre:** solo si OSM trae nombre real; nunca «Café de prueba»
-- **Hero + segunda foto:** producto real (`/stock/freddos.jpg`, `/markos.jpg`) · sin nombrar locales
-- CTA → `/negocio` · RGPD art. 6.1.f + baja `/api/outreach/opt-out`
-- Código: `lib/business-leads/template.ts` · cola Blob · discover Overpass
+- **Asunto:** `{Nombre}: crea tu pieza NFC en 1 minuto` (o ciudad si no hay nombre)
+- **Preheader:** atril + chips NFC + toque del móvil + 1 minuto
+- **Tono:** humano («Hola… Soy Alberto, de nfctap.tech») · ciudad y nombre del lead
+- **Qué es:** atril con **tu logo** + **chips NFC** (como pago sin contacto) → web / Google / IG / WhatsApp
+- **CTA:** «Crea tu pieza en 1 minuto →» → `/negocio`
+- **Fotos:** producto real (`/stock/freddos.jpg`, `/markos.jpg`) · sin nombrar locales
+- RGPD art. 6.1.f + baja `/api/outreach/opt-out`
+- Código: `lib/business-leads/template.ts`
 
 ## 5. Descubrir emails
 
