@@ -22,7 +22,7 @@ export function HomeHero() {
         </h1>
         <p className="mt-5 max-w-md text-lg text-[#5c564c]">
           Atril NFC impreso en España. El cliente acerca el móvil y se abre el chat, el perfil o
-          tu reseña. Lo ves en 3D, lo encargas aquí y sale en 24 h. Pagas con tarjeta, Apple Pay
+          tu reseña. Lo ves en 3D, lo encargas aquí. Fabricación en España ~72 h laborables. Pagas con tarjeta, Apple Pay
           o Bizum.
         </p>
         <div className="mt-6 grid max-w-md grid-cols-3 gap-2">

@@ -61,7 +61,7 @@ function copyForTouch(v: OutreachVars, touch: TouchKind) {
           ? `Hola otra vez — vimos que entrasteis en la web desde el mail de <strong>${escapeHtml(name)}</strong> (${escapeHtml(city)}).`
           : `Hola otra vez — vimos que entrasteis en la web desde nuestro mail a un negocio de ${escapeHtml(city)}.`,
         `Si os encajó la idea: atril con <strong>vuestro logo</strong> y <strong>chips NFC</strong> (el cliente acerca el móvil → web, Google, Instagram o WhatsApp). Sin app.`,
-        `Desde <strong>${price1}&nbsp;€</strong> (1 chip) · <strong>${price2}&nbsp;€</strong> (2 chips). Elegís diseño, pagáis e imprimimos en España (~2 días).`,
+        `Desde <strong>${price1}&nbsp;€</strong> (1 chip) · <strong>${price2}&nbsp;€</strong> (2 chips). Elegís diseño, pagáis e imprimimos en España (taller ~72&nbsp;h laborables).`,
       ],
       closing:
         "Si no es el momento, no pasa nada. Si preferís no recibir más mensajes, un clic en darse de baja basta (RGPD).",
@@ -83,7 +83,7 @@ function copyForTouch(v: OutreachVars, touch: TouchKind) {
         `Un <strong>atril con vuestro logo</strong> lleva dentro chips NFC (igual que el del datáfono): el cliente toca con el móvil y entra en <strong>vuestra web, reseñas, Instagram o WhatsApp</strong>.`,
         web
           ? `Pensé en vosotros al ver <a href="${escapeAttr(web)}" style="color:#1c1915;font-weight:600;">${escapeHtml(host)}</a>. Desde <strong>${price1}&nbsp;€</strong> · se crea en 1 minuto en la web.`
-          : `Desde <strong>${price1}&nbsp;€</strong> · se crea en 1 minuto en la web · envío en unos 2 días.`,
+          : `Desde <strong>${price1}&nbsp;€</strong> · se crea en 1 minuto en la web · fabricación en España ~72&nbsp;h laborables.`,
       ],
       closing:
         "Si no os interesa, podéis daros de baja abajo (interés legítimo B2B · art. 6.1.f RGPD).",
@@ -126,7 +126,7 @@ function copyForTouch(v: OutreachVars, touch: TouchKind) {
         : `Hola, escribo a un negocio de ${escapeHtml(city)}.`,
       `Somos <strong>nfctap.tech</strong>. ${webLine}`,
       `Fabricamos un <strong>atril personalizado con el logo de tu negocio</strong> y dentro van <strong>chips NFC</strong> (como el del pago sin contacto): el cliente acerca el móvil y abre <strong>tu web, Google, Instagram o WhatsApp</strong> — el enlace que tú elijas. Sin app. Sin QR borroso.`,
-      `En la web eliges logo y chips, pagas, e imprimimos en España. <strong>Desde ${price1}&nbsp;€</strong> (1 chip) · <strong>${price2}&nbsp;€</strong> (2 chips). Envío en unos 2 días.`,
+      `En la web eliges logo y chips, pagas, e imprimimos en España. <strong>Desde ${price1}&nbsp;€</strong> (1 chip) · <strong>${price2}&nbsp;€</strong> (2 chips). Taller ~72&nbsp;h laborables.`,
     ],
     closing:
       "Si te encaja, en un minuto dejas el pedido. Si no, no pasa nada — y si prefieres no recibir más mails, basta un clic abajo.",

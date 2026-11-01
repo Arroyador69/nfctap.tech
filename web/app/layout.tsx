@@ -1,3 +1,4 @@
+import { CookieBanner } from "@/components/CookieBanner";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { JsonLd } from "@/components/JsonLd";
@@ -34,7 +35,7 @@ const siteMetadata: Metadata = {
     template: "%s · NFCTap",
   },
   description:
-    "Atril NFC impreso en España. WhatsApp, Instagram o Google. Lo ves en 3D y lo encargas. Desde 20 €. Envío en 24 h. Pago con tarjeta, Apple Pay o Bizum.",
+    "Atril NFC impreso en España. WhatsApp, Instagram o Google. Lo ves en 3D y lo encargas. Desde 20 €. Fabricación ~72 h laborables. Pago con tarjeta, Apple Pay o Bizum.",
   applicationName: "NFCTap",
   openGraph: {
     type: "website",
@@ -43,14 +44,14 @@ const siteMetadata: Metadata = {
     siteName: "NFCTap",
     title: "NFCTap — TAP. WhatsApp, Instagram o Google.",
     description:
-      "Atril NFC. Lo ves en 3D y lo encargas. Desde 20 €. Envío en 24 h. Impreso en España.",
+      "Atril NFC. Lo ves en 3D y lo encargas. Desde 20 €. Fabricación en España ~72 h laborables.",
     images: [{ url: "/og.png", width: 1200, height: 630, alt: "NFCTap" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "NFCTap — TAP. WhatsApp, Instagram o Google.",
     description:
-      "Atril NFC. Desde 20 €. Envío en 24 h. Impreso en España.",
+      "Atril NFC. Desde 20 €. Fabricación en España ~72 h laborables.",
     images: ["/og.png"],
   },
   appleWebApp: {
@@ -80,6 +81,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
+        <CookieBanner />
       </body>
     </html>
   );

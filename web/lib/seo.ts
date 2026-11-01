@@ -55,7 +55,7 @@ export const HOME_FAQ: FaqItem[] = [
   },
   {
     q: "¿Cuánto cuesta y cuánto tarda el envío?",
-    a: `La primera de barra ${PRICE.generica.first} €, cada una más ${PRICE.generica.extra} €. Con logo ${PRICE.personalizada.first} €. TAP Wi‑Fi de pared ${PRICE.wifi.first} €. Sale con Correos en 24 h, solo España.`,
+    a: `La primera de barra ${PRICE.generica.first} €, cada una más ${PRICE.generica.extra} €. Con logo ${PRICE.personalizada.first} €. TAP Wi‑Fi de pared ${PRICE.wifi.first} €. Fabricación habitual ~72 h laborables; Correos sale el día laborable siguiente. En picos, hasta 15 días. Solo España.`,
   },
   {
     q: "¿El TAP Wi‑Fi de pared es lo mismo que el atril?",

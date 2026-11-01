@@ -1,34 +1,47 @@
 "use client";
 
+import { readConsent } from "@/lib/cookie-consent";
 import { META_PIXEL_ID, trackMeta } from "@/lib/meta-pixel";
 import { usePathname } from "next/navigation";
 import Script from "next/script";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+
+function skipPath(pathname: string | null) {
+  return (
+    !pathname ||
+    pathname.startsWith("/dashboard") ||
+    pathname === "/w" ||
+    pathname.startsWith("/w/") ||
+    pathname.startsWith("/lista/") ||
+    pathname.startsWith("/taller/") ||
+    pathname.startsWith("/panel")
+  );
+}
 
 export function MetaPixel() {
   const pathname = usePathname();
   const first = useRef(true);
+  const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
-    if (
-      !pathname ||
-      pathname.startsWith("/dashboard") ||
-      pathname === "/w" ||
-      pathname.startsWith("/w/") ||
-      pathname.startsWith("/lista/") ||
-      pathname.startsWith("/taller/") ||
-      pathname.startsWith("/panel")
-    ) {
-      return;
+    function sync() {
+      setAllowed(Boolean(readConsent()?.marketing));
     }
+    sync();
+    window.addEventListener("nfctap-consent", sync);
+    return () => window.removeEventListener("nfctap-consent", sync);
+  }, []);
+
+  useEffect(() => {
+    if (!allowed || skipPath(pathname)) return;
     if (first.current) {
       first.current = false;
       return;
     }
     trackMeta("PageView");
-  }, [pathname]);
+  }, [pathname, allowed]);
 
-  if (!META_PIXEL_ID || pathname?.startsWith("/dashboard") || pathname === "/w" || pathname?.startsWith("/w/")) {
+  if (!META_PIXEL_ID || !allowed || skipPath(pathname)) {
     return null;
   }
 
@@ -47,7 +60,6 @@ export function MetaPixel() {
         fbq('track', 'PageView');
       `}</Script>
       <noscript>
-        {/* Pixel de Meta: el noscript tiene que ser un <img> crudo, no next/image. */}
         <img
           height={1}
           width={1}
@@ -68,6 +80,7 @@ export function MetaViewContent({
   value: number;
 }) {
   useEffect(() => {
+    if (!readConsent()?.marketing) return;
     trackMeta("ViewContent", {
       value,
       currency: "EUR",
@@ -90,6 +103,7 @@ export function MetaPurchase({
   kind: string;
 }) {
   useEffect(() => {
+    if (!readConsent()?.marketing) return;
     const key = `meta_purchase_${orderId}`;
     if (sessionStorage.getItem(key)) return;
     sessionStorage.setItem(key, "1");

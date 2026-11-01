@@ -940,7 +940,7 @@ export function Designer({
               <p className="text-sm text-[#6f675c]">
                 {admin
                   ? "En mano o a Correos. El ZIP es el mismo atril que ves aquí."
-                  : "Solo España. El código postal elige la tarifa de Correos. Sale en 24 h. En Polar pagas producto + envío (tarjeta, Apple Pay o Bizum)."}
+                  : "Solo España. El CP elige la tarifa de Correos. Fabricación ~72 h laborables; sale el día laborable siguiente (hasta 15 días en picos). Polar: producto + envío."}
               </p>
 
               {admin && (
@@ -1048,7 +1048,10 @@ export function Designer({
 
               {handover === "envio" && (
                 <>
-                  <p className="text-xs text-[#8a8173]">Correos · España · sale en 24 h. El CP marca la tarifa.</p>
+                  <p className="text-xs text-[#8a8173]">
+                    Correos · España · ~72 h fab. + sale el día laborable siguiente. El CP marca la
+                    tarifa.
+                  </p>
                   <Rates
                     shipping={shipping}
                     zone={form.postalCode.length === 5 ? zone : null}
@@ -1405,7 +1408,7 @@ function Rates({
         </li>
       ))}
       <li className="px-1 text-xs text-[#8a8173]">
-        Salimos como muy tarde en 24 h.
+        Fabricación ~72 h laborables · sale el día laborable siguiente.
         {shipping.freePeninsulaFrom > 0
           ? ` Península gratis desde ${euros(shipping.freePeninsulaFrom)} de producto.`
           : ""}

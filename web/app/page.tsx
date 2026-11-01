@@ -10,7 +10,7 @@ import Link from "next/link";
 export const metadata = pageMeta({
   title: "NFCTap — Atril NFC para WhatsApp, Instagram o Google",
   description:
-    "Atril NFC impreso en España. WhatsApp, Instagram o Google. Lo ves en 3D y lo encargas. Desde 20 €. Envío en 24 h. Pago con tarjeta, Apple Pay o Bizum.",
+    "Atril NFC impreso en España. WhatsApp, Instagram o Google. Lo ves en 3D y lo encargas. Desde 20 €. Fabricación ~72 h laborables. Pago con tarjeta, Apple Pay o Bizum.",
   path: "/",
   absoluteTitle: true,
 });
@@ -25,7 +25,7 @@ export default function HomePage() {
           {[
             ["1. Eliges", "WhatsApp, Instagram o Google. Las que quieras, las cantidades que quieras."],
             ["2. TAP", "Acerca el móvil. Se abre el enlace. Sin app, sin QR sucio."],
-            ["3. En 24 h", "Lo imprimimos, programamos el NFC y Correos lo lleva. España."],
+            ["3. Fabricamos", "Impresión, NFC y Correos: ~72 h laborables; sale el día laborable siguiente."],
           ].map(([t, d]) => (
             <article key={t} className="rounded-[24px] border border-[#e6ddd0] bg-white/70 p-5">
               <h3 className="font-semibold">{t}</h3>
@@ -39,7 +39,7 @@ export default function HomePage() {
         <h2 className="font-[family-name:var(--font-display)] text-4xl">Encarga la tuya</h2>
         <p className="mt-3 max-w-xl text-[#5c564c]">
           El mismo atril que ves en 3D es el que se imprime. La primera no es el doble de las
-          siguientes. Envío a España en 24 h. Pago con Polar: tarjeta, Apple Pay o Bizum.
+          siguientes. Fabricación ~72 h laborables · España. Pago con Polar: tarjeta, Apple Pay o Bizum.
         </p>
         <div className="mt-8 grid gap-5 md:grid-cols-3">
           <article className="flex flex-col rounded-[28px] border border-[#e6ddd0] bg-white p-6">
@@ -120,7 +120,8 @@ export default function HomePage() {
             <h3 className="mt-1 text-2xl font-semibold">Logo + 1 a 3 chips NFC</h3>
             <p className="mt-2 text-sm leading-6 text-[#6f675c]">
               La ves en 3D, subes el logo y eliges Google, Instagram, WhatsApp u otro enlace. Envío
-              a tu local en unos 2 días. Desde {euros(70)} (1 chip) · base {euros(PRICES.unica[1])}{" "}
+              con plazos de taller (~72 h laborables). Desde {euros(70)} (1 chip) · base{" "}
+              {euros(PRICES.unica[1])}{" "}
               (2 chips) · +{euros(15)} el tercero.
             </p>
             <Link
