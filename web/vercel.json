@@ -3,19 +3,19 @@
   "crons": [
     {
       "path": "/api/cron/nfctap-leads-harvest",
-      "schedule": "5,35 7-16 * * *"
+      "schedule": "5,35 6-16 * * *"
     },
     {
       "path": "/api/cron/nfctap-leads-extract",
-      "schedule": "20,50 7-16 * * *"
+      "schedule": "20,50 6-16 * * *"
     },
     {
       "path": "/api/cron/nfctap-leads-wave",
-      "schedule": "0 8-17 * * *"
+      "schedule": "0 6-16 * * *"
     },
     {
       "path": "/api/cron/nfctap-telegram-digest",
-      "schedule": "0 11,15,20 * * *"
+      "schedule": "0 10,11,14,15,19,20 * * *"
     }
   ]
 }

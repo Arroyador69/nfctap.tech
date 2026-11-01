@@ -67,6 +67,7 @@ Cada envío: `city` + `businessName` (+ `websiteUrl` si hay) en `OutreachVars`.
 | Cap día | **500** |
 | Delay | 1,8 s |
 | Ventana | 08:00–17:00 Madrid · **todos los días** (como Delfín) |
+| Cron UTC | wave `0 6-16` · harvest/extract `*:05/35` y `*:20/50` en `6-16` · Telegram `10,11,14,15,19,20` (filtra a 12/16/21 Madrid invierno y verano) |
 | Stop | si ventas pagadas ≥ **10** ese día |
 
 Código: `lib/business-leads/constants.ts`, `template.ts`, `send-resend.ts`.
