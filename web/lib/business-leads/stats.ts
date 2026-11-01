@@ -54,6 +54,19 @@ export async function getDayStats(date = madridDate()): Promise<DayStats> {
   return readDay(date);
 }
 
+/**
+ * Antes del split cold/FU, `sent` existía sin coldSent/fuSent.
+ * Si ambos son 0 y hay enviados, atribuimos todo a cold (día de migración).
+ */
+export function effectiveColdFu(day: DayStats) {
+  const cold = day.coldSent || 0;
+  const fu = day.fuSent || 0;
+  if (cold + fu === 0 && day.sent > 0) {
+    return { coldSent: day.sent, fuSent: 0 };
+  }
+  return { coldSent: cold, fuSent: fu };
+}
+
 export async function bumpDayStats(delta: {
   sent?: number;
   failed?: number;

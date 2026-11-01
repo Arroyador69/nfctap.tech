@@ -4,20 +4,29 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 /**
- * Estado / sync opens / prueba Telegram.
- * Las oleadas van solas por cron.
+ * Sync opens / Telegram. Las oleadas van solas por cron.
  */
 export function CaptacionPanel({
   salesStop,
   lastWaveAt,
   lastPlace,
   queued = 0,
+  dueFu = 0,
+  coldSent = 0,
+  fuSent = 0,
+  coldCap = 350,
+  fuCap = 150,
 }: {
   defaultTo?: string;
   salesStop: boolean;
   lastWaveAt?: string;
   lastPlace?: string;
   queued?: number;
+  dueFu?: number;
+  coldSent?: number;
+  fuSent?: number;
+  coldCap?: number;
+  fuCap?: number;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState<"tg" | "sync" | null>(null);
@@ -67,23 +76,33 @@ export function CaptacionPanel({
     <div className="rounded-[24px] border border-[#e6ddd0] bg-white p-5">
       <h2 className="text-lg font-semibold">Automático · no toques nada</h2>
       <p className="mt-1 text-sm text-[#6f675c]">
-        Tope <strong>500/día</strong>: ~<strong>350 cold</strong> + ~<strong>150 follow-up</strong>{" "}
-        (prioridad click → open → silencio). Para si hay <strong>≥10 ventas</strong> /negocio.
-        Telegram 12:00 · 16:00 · 21:00 (Madrid).
-        {salesStop ? " Hoy ya estáis en meta: oleadas en STOP." : null}
+        Cada hora: primero follow-up due, luego cold. Para a las{" "}
+        <strong>≥10 ventas</strong> /negocio. Telegram 12 · 16 · 21.
+        {salesStop ? " Hoy meta OK: STOP." : null}
       </p>
 
       <ul className="mt-4 space-y-2 text-sm text-[#5c564c]">
         <li>
-          Cola lista: <strong className="tabular-nums text-[#1c1915]">{queued}</strong> (objetivo
-          ~1000 = hoy + mañana)
+          Hoy cold{" "}
+          <strong className="tabular-nums text-[#1c1915]">
+            {coldSent}/{coldCap}
+          </strong>{" "}
+          · FU{" "}
+          <strong className="tabular-nums text-[#1c1915]">
+            {fuSent}/{fuCap}
+          </strong>
+        </li>
+        <li>
+          FU due ahora: <strong className="tabular-nums text-[#1c1915]">{dueFu}</strong>
+        </li>
+        <li>
+          Cola cold: <strong className="tabular-nums text-[#1c1915]">{queued}</strong>
         </li>
         <li>
           Última oleada:{" "}
           {lastWaveAt ? new Date(lastWaveAt).toLocaleString("es-ES") : "aún no"}
           {lastPlace ? ` · ${lastPlace}` : ""}
         </li>
-        <li>Ventana 08:00–17:00 · FU primero en cada tick · RGPD + baja en todos los toques</li>
       </ul>
 
       <div className="mt-5 flex flex-wrap gap-2">

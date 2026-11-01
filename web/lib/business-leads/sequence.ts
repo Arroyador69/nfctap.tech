@@ -261,13 +261,28 @@ export function backfillFollowUpSchedules(leads: BusinessLead[]): {
 
 export function sequenceCounts(leads: BusinessLead[]) {
   const due = leads.filter((l) => isFollowUpDue(l));
+  const scheduled = leads.filter(
+    (l) =>
+      isSequenceActive(l) &&
+      l.status === "sent" &&
+      l.nextTouchKind &&
+      l.nextTouchKind !== "cold" &&
+      l.nextTouchAt,
+  );
   return {
     dueTotal: due.length,
     dueClick: due.filter((l) => followUpPriority(l) === 0).length,
     dueOpen: due.filter((l) => followUpPriority(l) === 1).length,
     dueSilent: due.filter((l) => followUpPriority(l) === 2).length,
+    scheduledClick: scheduled.filter((l) => l.nextTouchKind === "fu_click").length,
+    scheduledOpen: scheduled.filter((l) => l.nextTouchKind === "fu_open").length,
+    scheduledSilent: scheduled.filter((l) => l.nextTouchKind === "fu_silent").length,
     active: leads.filter((l) => isSequenceActive(l) && l.status === "sent").length,
     stoppedSale: leads.filter((l) => l.sequenceStatus === "stopped_sale").length,
+    exhausted: leads.filter((l) => l.sequenceStatus === "exhausted").length,
+    fuSentEver: leads.filter(
+      (l) => l.lastTouchKind && l.lastTouchKind !== "cold" && (l.touchCount || 0) > 1,
+    ).length,
   };
 }
 

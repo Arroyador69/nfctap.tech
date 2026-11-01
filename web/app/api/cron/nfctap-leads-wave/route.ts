@@ -28,7 +28,7 @@ import {
   sequenceCounts,
 } from "@/lib/business-leads/sequence";
 import { sendNfctapOutreach } from "@/lib/business-leads/send-resend";
-import { bumpDayStats, getDayStats } from "@/lib/business-leads/stats";
+import { bumpDayStats, effectiveColdFu, getDayStats } from "@/lib/business-leads/stats";
 import { notifyTelegram, waveTelegramMessage } from "@/lib/business-leads/telegram";
 import { loadWebsiteStock, stockCounts } from "@/lib/business-leads/website-stock";
 import {
@@ -207,8 +207,7 @@ export async function GET(req: Request) {
     if (stoppedBuyers) await saveQueue(qFile.leads);
   }
 
-  const coldSentDay = day.coldSent || 0;
-  const fuSentDay = day.fuSent || 0;
+  const { coldSent: coldSentDay, fuSent: fuSentDay } = effectiveColdFu(day);
   let fuRoom = Math.min(room, Math.max(0, NFC_LEADS_FU_DAILY_CAP - fuSentDay));
   // Si el cold ya está al tope, el resto del hard cap puede ir a FU
   if (coldSentDay >= NFC_LEADS_COLD_DAILY_CAP) {
