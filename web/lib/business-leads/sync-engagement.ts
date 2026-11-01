@@ -5,6 +5,11 @@
  */
 
 import { loadQueue, saveQueue, type BusinessLead } from "./queue";
+import {
+  patchAfterBounce,
+  patchAfterClicked,
+  patchAfterOpened,
+} from "./sequence";
 
 type ResendListItem = {
   id: string;
@@ -33,10 +38,20 @@ function applyEvent(lead: BusinessLead, lastEvent: string, at: string): boolean 
       lead.openedAt = at;
       changed = true;
     }
+    const seq = patchAfterOpened(lead, at);
+    if (Object.keys(seq).length) {
+      Object.assign(lead, seq);
+      changed = true;
+    }
   }
   if (lastEvent === "clicked") {
     if (!lead.clickedAt) {
       lead.clickedAt = at;
+      changed = true;
+    }
+    const seq = patchAfterClicked(lead, at);
+    if (Object.keys(seq).length) {
+      Object.assign(lead, seq);
       changed = true;
     }
   }
@@ -49,6 +64,8 @@ function applyEvent(lead: BusinessLead, lastEvent: string, at: string): boolean 
       lead.status = "failed";
       changed = true;
     }
+    Object.assign(lead, patchAfterBounce());
+    changed = true;
   }
   return changed;
 }

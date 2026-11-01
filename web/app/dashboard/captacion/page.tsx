@@ -2,7 +2,9 @@ import { CaptacionPanel } from "@/components/CaptacionPanel";
 import { DashboardNav } from "@/components/DashboardNav";
 import { isAdmin } from "@/lib/auth";
 import {
+  NFC_LEADS_COLD_DAILY_CAP,
   NFC_LEADS_DAILY_HARD_CAP,
+  NFC_LEADS_FU_DAILY_CAP,
   NFC_LEADS_WAVE_MAX,
   NFC_LEADS_WAVES_PER_DAY,
   NFC_SALES_DAILY_GOAL,
@@ -16,6 +18,7 @@ import {
   type BusinessLead,
 } from "@/lib/business-leads/queue";
 import { salesGoalReached } from "@/lib/business-leads/sales";
+import { sequenceCounts } from "@/lib/business-leads/sequence";
 import { getDayStats } from "@/lib/business-leads/stats";
 import { loadWebsiteStock, stockCounts } from "@/lib/business-leads/website-stock";
 import { polarUnicaReady } from "@/lib/polar";
@@ -36,6 +39,7 @@ export default async function CaptacionPage() {
   const queue = queueCounts(qFile.leads);
   const stock = stockCounts(stockFile.items);
   const today = todayEngagement(qFile.leads);
+  const seq = sequenceCounts(qFile.leads);
   const sentRows = recentSent(qFile.leads, 80);
   const queueTarget = 1000;
   const sendPct = Math.min(
@@ -70,9 +74,9 @@ export default async function CaptacionPage() {
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#6f675c]">
           Meta <strong className="text-[#1c1915]">≥ {NFC_SALES_DAILY_GOAL} ventas /negocio</strong> ·
-          tope <strong className="text-[#1c1915]">{NFC_LEADS_DAILY_HARD_CAP} mails/día</strong>. Flujo
-          nuevo: <strong>harvest webs</strong> (Fuengirola→Costa) → <strong>extract emails</strong> →
-          oleadas 08:00–17:00 · Telegram 12/16/21. Cualquier negocio con web (no solo vacacional).
+          tope <strong className="text-[#1c1915]">{NFC_LEADS_DAILY_HARD_CAP}/día</strong> (
+          ~{NFC_LEADS_COLD_DAILY_CAP} cold + ~{NFC_LEADS_FU_DAILY_CAP} follow-up). Harvest → extract →
+          oleadas 08:00–17:00 con FU por intención (click→open→silencio) · Telegram 12/16/21.
         </p>
       </header>
 
@@ -116,14 +120,14 @@ export default async function CaptacionPage() {
           pct={sendPct}
           ok={stats.sent > 0}
           okLabel={`${stats.waves}/${NFC_LEADS_WAVES_PER_DAY} oleadas`}
-          hint={`Abiertos ${today.openedToday} · clicks ${today.clickedToday} · bounce ${today.bouncedToday} · nuevos ${today.discoveredToday}`}
+          hint={`Cold ${stats.coldSent || 0}/${NFC_LEADS_COLD_DAILY_CAP} · FU ${stats.fuSent || 0}/${NFC_LEADS_FU_DAILY_CAP} · open ${today.openedToday} · click ${today.clickedToday}`}
         />
       </section>
 
       <section className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <Metric label="En cola" value={queue.queued} sub={`≥${queueTarget}`} accent />
+        <Metric label="FU due ahora" value={seq.dueTotal} sub={`A ${seq.dueClick} · B ${seq.dueOpen}`} />
         <Metric label="Enviados total" value={queue.sent} />
-        <Metric label="Fallidos / bounce" value={queue.failed + queue.bounced} />
         <Metric label="Abiertos" value={queue.opened} sub={`${openRate}%`} />
         <Metric label="Clicks" value={queue.clicked} sub={`${clickRate}%`} />
         <Metric label="Hoy open %" value={today.openRatePct} sub={`${today.openedToday}/${today.sentToday}`} />

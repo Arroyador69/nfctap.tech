@@ -1,4 +1,5 @@
 import { BRAND } from "@/lib/catalog";
+import type { TouchKind } from "./queue";
 import {
   nfctapOutreachHtml,
   nfctapOutreachSubject,
@@ -11,13 +12,13 @@ export type SendResult =
   | { ok: false; error: string };
 
 /**
- * Envía un cold email vía Resend.
- * Requiere RESEND_API_KEY y dominio nfctap.tech verificado (SPF/DKIM).
- * From: NFCTap (marca), nunca un nombre personal.
+ * Envía cold o follow-up vía Resend.
+ * From: NFCTap (marca). Tags: campaign + touch + city.
  */
 export async function sendNfctapOutreach(
   to: string,
   vars: OutreachVars,
+  touch: TouchKind = "cold",
 ): Promise<SendResult> {
   const key = (process.env.RESEND_API_KEY || "").trim().replace(/^["']|["']$/g, "");
   if (!key) return { ok: false, error: "Falta RESEND_API_KEY" };
@@ -31,6 +32,8 @@ export async function sendNfctapOutreach(
     vars.optOutUrl?.trim() ||
     `mailto:${BRAND.email}?subject=${encodeURIComponent("baja")}`;
 
+  const touchTag = touch === "cold" ? "cold" : touch;
+
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -41,19 +44,21 @@ export async function sendNfctapOutreach(
       from,
       to: [to],
       reply_to: BRAND.email,
-      subject: nfctapOutreachSubject(vars),
-      html: nfctapOutreachHtml(vars),
-      text: nfctapOutreachText(vars),
+      subject: nfctapOutreachSubject(vars, touch),
+      html: nfctapOutreachHtml(vars, touch),
+      text: nfctapOutreachText(vars, touch),
       headers: {
         "List-Unsubscribe": `<${optOut}>`,
         "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
       },
       tags: [
         { name: "campaign", value: "nfctap_local_es" },
-        { name: "city", value: (vars.city || "es").slice(0, 40).replace(/[^a-zA-Z0-9_-]/g, "_") },
+        { name: "touch", value: touchTag.slice(0, 40) },
+        {
+          name: "city",
+          value: (vars.city || "es").slice(0, 40).replace(/[^a-zA-Z0-9_-]/g, "_"),
+        },
       ],
-      // Opens/clicks → webhook /api/webhook/resend
-
     }),
   });
 

@@ -1,6 +1,6 @@
-import { madridDate } from "./stats";
 import { listOrders } from "@/lib/store";
 import { NFC_SALES_DAILY_GOAL } from "./constants";
+import { madridDate } from "./stats";
 
 const PAID = new Set(["pagado", "en_impresion", "enviado", "entregado"]);
 
@@ -12,7 +12,6 @@ export async function salesTodayCount() {
     if (!PAID.has(o.status)) return false;
     if (o.kind !== "unica") return false;
     const created = o.createdAt?.slice(0, 10);
-    // createdAt ISO → comparar fecha Madrid vía toLocale
     const madrid = new Intl.DateTimeFormat("en-CA", {
       timeZone: "Europe/Madrid",
       year: "numeric",
@@ -27,3 +26,17 @@ export async function salesGoalReached() {
   const n = await salesTodayCount();
   return { count: n, goal: NFC_SALES_DAILY_GOAL, stop: n >= NFC_SALES_DAILY_GOAL };
 }
+
+/** Emails que ya compraron unica (cualquier día) — no follow-up. */
+export async function paidUnicaEmailSet(): Promise<Set<string>> {
+  const orders = await listOrders();
+  const set = new Set<string>();
+  for (const o of orders) {
+    if (!PAID.has(o.status)) continue;
+    if (o.kind !== "unica") continue;
+    const email = o.address?.email?.toLowerCase().trim();
+    if (email?.includes("@")) set.add(email);
+  }
+  return set;
+}
+

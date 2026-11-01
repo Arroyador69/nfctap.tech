@@ -18,7 +18,7 @@ function blobOk() {
 }
 
 async function readDay(date: string): Promise<DayStats> {
-  const empty: DayStats = { date, sent: 0, failed: 0, waves: 0 };
+  const empty: DayStats = { date, sent: 0, failed: 0, waves: 0, coldSent: 0, fuSent: 0 };
   if (!blobOk()) return empty;
   try {
     const { get } = await import("@vercel/blob");
@@ -27,7 +27,13 @@ async function readDay(date: string): Promise<DayStats> {
     if (!result || result.statusCode !== 200 || !result.stream) return empty;
     const text = await new Response(result.stream).text();
     if (!text) return empty;
-    return JSON.parse(text) as DayStats;
+    const parsed = JSON.parse(text) as DayStats;
+    return {
+      ...empty,
+      ...parsed,
+      coldSent: parsed.coldSent ?? 0,
+      fuSent: parsed.fuSent ?? 0,
+    };
   } catch {
     return empty;
   }
@@ -51,6 +57,8 @@ export async function getDayStats(date = madridDate()): Promise<DayStats> {
 export async function bumpDayStats(delta: {
   sent?: number;
   failed?: number;
+  coldSent?: number;
+  fuSent?: number;
   place?: string;
 }): Promise<DayStats> {
   const date = madridDate();
@@ -59,6 +67,8 @@ export async function bumpDayStats(delta: {
     date,
     sent: cur.sent + (delta.sent || 0),
     failed: cur.failed + (delta.failed || 0),
+    coldSent: (cur.coldSent || 0) + (delta.coldSent || 0),
+    fuSent: (cur.fuSent || 0) + (delta.fuSent || 0),
     waves: cur.waves + 1,
     lastWaveAt: new Date().toISOString(),
     lastPlace: delta.place || cur.lastPlace,

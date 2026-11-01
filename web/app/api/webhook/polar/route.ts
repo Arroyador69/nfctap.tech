@@ -1,3 +1,4 @@
+import { stopSequenceByEmail } from "@/lib/business-leads/queue";
 import { sendMetaCapiPurchase } from "@/lib/meta-capi";
 import { polarMarksPaid, polarOrderId, verifyPolarWebhook } from "@/lib/polar-webhook";
 import { getOrder, updateOrder } from "@/lib/store";
@@ -37,6 +38,15 @@ export async function POST(req: Request) {
         await sendMetaCapiPurchase(updated);
       } catch (err) {
         console.error("Meta CAPI Purchase", err);
+      }
+      // Para follow-up: no insistir a quien ya compró
+      const email = updated.address?.email || before?.address?.email;
+      if (email) {
+        try {
+          await stopSequenceByEmail(email, "sale");
+        } catch (err) {
+          console.error("stopSequenceByEmail", err);
+        }
       }
     }
   }

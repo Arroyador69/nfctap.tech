@@ -67,9 +67,9 @@ export function CaptacionPanel({
     <div className="rounded-[24px] border border-[#e6ddd0] bg-white p-5">
       <h2 className="text-lg font-semibold">Automático · no toques nada</h2>
       <p className="mt-1 text-sm text-[#6f675c]">
-        El cron rellena la cola, envía hasta <strong>500 mails/día</strong> (ritmo anti-ban) y para
-        si hay <strong>≥10 ventas</strong> en /negocio. Telegram te avisa a las 12:00, 16:00 y
-        21:00 (Madrid).
+        Tope <strong>500/día</strong>: ~<strong>350 cold</strong> + ~<strong>150 follow-up</strong>{" "}
+        (prioridad click → open → silencio). Para si hay <strong>≥10 ventas</strong> /negocio.
+        Telegram 12:00 · 16:00 · 21:00 (Madrid).
         {salesStop ? " Hoy ya estáis en meta: oleadas en STOP." : null}
       </p>
 
@@ -83,7 +83,7 @@ export function CaptacionPanel({
           {lastWaveAt ? new Date(lastWaveAt).toLocaleString("es-ES") : "aún no"}
           {lastPlace ? ` · ${lastPlace}` : ""}
         </li>
-        <li>Ventana envío: 08:00–17:00 · 10×50 · 1,8 s entre mails</li>
+        <li>Ventana 08:00–17:00 · FU primero en cada tick · RGPD + baja en todos los toques</li>
       </ul>
 
       <div className="mt-5 flex flex-wrap gap-2">

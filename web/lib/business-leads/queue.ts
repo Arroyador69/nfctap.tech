@@ -2,6 +2,15 @@
  * Cola + historial de leads en Vercel Blob (get/put private).
  */
 
+export type TouchKind = "cold" | "fu_click" | "fu_open" | "fu_silent";
+
+export type SequenceStatus =
+  | "active"
+  | "stopped_sale"
+  | "stopped_optout"
+  | "stopped_bounce"
+  | "exhausted";
+
 export type BusinessLead = {
   id: string;
   email: string;
@@ -12,12 +21,20 @@ export type BusinessLead = {
   status: "queued" | "sent" | "failed" | "optout";
   createdAt: string;
   sentAt?: string;
-  /** id Resend (email_…) para webhooks open/click/bounce */
+  /** id Resend (email_…) para webhooks open/click/bounce — último envío */
   resendId?: string;
   openedAt?: string;
   clickedAt?: string;
   bouncedAt?: string;
   error?: string;
+  /** Nº de toques enviados (1 = cold). */
+  touchCount?: number;
+  lastTouchAt?: string;
+  lastTouchKind?: TouchKind;
+  /** Próximo follow-up programado. */
+  nextTouchAt?: string;
+  nextTouchKind?: TouchKind;
+  sequenceStatus?: SequenceStatus;
 };
 
 const QUEUE_KEY = "nfctap-business-leads-queue.json";
@@ -75,6 +92,7 @@ export async function addOptOut(email: string) {
   const set = await loadOptOut();
   set.add(email.toLowerCase());
   await writeJson(OPT_OUT_KEY, { emails: [...set], updatedAt: new Date().toISOString() });
+  await stopSequenceByEmail(email, "optout");
 }
 
 export function queueCounts(leads: BusinessLead[]) {
@@ -107,12 +125,20 @@ export function todayEngagement(leads: BusinessLead[]) {
   const clickedToday = sentToday.filter((l) => l.clickedAt).length;
   const bouncedToday = sentToday.filter((l) => l.bouncedAt).length;
   const discoveredToday = leads.filter((l) => madridDayKey(l.createdAt) === day).length;
+  const fuToday = leads.filter(
+    (l) =>
+      l.lastTouchAt &&
+      madridDayKey(l.lastTouchAt) === day &&
+      l.lastTouchKind &&
+      l.lastTouchKind !== "cold",
+  ).length;
   return {
     sentToday: sentToday.length,
     openedToday,
     clickedToday,
     bouncedToday,
     discoveredToday,
+    fuToday,
     openRatePct:
       sentToday.length > 0 ? Math.round((openedToday / sentToday.length) * 100) : 0,
   };
@@ -139,6 +165,8 @@ export async function enqueueLeads(
       id: `bl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
       status: "queued",
       createdAt: new Date().toISOString(),
+      sequenceStatus: "active",
+      touchCount: 0,
     });
     added++;
   }
@@ -160,7 +188,19 @@ export async function takeQueued(n: number): Promise<BusinessLead[]> {
 export type LeadPatch = Partial<
   Pick<
     BusinessLead,
-    "status" | "sentAt" | "error" | "resendId" | "openedAt" | "clickedAt" | "bouncedAt"
+    | "status"
+    | "sentAt"
+    | "error"
+    | "resendId"
+    | "openedAt"
+    | "clickedAt"
+    | "bouncedAt"
+    | "touchCount"
+    | "lastTouchAt"
+    | "lastTouchKind"
+    | "nextTouchAt"
+    | "nextTouchKind"
+    | "sequenceStatus"
   >
 >;
 
@@ -200,6 +240,74 @@ export async function markLeadByResendId(
   };
   await saveQueue(file.leads);
   return true;
+}
+
+/**
+ * Aplica engagement + programa follow-up en una sola escritura.
+ */
+export async function applyEngagementByResendId(
+  resendId: string,
+  event: "opened" | "clicked" | "bounced",
+  at: string,
+  toEmail?: string,
+): Promise<boolean> {
+  const { patchAfterBounce, patchAfterClicked, patchAfterOpened } = await import("./sequence");
+  const file = await loadQueue();
+  let i = resendId ? file.leads.findIndex((l) => l.resendId === resendId) : -1;
+  if (i < 0 && toEmail) {
+    const want = toEmail.toLowerCase();
+    const candidates = file.leads
+      .map((l, idx) => ({ l, idx }))
+      .filter(({ l }) => l.email === want && (l.status === "sent" || l.status === "failed"))
+      .sort((a, b) => (b.l.sentAt || "").localeCompare(a.l.sentAt || ""));
+    if (candidates[0]) i = candidates[0].idx;
+  }
+  if (i < 0) return false;
+
+  let lead = { ...file.leads[i] };
+  if (event === "opened") {
+    lead.openedAt = lead.openedAt || at;
+    lead = { ...lead, ...patchAfterOpened(lead, at) };
+  } else if (event === "clicked") {
+    lead.clickedAt = lead.clickedAt || at;
+    lead.openedAt = lead.openedAt || at;
+    lead = { ...lead, ...patchAfterClicked(lead, at) };
+  } else {
+    lead.bouncedAt = at;
+    lead.status = "failed";
+    lead = { ...lead, ...patchAfterBounce() };
+  }
+  file.leads[i] = lead;
+  await saveQueue(file.leads);
+  return true;
+}
+
+export async function stopSequenceByEmail(
+  email: string,
+  reason: "sale" | "optout" | "bounce",
+): Promise<number> {
+  const {
+    patchAfterBounce,
+    patchAfterOptOut,
+    patchAfterSale,
+  } = await import("./sequence");
+  const want = email.toLowerCase().trim();
+  if (!want.includes("@")) return 0;
+  const file = await loadQueue();
+  let n = 0;
+  const patch =
+    reason === "sale"
+      ? patchAfterSale()
+      : reason === "optout"
+        ? patchAfterOptOut()
+        : patchAfterBounce();
+  for (let i = 0; i < file.leads.length; i++) {
+    if (file.leads[i].email.toLowerCase() !== want) continue;
+    file.leads[i] = { ...file.leads[i], ...patch };
+    n++;
+  }
+  if (n) await saveQueue(file.leads);
+  return n;
 }
 
 export function recentSent(leads: BusinessLead[], limit = 40) {

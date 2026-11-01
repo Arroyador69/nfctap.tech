@@ -66,8 +66,9 @@ export function waveScheduleSummary() {
     wavesPerDay: NFC_LEADS_WAVES_PER_DAY,
     dailyHardCap: NFC_LEADS_DAILY_HARD_CAP,
     windowMadrid: "08:00–17:00 (cron horario · 10×50)",
+    mixNote: "~350 cold + ~150 follow-up (click→open→silencio) · RGPD en cada toque",
     telegramDay: "12:00 progreso · 16:00 progreso · 21:00 cierre (3/día)",
     salesGoalNote: "Con ≥10 ventas /negocio → STOP oleadas ese día",
-    dashboardNote: "No hace falta tocar el dashboard: el cron rellena cola y envía solo",
+    dashboardNote: "Cron: FU due primero, luego cold. Backfill: ?backfillFollowUp=1&force=1",
   };
 }

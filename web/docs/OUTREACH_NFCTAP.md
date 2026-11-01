@@ -64,11 +64,12 @@ Cada envío: `city` + `businessName` (+ `websiteUrl` si hay) en `OutreachVars`.
 |-----------|--------|
 | Oleada | 50 |
 | Oleadas/día | 10 |
-| Cap día | **500** |
+| Cap día | **500** (~**350 cold** + ~**150 follow-up**) |
 | Delay | 1,8 s |
 | Ventana | 08:00–17:00 Madrid · **todos los días** (como Delfín) |
 | Cron UTC | wave `0 6-16` · harvest/extract `*:05/35` y `*:20/50` en `6-16` · Telegram `10,11,14,15,19,20` (filtra a 12/16/21 Madrid invierno y verano) |
 | Stop | si ventas pagadas ≥ **10** ese día |
+| Follow-up | click (+2 d) → open (+3 d) → silencio (+8 d, baja prioridad) · RGPD en cada toque |
 
 Código: `lib/business-leads/constants.ts`, `template.ts`, `send-resend.ts`.
 
@@ -104,3 +105,9 @@ Siguiente iteración en este repo:
 | Cola queued | ≥ 800 |
 
 Si llegas a 10 ventas `/negocio` → parar oleadas ese día (reputación + foco en producir).
+
+## 7. Follow-up (2º/3º toque)
+
+Prioridad clicks → opens → silencio; estimación Resend y flujo reutilizable en Delfín:
+
+→ [`OUTREACH_FOLLOWUP.md`](./OUTREACH_FOLLOWUP.md)
