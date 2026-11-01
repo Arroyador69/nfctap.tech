@@ -191,6 +191,62 @@ export function selectFollowUpDue(
 }
 
 /**
+ * Cierra secuencias de emails en baja / compradores (histórico sin patch).
+ * Sin esto el panel marca «due» leads que el envío salta por opt-out.
+ */
+export function syncStopsOnLeads(
+  leads: BusinessLead[],
+  optOut: Set<string>,
+  buyers: Set<string>,
+): { leads: BusinessLead[]; stoppedOpt: number; stoppedSale: number } {
+  let stoppedOpt = 0;
+  let stoppedSale = 0;
+  const next = leads.map((lead) => {
+    const email = lead.email.toLowerCase();
+    if (buyers.has(email) && lead.sequenceStatus !== "stopped_sale") {
+      stoppedSale++;
+      return { ...lead, ...patchAfterSale() };
+    }
+    if (optOut.has(email) && lead.sequenceStatus !== "stopped_optout") {
+      stoppedOpt++;
+      return { ...lead, ...patchAfterOptOut() };
+    }
+    return lead;
+  });
+  return { leads: next, stoppedOpt, stoppedSale };
+}
+
+/**
+ * Clicks antiguos sin FU enviado → due ahora (sistema no se queda mirando).
+ */
+export function promoteOverdueClickFollowUps(
+  leads: BusinessLead[],
+  now = Date.now(),
+): { leads: BusinessLead[]; promoted: number } {
+  let promoted = 0;
+  const out = leads.map((lead) => {
+    if (lead.status !== "sent" || !lead.clickedAt) return lead;
+    if (!isSequenceActive(lead)) return lead;
+    const touches = lead.touchCount || 1;
+    if (touches >= NFC_FU_MAX_TOUCHES_CLICK) return lead;
+    if (touches > 1 && lead.lastTouchKind && lead.lastTouchKind !== "cold") return lead;
+    const clickAge = now - new Date(lead.clickedAt).getTime();
+    if (clickAge < NFC_FU_CLICK_DELAY_DAYS * 86_400_000) return lead;
+    const dueAt = lead.nextTouchAt ? new Date(lead.nextTouchAt).getTime() : Infinity;
+    if (lead.nextTouchKind === "fu_click" && dueAt <= now) return lead;
+    promoted++;
+    return {
+      ...lead,
+      nextTouchKind: "fu_click" as const,
+      nextTouchAt: new Date().toISOString(),
+      sequenceStatus: "active" as const,
+      touchCount: touches || 1,
+    };
+  });
+  return { leads: out, promoted };
+}
+
+/**
  * Programa FU para leads ya enviados (backfill one-shot).
  * Clicks → ya; opens →; silencio → +8d desde sent (o ahora si vencido).
  */
@@ -259,12 +315,15 @@ export function backfillFollowUpSchedules(leads: BusinessLead[]): {
   return { leads: out, updated, tiers };
 }
 
-export function sequenceCounts(leads: BusinessLead[]) {
-  const due = leads.filter((l) => isFollowUpDue(l));
+export function sequenceCounts(leads: BusinessLead[], optOut?: Set<string>) {
+  const sendable = (l: BusinessLead) =>
+    !optOut?.has(l.email.toLowerCase()) && isFollowUpDue(l);
+  const due = leads.filter(sendable);
   const scheduled = leads.filter(
     (l) =>
       isSequenceActive(l) &&
       l.status === "sent" &&
+      !optOut?.has(l.email.toLowerCase()) &&
       l.nextTouchKind &&
       l.nextTouchKind !== "cold" &&
       l.nextTouchAt,
@@ -279,6 +338,7 @@ export function sequenceCounts(leads: BusinessLead[]) {
     scheduledSilent: scheduled.filter((l) => l.nextTouchKind === "fu_silent").length,
     active: leads.filter((l) => isSequenceActive(l) && l.status === "sent").length,
     stoppedSale: leads.filter((l) => l.sequenceStatus === "stopped_sale").length,
+    stoppedOptout: leads.filter((l) => l.sequenceStatus === "stopped_optout").length,
     exhausted: leads.filter((l) => l.sequenceStatus === "exhausted").length,
     fuSentEver: leads.filter(
       (l) => l.lastTouchKind && l.lastTouchKind !== "cold" && (l.touchCount || 0) > 1,

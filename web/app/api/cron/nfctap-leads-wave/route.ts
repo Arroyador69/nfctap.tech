@@ -24,8 +24,10 @@ import {
   patchAfterColdSend,
   patchAfterFollowUpSent,
   patchAfterSale,
+  promoteOverdueClickFollowUps,
   selectFollowUpDue,
   sequenceCounts,
+  syncStopsOnLeads,
 } from "@/lib/business-leads/sequence";
 import { sendNfctapOutreach } from "@/lib/business-leads/send-resend";
 import { bumpDayStats, effectiveColdFu, getDayStats } from "@/lib/business-leads/stats";
@@ -140,6 +142,7 @@ export async function GET(req: Request) {
 
   if (!force && (hour < WAVE_HOUR_START || hour > WAVE_HOUR_END)) {
     const q = await loadQueue();
+    const optSkip = await loadOptOut();
     return NextResponse.json({
       ok: true,
       skipped: true,
@@ -148,7 +151,7 @@ export async function GET(req: Request) {
       window: `${WAVE_HOUR_START}–${WAVE_HOUR_END}`,
       day,
       sales,
-      sequence: sequenceCounts(q.leads),
+      sequence: sequenceCounts(q.leads, optSkip),
       caps: {
         hard: NFC_LEADS_DAILY_HARD_CAP,
         cold: NFC_LEADS_COLD_DAILY_CAP,
@@ -157,27 +160,54 @@ export async function GET(req: Request) {
     });
   }
 
-  const qBefore = queueCounts((await loadQueue()).leads);
+  const opt = await loadOptOut();
+  const buyers = await paidUnicaEmailSet();
+  let qFile = await loadQueue();
+
+  // Mantener categorías al día: baja/compra + backfill + clicks vencidos → due
+  const synced = syncStopsOnLeads(qFile.leads, opt, buyers);
+  let leads = synced.leads;
+  const bf = backfillFollowUpSchedules(leads);
+  leads = bf.leads;
+  const promoted = promoteOverdueClickFollowUps(leads);
+  leads = promoted.leads;
+  qFile = { ...qFile, leads };
+  const maintenance = {
+    stoppedOpt: synced.stoppedOpt,
+    stoppedSale: synced.stoppedSale,
+    backfill: bf.updated,
+    promotedClicks: promoted.promoted,
+  };
+  if (!dry && (synced.stoppedOpt || synced.stoppedSale || bf.updated || promoted.promoted)) {
+    await saveQueue(leads);
+  }
+
+  const qBefore = queueCounts(leads);
   let refill = null as {
     harvest?: Awaited<ReturnType<typeof harvestWebsitesIntoStock>>;
     extract?: Awaited<ReturnType<typeof extractEmailsFromStock>>;
   } | null;
-  if (!dry && qBefore.queued < 40) {
+  // Cola/stock vivos: cosechar si pending bajo o cola fría; extract si hay pending
+  if (!dry) {
     try {
       const stock = stockCounts((await loadWebsiteStock()).items);
-      const harvest =
-        stock.pending < 30
-          ? await harvestWebsitesIntoStock({
-              waveIndex: day.waves,
-              maxCells: 3,
-              searchKeywords: 2,
-              targetPending: 200,
+      const needHarvest = stock.pending < 120 || qBefore.queued < 300;
+      const harvest = needHarvest
+        ? await harvestWebsitesIntoStock({
+            waveIndex: day.waves + hour,
+            maxCells: 4,
+            searchKeywords: 3,
+            targetPending: 400,
+          })
+        : undefined;
+      const pendingAfter = harvest?.stock?.pending ?? stock.pending;
+      const extract =
+        pendingAfter > 0
+          ? await extractEmailsFromStock({
+              maxPages: 30,
+              targetQueued: 800,
             })
           : undefined;
-      const extract = await extractEmailsFromStock({
-        maxPages: 25,
-        targetQueued: 120,
-      });
       refill = { harvest, extract };
     } catch (e) {
       console.error("refill", e);
@@ -190,23 +220,6 @@ export async function GET(req: Request) {
   const want = behind > 0 ? behind : NFC_LEADS_WAVE_MAX;
   const room = Math.min(want, NFC_LEADS_DAILY_HARD_CAP - day.sent, MAX_PER_INVOKE);
 
-  const opt = await loadOptOut();
-  const buyers = await paidUnicaEmailSet();
-  const qFile = await loadQueue();
-
-  // Silenciar compradores en cola
-  let stoppedBuyers = 0;
-  if (!dry) {
-    for (let i = 0; i < qFile.leads.length; i++) {
-      const l = qFile.leads[i];
-      if (buyers.has(l.email.toLowerCase()) && l.sequenceStatus !== "stopped_sale") {
-        qFile.leads[i] = { ...l, ...patchAfterSale() };
-        stoppedBuyers++;
-      }
-    }
-    if (stoppedBuyers) await saveQueue(qFile.leads);
-  }
-
   const { coldSent: coldSentDay, fuSent: fuSentDay } = effectiveColdFu(day);
   let fuRoom = Math.min(room, Math.max(0, NFC_LEADS_FU_DAILY_CAP - fuSentDay));
   // Si el cold ya está al tope, el resto del hard cap puede ir a FU
@@ -214,7 +227,8 @@ export async function GET(req: Request) {
     fuRoom = Math.min(room, Math.max(0, NFC_LEADS_DAILY_HARD_CAP - day.sent));
   }
 
-  const fuBatch = selectFollowUpDue(qFile.leads, fuRoom, opt).filter(
+  // Prioridad absoluta a FU due (clicks primero)
+  const fuBatch = selectFollowUpDue(leads, fuRoom, opt).filter(
     (l) => !buyers.has(l.email.toLowerCase()),
   );
 
@@ -232,7 +246,7 @@ export async function GET(req: Request) {
     (l) => !opt.has(l.email.toLowerCase()) && !buyers.has(l.email.toLowerCase()),
   );
 
-  const seq = sequenceCounts(qFile.leads);
+  const seq = sequenceCounts(leads, opt);
 
   if (dry) {
     return NextResponse.json({
@@ -252,7 +266,7 @@ export async function GET(req: Request) {
         fu: NFC_LEADS_FU_DAILY_CAP,
       },
       sequence: seq,
-      stoppedBuyers,
+      maintenance,
       sampleFu: fuBatch.slice(0, 5).map((l) => ({
         tier: l.nextTouchKind,
         city: l.city,
@@ -265,7 +279,7 @@ export async function GET(req: Request) {
         name: l.businessName,
         email: l.email.replace(/(^.).*(@.*$)/, "$1***$2"),
       })),
-      queue: queueCounts(qFile.leads),
+      queue: queueCounts(leads),
       refill,
     });
   }
@@ -378,7 +392,8 @@ export async function GET(req: Request) {
     place,
     sales,
     day: nextDay,
-    sequence: sequenceCounts((await loadQueue()).leads),
+    maintenance,
+    sequence: sequenceCounts((await loadQueue()).leads, opt),
     refill,
     queue: queueCounts((await loadQueue()).leads),
   });

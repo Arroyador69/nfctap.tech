@@ -11,6 +11,7 @@ import {
   NFC_SEED_PLACES,
 } from "@/lib/business-leads/constants";
 import {
+  loadOptOut,
   loadQueue,
   queueCounts,
   recentSent,
@@ -31,16 +32,17 @@ export const metadata = { title: "Captación · Dashboard" };
 export default async function CaptacionPage() {
   if (!(await isAdmin())) redirect("/dashboard/login");
 
-  const [stats, sales, qFile, stockFile] = await Promise.all([
+  const [stats, sales, qFile, stockFile, optOut] = await Promise.all([
     getDayStats(),
     salesGoalReached(),
     loadQueue(),
     loadWebsiteStock(),
+    loadOptOut(),
   ]);
   const queue = queueCounts(qFile.leads);
   const stock = stockCounts(stockFile.items);
   const today = todayEngagement(qFile.leads);
-  const seq = sequenceCounts(qFile.leads);
+  const seq = sequenceCounts(qFile.leads, optOut);
   const { coldSent, fuSent } = effectiveColdFu(stats);
   const sentRows = recentSent(qFile.leads, 80);
   const queueTarget = 1000;
@@ -175,8 +177,12 @@ export default async function CaptacionPage() {
             <strong className="text-[#1c1915]">{seq.fuSentEver}</strong>
           </span>
           <span>
-            Secuencia cerrada (compra){" "}
+            Compra{" "}
             <strong className="text-[#1c1915]">{seq.stoppedSale}</strong>
+          </span>
+          <span>
+            Baja{" "}
+            <strong className="text-[#1c1915]">{seq.stoppedOptout ?? 0}</strong>
           </span>
           <span>
             Agotados <strong className="text-[#1c1915]">{seq.exhausted}</strong>
