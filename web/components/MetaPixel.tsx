@@ -1,10 +1,10 @@
 "use client";
 
-import { readConsent } from "@/lib/cookie-consent";
+import { readConsent, useCookieConsent } from "@/lib/cookie-consent";
 import { META_PIXEL_ID, trackMeta } from "@/lib/meta-pixel";
 import { usePathname } from "next/navigation";
 import Script from "next/script";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 function skipPath(pathname: string | null) {
   return (
@@ -20,17 +20,9 @@ function skipPath(pathname: string | null) {
 
 export function MetaPixel() {
   const pathname = usePathname();
+  const consent = useCookieConsent();
+  const allowed = Boolean(consent?.marketing);
   const first = useRef(true);
-  const [allowed, setAllowed] = useState(false);
-
-  useEffect(() => {
-    function sync() {
-      setAllowed(Boolean(readConsent()?.marketing));
-    }
-    sync();
-    window.addEventListener("nfctap-consent", sync);
-    return () => window.removeEventListener("nfctap-consent", sync);
-  }, []);
 
   useEffect(() => {
     if (!allowed || skipPath(pathname)) return;

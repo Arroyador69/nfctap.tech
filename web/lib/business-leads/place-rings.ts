@@ -31,7 +31,6 @@ export function cellsAround(
     cellId: `${center.name}-r0-c0`,
     radiusM: 6000,
   });
-  let n = 1;
   for (let r = 1; r <= rings; r++) {
     const count = r * 6;
     for (let i = 0; i < count; i++) {
@@ -46,7 +45,6 @@ export function cellsAround(
         ring: r,
         cellId: `${center.name}-r${r}-c${i}`,
       });
-      n++;
     }
   }
   return out;

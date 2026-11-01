@@ -1,22 +1,18 @@
 "use client";
 
-import { acceptAllConsent, readConsent, rejectOptionalConsent, writeConsent } from "@/lib/cookie-consent";
+import {
+  acceptAllConsent,
+  rejectOptionalConsent,
+  useConsentDraft,
+  writeConsent,
+} from "@/lib/cookie-consent";
 import { BRAND } from "@/lib/catalog";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export default function CookiesPage() {
-  const [analytics, setAnalytics] = useState(false);
-  const [marketing, setMarketing] = useState(false);
+  const { analytics, marketing, setAnalytics, setMarketing, clearDraft } = useConsentDraft();
   const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    const c = readConsent();
-    if (c) {
-      setAnalytics(c.analytics);
-      setMarketing(c.marketing);
-    }
-  }, []);
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-16 text-sm leading-7 text-[#4d473e]">
@@ -79,6 +75,7 @@ export default function CookiesPage() {
             className="rounded-full bg-[#1c1915] px-4 py-2 text-sm text-[#f6f1e7]"
             onClick={() => {
               writeConsent({ analytics, marketing });
+              clearDraft();
               setSaved(true);
             }}
           >
@@ -89,8 +86,7 @@ export default function CookiesPage() {
             className="rounded-full bg-white px-4 py-2 text-sm ring-1 ring-[#e6ddd0]"
             onClick={() => {
               acceptAllConsent();
-              setAnalytics(true);
-              setMarketing(true);
+              clearDraft();
               setSaved(true);
             }}
           >
@@ -101,8 +97,7 @@ export default function CookiesPage() {
             className="rounded-full bg-white px-4 py-2 text-sm ring-1 ring-[#e6ddd0]"
             onClick={() => {
               rejectOptionalConsent();
-              setAnalytics(false);
-              setMarketing(false);
+              clearDraft();
               setSaved(true);
             }}
           >

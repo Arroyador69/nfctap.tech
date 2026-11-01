@@ -2,42 +2,41 @@
 
 import {
   acceptAllConsent,
-  readConsent,
   rejectOptionalConsent,
+  useConsentDraft,
+  useCookieConsent,
   writeConsent,
 } from "@/lib/cookie-consent";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+
+function hideBanner(path: string | null) {
+  return (
+    !path ||
+    path.startsWith("/dashboard") ||
+    path.startsWith("/panel") ||
+    path.startsWith("/lista/") ||
+    path.startsWith("/taller/") ||
+    path === "/w" ||
+    path.startsWith("/w/")
+  );
+}
 
 export function CookieBanner() {
   const path = usePathname();
-  const [open, setOpen] = useState(false);
+  const consent = useCookieConsent();
+  const { analytics, marketing, setAnalytics, setMarketing, clearDraft } = useConsentDraft();
   const [detail, setDetail] = useState(false);
-  const [analytics, setAnalytics] = useState(false);
-  const [marketing, setMarketing] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
-  useEffect(() => {
-    if (
-      path?.startsWith("/dashboard") ||
-      path?.startsWith("/panel") ||
-      path?.startsWith("/lista/") ||
-      path?.startsWith("/taller/") ||
-      path === "/w" ||
-      path?.startsWith("/w/")
-    ) {
-      setOpen(false);
-      return;
-    }
-    const c = readConsent();
-    if (!c) setOpen(true);
-  }, [path]);
-
+  const open = !hideBanner(path) && consent === null && !dismissed;
   if (!open) return null;
 
   function saveCustom() {
     writeConsent({ analytics, marketing });
-    setOpen(false);
+    clearDraft();
+    setDismissed(true);
   }
 
   return (
@@ -102,7 +101,8 @@ export function CookieBanner() {
             type="button"
             onClick={() => {
               acceptAllConsent();
-              setOpen(false);
+              clearDraft();
+              setDismissed(true);
             }}
             className="rounded-full bg-[#1c1915] px-4 py-2 text-sm font-semibold text-[#f6f1e7]"
           >
@@ -112,7 +112,8 @@ export function CookieBanner() {
             type="button"
             onClick={() => {
               rejectOptionalConsent();
-              setOpen(false);
+              clearDraft();
+              setDismissed(true);
             }}
             className="rounded-full bg-white px-4 py-2 text-sm ring-1 ring-[#e6ddd0]"
           >
