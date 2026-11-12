@@ -22,6 +22,9 @@ export function DashboardNav() {
         <Link href="/dashboard/captacion" className="rounded-full bg-white px-4 py-2 ring-1 ring-[#e6ddd0]">
           Captación
         </Link>
+        <Link href="/dashboard/llamadas" className="rounded-full bg-white px-4 py-2 ring-1 ring-[#e6ddd0]">
+          Llamadas
+        </Link>
       </nav>
       <a href="/api/auth/logout" className="text-sm text-[#7a7266] hover:text-[#1c1915]">
         Salir
