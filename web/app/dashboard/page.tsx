@@ -1,6 +1,10 @@
 import { DashboardNav } from "@/components/DashboardNav";
 import { isAdmin } from "@/lib/auth";
 import { orderGoodsLabel, orderPieces } from "@/lib/catalog";
+import {
+  bookingsTodayCount,
+  upcomingBookings,
+} from "@/lib/sales-calls/dashboard";
 import { formatWhenMadrid } from "@/lib/sales-calls/mail";
 import { loadSalesCalls } from "@/lib/sales-calls/store";
 import { euros, ZONE_LABEL } from "@/lib/shipping";
@@ -18,17 +22,8 @@ export default async function DashboardPage() {
   const orders = await listOrders();
   const shipping = await getShipping();
   const callsFile = await loadSalesCalls();
-  const now = Date.now();
-  const callsUpcoming = callsFile.bookings
-    .filter((b) => b.status === "booked" && new Date(b.startsAt).getTime() >= now - 15 * 60_000)
-    .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
-  const todayKey = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Madrid",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
-  const callsToday = callsUpcoming.filter((b) => b.slotKey.startsWith(todayKey)).length;
+  const callsUpcoming = upcomingBookings(callsFile);
+  const callsToday = bookingsTodayCount(callsUpcoming);
   const paid = orders.filter((o) => o.status !== "cancelado" && o.status !== "pendiente_pago");
   const revenue = paid.reduce((s, o) => s + o.total, 0);
   const pending = orders.filter((o) => o.status === "pagado" || o.status === "en_impresion");

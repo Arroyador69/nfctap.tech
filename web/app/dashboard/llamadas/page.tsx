@@ -1,6 +1,12 @@
 import { DashboardNav } from "@/components/DashboardNav";
 import { isAdmin } from "@/lib/auth";
 import { CALL_PROJECT_LABEL } from "@/lib/sales-calls/constants";
+import {
+  bookingsTodayCount,
+  cancelledBookings,
+  pastBookings,
+  upcomingBookings,
+} from "@/lib/sales-calls/dashboard";
 import { formatWhenMadrid } from "@/lib/sales-calls/mail";
 import { loadSalesCalls, type SalesCallBooking } from "@/lib/sales-calls/store";
 import Link from "next/link";
@@ -9,28 +15,14 @@ import { redirect } from "next/navigation";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Llamadas · Dashboard" };
 
-function sortByStart(a: SalesCallBooking, b: SalesCallBooking) {
-  return a.startsAt.localeCompare(b.startsAt);
-}
-
 export default async function DashboardLlamadasPage() {
   if (!(await isAdmin())) redirect("/dashboard/login");
   const file = await loadSalesCalls();
-  const now = Date.now();
-  const booked = file.bookings.filter((b) => b.status === "booked").sort(sortByStart);
-  const upcoming = booked.filter((b) => new Date(b.startsAt).getTime() >= now - 15 * 60_000);
-  const past = booked.filter((b) => new Date(b.startsAt).getTime() < now - 15 * 60_000).reverse();
-  const cancelled = file.bookings
-    .filter((b) => b.status === "cancelled")
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    .slice(0, 20);
-  const todayKey = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Madrid",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
-  const todayCount = upcoming.filter((b) => b.slotKey.startsWith(todayKey)).length;
+  const upcoming = upcomingBookings(file);
+  const past = pastBookings(file);
+  const cancelled = cancelledBookings(file);
+  const booked = file.bookings.filter((b) => b.status === "booked");
+  const todayCount = bookingsTodayCount(upcoming);
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-10">
