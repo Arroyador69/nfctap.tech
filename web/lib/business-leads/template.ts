@@ -13,11 +13,40 @@ export type OutreachVars = {
   optOutUrl?: string;
 };
 
-/** Fotos de ejemplo reales (CDN público). ?v= fuerza refresh en clientes de mail. */
-const IMG_V = "20261112";
-const ATRIL_GOOGLE = `${BRAND.url}/stock/atril-google.jpg?v=${IMG_V}`;
-const FREDDOS = `${BRAND.url}/stock/freddos.jpg?v=${IMG_V}`;
-const MARKOS = `${BRAND.url}/stock/markos.jpg?v=${IMG_V}`;
+/**
+ * Imágenes de ejemplo embebidas por CID (Resend inline).
+ * Así se ven aunque el cliente bloquee imágenes remotas.
+ */
+export type OutreachInlineKey = "atril" | "freddos" | "markos";
+
+export const OUTREACH_INLINE_IMAGES: Record<
+  OutreachInlineKey,
+  { cid: string; filename: string; path: string; contentType: string }
+> = {
+  atril: {
+    cid: "nfctap-atril",
+    filename: "atril-google.jpg",
+    path: `${BRAND.url}/stock/mail/atril-google.jpg`,
+    contentType: "image/jpeg",
+  },
+  freddos: {
+    cid: "nfctap-freddos",
+    filename: "freddos.jpg",
+    path: `${BRAND.url}/stock/mail/freddos.jpg`,
+    contentType: "image/jpeg",
+  },
+  markos: {
+    cid: "nfctap-markos",
+    filename: "markos.jpg",
+    path: `${BRAND.url}/stock/mail/markos.jpg`,
+    contentType: "image/jpeg",
+  },
+};
+
+function imgSrc(key: OutreachInlineKey, mode: "cid" | "https") {
+  const row = OUTREACH_INLINE_IMAGES[key];
+  return mode === "cid" ? `cid:${row.cid}` : row.path;
+}
 
 /** Bloque imagen a sangre + pie de foto (Outlook-safe). */
 function emailExampleImage(opts: {
@@ -26,7 +55,7 @@ function emailExampleImage(opts: {
   caption: string;
   href?: string;
 }) {
-  const img = `<img src="${escapeAttr(opts.src)}" alt="${escapeAttr(opts.alt)}" width="560" border="0" style="display:block;width:100%;max-width:560px;height:auto;border:0;outline:none;text-decoration:none;" />`;
+  const img = `<img src="${escapeAttr(opts.src)}" alt="${escapeAttr(opts.alt)}" width="560" border="0" style="display:block;width:100%;max-width:560px;height:auto;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;" />`;
   const linked = opts.href
     ? `<a href="${escapeAttr(opts.href)}" style="text-decoration:none;border:0;">${img}</a>`
     : img;
@@ -36,6 +65,27 @@ function emailExampleImage(opts: {
     <tr><td style="padding:10px 28px 0;font-size:12px;line-height:1.4;color:#8a8173;font-family:Arial,Helvetica,sans-serif;">
       ${escapeHtml(opts.caption)}
     </td></tr>`;
+}
+
+/** Adjuntos inline para Resend según el toque. */
+export function outreachInlineAttachments(touch: TouchKind = "cold") {
+  const keys: OutreachInlineKey[] =
+    touch === "cold"
+      ? ["atril", "freddos", "markos"]
+      : touch === "fu_open"
+        ? ["freddos", "markos"]
+        : touch === "fu_click"
+          ? ["markos", "freddos"]
+          : ["markos"];
+  return keys.map((k) => {
+    const row = OUTREACH_INLINE_IMAGES[k];
+    return {
+      path: row.path,
+      filename: row.filename,
+      content_id: row.cid,
+      content_type: row.contentType,
+    };
+  });
 }
 
 function ctaForTouch(touch: TouchKind) {
@@ -179,8 +229,18 @@ export function nfctapOutreachSubject(v: OutreachVars, touch: TouchKind = "cold"
   return copyForTouch(v, touch).subject;
 }
 
+export type OutreachHtmlOpts = {
+  /** cid = embebidas (Resend). https = preview en navegador. */
+  imageMode?: "cid" | "https";
+};
+
 /** HTML · personalizado · RGPD en todos los toques. Fotos de ejemplo a sangre. */
-export function nfctapOutreachHtml(v: OutreachVars, touch: TouchKind = "cold") {
+export function nfctapOutreachHtml(
+  v: OutreachVars,
+  touch: TouchKind = "cold",
+  opts: OutreachHtmlOpts = {},
+) {
+  const mode = opts.imageMode || "cid";
   const name = displayName(v);
   const city = displayCity(v);
   const CTA = ctaForTouch(touch);
@@ -192,14 +252,14 @@ export function nfctapOutreachHtml(v: OutreachVars, touch: TouchKind = "cold") {
       `<a href="${escapeAttr(s.href)}" style="color:#1c1915;text-decoration:underline;margin-right:12px;">${escapeHtml(s.label)}</a>`,
   ).join("");
 
-  // Cold: atril Google (producto claro) + Freddo's (logo en barra). FU: Markos / Freddos.
-  const heroSrc =
-    v.heroImageUrl ||
-    (touch === "fu_click" || touch === "fu_silent"
-      ? MARKOS
+  // Cold: atril Google + Freddo's + Markos. FU: Markos / Freddos.
+  const heroKey: OutreachInlineKey =
+    touch === "fu_click" || touch === "fu_silent"
+      ? "markos"
       : touch === "fu_open"
-        ? FREDDOS
-        : ATRIL_GOOGLE);
+        ? "freddos"
+        : "atril";
+  const heroSrc = v.heroImageUrl || imgSrc(heroKey, mode);
   const heroCaption =
     touch === "cold"
       ? "Ejemplo real · atril NFC en barra (reseñas Google)"
@@ -207,14 +267,15 @@ export function nfctapOutreachHtml(v: OutreachVars, touch: TouchKind = "cold") {
         ? "Ejemplo real · Freddo's Coffee · pieza con logo"
         : "Ejemplo real · Marko's Peluqueros · atril con logo";
 
-  const midSrc =
+  const midKey: OutreachInlineKey | null =
     touch === "cold"
-      ? v.secondImageUrl || FREDDOS
+      ? "freddos"
       : touch === "fu_open"
-        ? MARKOS
+        ? "markos"
         : touch === "fu_click"
-          ? FREDDOS
-          : "";
+          ? "freddos"
+          : null;
+  const midSrc = v.secondImageUrl || (midKey ? imgSrc(midKey, mode) : "");
   const midCaption =
     touch === "cold"
       ? "Otro ejemplo · Freddo's Coffee · logo + chips NFC en barra"
@@ -299,7 +360,7 @@ export function nfctapOutreachHtml(v: OutreachVars, touch: TouchKind = "cold") {
         ${
           touch === "cold"
             ? emailExampleImage({
-                src: MARKOS,
+                src: imgSrc("markos", mode),
                 alt: "Marko's Peluqueros — atril NFC con logo",
                 caption: "Ejemplo con logo de cliente · Marko's Peluqueros",
                 href: CTA,

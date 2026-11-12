@@ -4,6 +4,7 @@ import {
   nfctapOutreachHtml,
   nfctapOutreachSubject,
   nfctapOutreachText,
+  outreachInlineAttachments,
   type OutreachVars,
 } from "./template";
 
@@ -13,7 +14,7 @@ export type SendResult =
 
 /**
  * Envía cold o follow-up vía Resend.
- * From: NFCTap (marca). Tags: campaign + touch + city.
+ * Imágenes embebidas con CID (content_id) para que se vean sin “mostrar imágenes”.
  */
 export async function sendNfctapOutreach(
   to: string,
@@ -33,6 +34,7 @@ export async function sendNfctapOutreach(
     `mailto:${BRAND.email}?subject=${encodeURIComponent("baja")}`;
 
   const touchTag = touch === "cold" ? "cold" : touch;
+  const attachments = outreachInlineAttachments(touch);
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -45,8 +47,9 @@ export async function sendNfctapOutreach(
       to: [to],
       reply_to: BRAND.email,
       subject: nfctapOutreachSubject(vars, touch),
-      html: nfctapOutreachHtml(vars, touch),
+      html: nfctapOutreachHtml(vars, touch, { imageMode: "cid" }),
       text: nfctapOutreachText(vars, touch),
+      attachments,
       headers: {
         "List-Unsubscribe": `<${optOut}>`,
         "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
