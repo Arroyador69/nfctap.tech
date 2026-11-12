@@ -113,6 +113,49 @@ export async function takePendingWebsites(n: number): Promise<WebsiteSource[]> {
   return file.items.filter((i) => i.status === "pending").slice(0, Math.max(0, n));
 }
 
+/**
+ * Si el stock pending está vacío, reabre webs `no_email` (las más antiguas)
+ * para un segundo scrape → vuelve a llenar la cola cold.
+ */
+export async function recycleNoEmailToPending(opts?: {
+  max?: number;
+  /** Solo si llevan ≥ N días en no_email (0 = todas). */
+  minAgeDays?: number;
+}): Promise<{ recycled: number; pending: number }> {
+  const max = Math.max(1, Math.min(800, opts?.max ?? 250));
+  const minAgeDays = Math.max(0, opts?.minAgeDays ?? 7);
+  const file = await readStock();
+  const cutoff = Date.now() - minAgeDays * 86_400_000;
+  const candidates = file.items
+    .map((item, idx) => ({ item, idx }))
+    .filter(({ item }) => {
+      if (item.status !== "no_email" && item.status !== "failed") return false;
+      const t = Date.parse(item.doneAt || item.createdAt || "");
+      if (!Number.isFinite(t)) return true;
+      return t <= cutoff;
+    })
+    .sort(
+      (a, b) =>
+        Date.parse(a.item.doneAt || a.item.createdAt || "0") -
+        Date.parse(b.item.doneAt || b.item.createdAt || "0"),
+    )
+    .slice(0, max);
+
+  if (!candidates.length) {
+    return { recycled: 0, pending: stockCounts(file.items).pending };
+  }
+  for (const { idx } of candidates) {
+    file.items[idx] = {
+      ...file.items[idx],
+      status: "pending",
+      lastError: "recycled_for_retry",
+      doneAt: undefined,
+    };
+  }
+  await writeStock(file.items);
+  return { recycled: candidates.length, pending: stockCounts(file.items).pending };
+}
+
 export async function markWebsite(
   domain: string,
   patch: Partial<Pick<WebsiteSource, "status" | "doneAt" | "lastError">>,

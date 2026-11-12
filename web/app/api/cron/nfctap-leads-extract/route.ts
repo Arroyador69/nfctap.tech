@@ -1,6 +1,10 @@
 import { extractEmailsFromStock } from "@/lib/business-leads/extract-batch";
 import { loadQueue, queueCounts } from "@/lib/business-leads/queue";
-import { loadWebsiteStock, stockCounts } from "@/lib/business-leads/website-stock";
+import {
+  loadWebsiteStock,
+  recycleNoEmailToPending,
+  stockCounts,
+} from "@/lib/business-leads/website-stock";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -36,23 +40,30 @@ export async function GET(req: Request) {
       stock: beforeS,
     });
   }
-  if (beforeS.pending < 1) {
+  let recycled = { recycled: 0, pending: beforeS.pending };
+  if (beforeS.pending < 1 && beforeQ.queued < 500) {
+    recycled = await recycleNoEmailToPending({ max: 320, minAgeDays: 5 });
+  }
+  const stockNow = stockCounts((await loadWebsiteStock()).items);
+  if (stockNow.pending < 1) {
     return NextResponse.json({
       ok: true,
       skipped: true,
       reason: "stock_empty",
+      recycled,
       queue: beforeQ,
-      stock: beforeS,
+      stock: stockNow,
     });
   }
 
   const result = await extractEmailsFromStock({
-    maxPages: 45,
+    maxPages: beforeQ.queued < 100 ? 60 : 45,
     targetQueued: 1000,
   });
 
   return NextResponse.json({
     ok: true,
+    recycled,
     before: { queue: beforeQ, stock: beforeS },
     ...result,
     queue: queueCounts((await loadQueue()).leads),
