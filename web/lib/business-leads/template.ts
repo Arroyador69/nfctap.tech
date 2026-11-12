@@ -13,8 +13,31 @@ export type OutreachVars = {
   optOutUrl?: string;
 };
 
-const FREDDOS = `${BRAND.url}/stock/freddos.jpg`;
-const MARKOS = `${BRAND.url}/stock/markos.jpg`;
+/** Fotos de ejemplo reales (CDN público). ?v= fuerza refresh en clientes de mail. */
+const IMG_V = "20261112";
+const ATRIL_GOOGLE = `${BRAND.url}/stock/atril-google.jpg?v=${IMG_V}`;
+const FREDDOS = `${BRAND.url}/stock/freddos.jpg?v=${IMG_V}`;
+const MARKOS = `${BRAND.url}/stock/markos.jpg?v=${IMG_V}`;
+
+/** Bloque imagen a sangre + pie de foto (Outlook-safe). */
+function emailExampleImage(opts: {
+  src: string;
+  alt: string;
+  caption: string;
+  href?: string;
+}) {
+  const img = `<img src="${escapeAttr(opts.src)}" alt="${escapeAttr(opts.alt)}" width="560" border="0" style="display:block;width:100%;max-width:560px;height:auto;border:0;outline:none;text-decoration:none;" />`;
+  const linked = opts.href
+    ? `<a href="${escapeAttr(opts.href)}" style="text-decoration:none;border:0;">${img}</a>`
+    : img;
+  return `<tr><td style="padding:0;line-height:0;font-size:0;">
+      ${linked}
+    </td></tr>
+    <tr><td style="padding:10px 28px 0;font-size:12px;line-height:1.4;color:#8a8173;font-family:Arial,Helvetica,sans-serif;">
+      ${escapeHtml(opts.caption)}
+    </td></tr>`;
+}
+
 function ctaForTouch(touch: TouchKind) {
   const params = new URLSearchParams({
     utm_source: "outreach",
@@ -156,27 +179,60 @@ export function nfctapOutreachSubject(v: OutreachVars, touch: TouchKind = "cold"
   return copyForTouch(v, touch).subject;
 }
 
-/** HTML · personalizado · RGPD en todos los toques. */
+/** HTML · personalizado · RGPD en todos los toques. Fotos de ejemplo a sangre. */
 export function nfctapOutreachHtml(v: OutreachVars, touch: TouchKind = "cold") {
   const name = displayName(v);
   const city = displayCity(v);
   const CTA = ctaForTouch(touch);
   const CALL = callCtaForTouch(touch);
-  const hero = touch === "fu_click" || touch === "fu_silent" ? MARKOS : v.heroImageUrl || FREDDOS;
-  const second =
-    touch === "cold" ? v.secondImageUrl || MARKOS : touch === "fu_open" ? FREDDOS : "";
   const optOut = optOutHref(v);
   const copy = copyForTouch(v, touch);
   const socialHtml = SOCIAL_LINKS.map(
     (s) =>
       `<a href="${escapeAttr(s.href)}" style="color:#1c1915;text-decoration:underline;margin-right:12px;">${escapeHtml(s.label)}</a>`,
   ).join("");
-  const bodyParas = copy.paragraphs
-    .map(
-      (p) =>
-        `<p style="margin:14px 0 0;font-size:16px;line-height:1.55;color:#3f3a34;">${p}</p>`,
-    )
-    .join("");
+
+  // Cold: atril Google (producto claro) + Freddo's (logo en barra). FU: Markos / Freddos.
+  const heroSrc =
+    v.heroImageUrl ||
+    (touch === "fu_click" || touch === "fu_silent"
+      ? MARKOS
+      : touch === "fu_open"
+        ? FREDDOS
+        : ATRIL_GOOGLE);
+  const heroCaption =
+    touch === "cold"
+      ? "Ejemplo real · atril NFC en barra (reseñas Google)"
+      : touch === "fu_open"
+        ? "Ejemplo real · Freddo's Coffee · pieza con logo"
+        : "Ejemplo real · Marko's Peluqueros · atril con logo";
+
+  const midSrc =
+    touch === "cold"
+      ? v.secondImageUrl || FREDDOS
+      : touch === "fu_open"
+        ? MARKOS
+        : touch === "fu_click"
+          ? FREDDOS
+          : "";
+  const midCaption =
+    touch === "cold"
+      ? "Otro ejemplo · Freddo's Coffee · logo + chips NFC en barra"
+      : touch === "fu_open"
+        ? "Otro ejemplo · Marko's · Google · app · Instagram"
+        : touch === "fu_click"
+          ? "Así queda la pieza con logo en un local real"
+          : "";
+
+  const intro = copy.paragraphs.slice(0, 2);
+  const rest = copy.paragraphs.slice(2);
+  const paras = (list: string[]) =>
+    list
+      .map(
+        (p) =>
+          `<p style="margin:14px 0 0;font-size:16px;line-height:1.55;color:#3f3a34;">${p}</p>`,
+      )
+      .join("");
 
   return `<!DOCTYPE html>
 <html lang="es" xmlns="http://www.w3.org/1999/xhtml">
@@ -184,48 +240,70 @@ export function nfctapOutreachHtml(v: OutreachVars, touch: TouchKind = "cold") {
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="color-scheme" content="light" />
+  <meta name="x-apple-disable-message-reformatting" />
   <title>${escapeHtml(copy.subject)}</title>
 </head>
 <body style="margin:0;padding:0;background:#f3eee4;font-family:Georgia,'Times New Roman',serif;color:#1c1915;-webkit-text-size-adjust:100%;">
   <div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">
     ${escapeHtml(copy.preheader)}
   </div>
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f3eee4;padding:24px 12px;border-collapse:collapse;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f3eee4;padding:24px 12px;border-collapse:collapse;">
     <tr><td align="center">
-      <table role="presentation" width="560" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border-radius:18px;overflow:hidden;border:1px solid #e5dccf;border-collapse:collapse;">
-        <tr><td style="padding:18px 28px 0;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#b0892c;">
+      <table role="presentation" width="560" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:18px;overflow:hidden;border:1px solid #e5dccf;border-collapse:collapse;">
+        <tr><td style="padding:18px 28px 14px;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#b0892c;font-family:Arial,Helvetica,sans-serif;">
           nfctap.tech · ${escapeHtml(city)}${touch !== "cold" ? " · seguimiento" : ""}
         </td></tr>
-        <tr><td style="padding:10px 28px 0;">
-          <img src="${escapeAttr(hero)}" alt="Atril con logo y chips NFC — NFCTap" width="504" style="display:block;width:100%;max-width:504px;height:auto;border:0;border-radius:12px;" />
-        </td></tr>
+        ${emailExampleImage({
+          src: heroSrc,
+          alt: "Ejemplo de atril NFC NFCTap en barra",
+          caption: heroCaption,
+          href: CTA,
+        })}
         <tr><td style="padding:22px 28px 8px;">
           <h1 style="margin:0;font-size:24px;line-height:1.28;font-weight:700;color:#1c1915;">
             ${copy.headline}
           </h1>
-          ${bodyParas}
+          ${paras(intro)}
+        </td></tr>
+        ${
+          midSrc
+            ? `${emailExampleImage({
+                src: midSrc,
+                alt: "Ejemplo de pieza NFC personalizada NFCTap",
+                caption: midCaption,
+                href: CTA,
+              })}`
+            : ""
+        }
+        <tr><td style="padding:18px 28px 8px;">
+          ${paras(rest)}
           <p style="margin:22px 0 0;">
             <a href="${CTA}" style="display:inline-block;background:#1c1915;color:#f6f1e7;text-decoration:none;padding:15px 28px;border-radius:999px;font-size:16px;font-weight:700;font-family:Arial,Helvetica,sans-serif;">
               ${escapeHtml(copy.ctaLabel)}
             </a>
           </p>
           <p style="margin:12px 0 0;font-size:13px;line-height:1.45;color:#8a8173;font-family:Arial,Helvetica,sans-serif;">
-            ${CTA.replace("https://", "")} · sin compromiso · ves el diseño antes de pagar
+            Sin compromiso · ves el diseño en 3D antes de pagar
           </p>
-          <p style="margin:18px 0 0;padding:14px 16px;background:#f7f3eb;border-radius:14px;font-size:14px;line-height:1.5;color:#3f3a34;font-family:Arial,Helvetica,sans-serif;">
-            ¿Prefieres que te lo contemos en <strong>15 minutos</strong>? Reserva con atención comercial
-            (lun–vie · mañana o tarde, hora de Madrid). La hora es fija.
-            <br />
-            <a href="${CALL}" style="display:inline-block;margin-top:10px;color:#1c1915;font-weight:700;text-decoration:underline;">
-              Reservar llamada de 15 min →
-            </a>
-          </p>
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:18px 0 0;border-collapse:collapse;">
+            <tr><td style="padding:14px 16px;background:#f7f3eb;border-radius:14px;font-size:14px;line-height:1.5;color:#3f3a34;font-family:Arial,Helvetica,sans-serif;">
+              ¿Prefieres que te lo contemos en <strong>15 minutos</strong>? Reserva con atención comercial
+              (lun–vie · mañana o tarde, hora de Madrid). La hora es fija.
+              <br />
+              <a href="${CALL}" style="display:inline-block;margin-top:10px;color:#1c1915;font-weight:700;text-decoration:underline;">
+                Reservar llamada de 15 min →
+              </a>
+            </td></tr>
+          </table>
         </td></tr>
         ${
-          second
-            ? `<tr><td style="padding:8px 28px 4px;">
-          <img src="${escapeAttr(second)}" alt="Ejemplo de pieza NFC personalizada" width="504" style="display:block;width:100%;max-width:504px;height:auto;border:0;border-radius:12px;" />
-        </td></tr>`
+          touch === "cold"
+            ? emailExampleImage({
+                src: MARKOS,
+                alt: "Marko's Peluqueros — atril NFC con logo",
+                caption: "Ejemplo con logo de cliente · Marko's Peluqueros",
+                href: CTA,
+              })
             : ""
         }
         <tr><td style="padding:16px 28px 4px;font-size:15px;line-height:1.5;color:#3f3a34;">
