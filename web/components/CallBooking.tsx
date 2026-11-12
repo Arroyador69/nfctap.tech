@@ -109,8 +109,8 @@ export function CallBooking() {
           <strong>{done.label}</strong> · 15 minutos · hora de Madrid.
         </p>
         <p className="mt-3 text-sm leading-6 text-[#5c564c]">
-          Sé puntual: no se puede atrasar. Si llegas tarde, la llamada se corta o se cancela
-          porque la agenda va llena.
+          Te hemos enviado un email de confirmación. Sé puntual: la hora no se atrasa. Si no
+          puedes, cancela o cambia desde el enlace del mail (así liberamos el hueco).
         </p>
         {done.meetingUrl ? (
           <p className="mt-4 text-sm">
@@ -121,7 +121,7 @@ export function CallBooking() {
           </p>
         ) : (
           <p className="mt-4 text-sm text-[#5c564c]">
-            Te enviaremos el enlace de la videollamada por email.
+            El enlace de Zoom va en el email de confirmación.
           </p>
         )}
       </div>

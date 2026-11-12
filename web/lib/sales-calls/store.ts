@@ -15,6 +15,10 @@ export type SalesCallBooking = {
   company?: string;
   notes?: string;
   meetingUrl?: string;
+  /** Token opaco para cancelar / cambiar hora (mail). */
+  manageToken: string;
+  /** ISO cuando se envió el recordatorio ~1 h antes. */
+  reminderSentAt?: string;
   createdAt: string;
   status: "booked" | "cancelled";
 };

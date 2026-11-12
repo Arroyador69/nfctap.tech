@@ -11,12 +11,18 @@ Fuente de verdad: **nfctap.tech** (Blob `sales-calls-shared.json`).
 ## Env (NFCTap · Vercel)
 
 ```
-SALES_CALL_MEETING_URL=https://zoom.us/j/...   # o Meet permanente
-CALLS_SYNC_SECRET=...                          # o reutilizar CRON_SECRET
+SALES_CALL_MEETING_URL=https://zoom.us/j/...
+CALLS_SYNC_SECRET=...                 # MISMO valor en Delfín
+# SALES_CALL_SYNC_SECRET=...          # alias aceptado
 TELEGRAM_BOT_TOKEN=...
 TELEGRAM_CHAT_ID=...
 BLOB_READ_WRITE_TOKEN=...
+RESEND_API_KEY=...                    # confirmación + recordatorio 1 h
+RESEND_FROM=NFCTap <hola@nfctap.tech>
 ```
+
+Confirmación al reservar + recordatorio ~1 h antes (cron) + enlace para cancelar/cambiar hora.
+Los mails salen por **Resend** (no Zoho). Zoho sigue para soporte 1-a-1.
 
 ## API para Delfín
 

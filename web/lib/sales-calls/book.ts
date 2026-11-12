@@ -1,10 +1,11 @@
-import { randomUUID } from "crypto";
+import { randomBytes, randomUUID } from "crypto";
 import { notifyTelegram } from "@/lib/business-leads/telegram";
 import {
   CALL_DURATION_MIN,
   CALL_PROJECT_LABEL,
   type CallProject,
 } from "./constants";
+import { formatWhenMadrid, manageUrl, sendBookingConfirmEmail } from "./mail";
 import { findSlotByKey } from "./slots";
 import {
   activeBookings,
@@ -21,6 +22,10 @@ export type BookCallInput = {
   phone?: string;
   company?: string;
   notes?: string;
+  /** Reutilizar token al reprogramar. */
+  manageToken?: string;
+  skipTelegram?: boolean;
+  skipConfirmEmail?: boolean;
 };
 
 function meetingUrl() {
@@ -37,6 +42,10 @@ function cleanEmail(raw: string) {
 
 function looksEmail(e: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+}
+
+function newManageToken() {
+  return randomBytes(24).toString("hex");
 }
 
 export async function bookSalesCall(input: BookCallInput) {
@@ -70,6 +79,7 @@ export async function bookSalesCall(input: BookCallInput) {
     company: company || undefined,
     notes: notes || undefined,
     meetingUrl: meetingUrl() || undefined,
+    manageToken: input.manageToken?.trim() || newManageToken(),
     createdAt: new Date().toISOString(),
     status: "booked",
   };
@@ -77,81 +87,32 @@ export async function bookSalesCall(input: BookCallInput) {
   file.bookings.push(booking);
   await saveSalesCalls(file);
 
-  const when = new Intl.DateTimeFormat("es-ES", {
-    timeZone: "Europe/Madrid",
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(new Date(booking.startsAt));
-
+  const when = formatWhenMadrid(booking.startsAt);
   const label = CALL_PROJECT_LABEL[input.project];
-  await notifyTelegram(
-    [
-      `${label} · nueva llamada ${CALL_DURATION_MIN} min`,
-      `📅 ${when} (Madrid)`,
-      `👤 ${name}${company ? ` · ${company}` : ""}`,
-      `✉️ ${email}${phone ? ` · ${phone}` : ""}`,
-      notes ? `💬 ${notes}` : "",
-      booking.meetingUrl ? `🔗 ${booking.meetingUrl}` : "🔗 Pon SALES_CALL_MEETING_URL en Vercel",
-      `id ${booking.id}`,
-    ]
-      .filter(Boolean)
-      .join("\n"),
-  );
+  if (!input.skipTelegram) {
+    await notifyTelegram(
+      [
+        `${label} · nueva llamada ${CALL_DURATION_MIN} min`,
+        `📅 ${when} (Madrid)`,
+        `👤 ${name}${company ? ` · ${company}` : ""}`,
+        `✉️ ${email}${phone ? ` · ${phone}` : ""}`,
+        notes ? `💬 ${notes}` : "",
+        booking.meetingUrl ? `🔗 ${booking.meetingUrl}` : "🔗 Pon SALES_CALL_MEETING_URL en Vercel",
+        `Gestionar: ${manageUrl(booking)}`,
+        `id ${booking.id}`,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    );
+  }
 
-  // Confirmación al cliente (best-effort)
-  try {
-    await sendBookingConfirmEmail(booking, when, input.project);
-  } catch {
-    /* no bloquea la reserva */
+  if (!input.skipConfirmEmail) {
+    try {
+      await sendBookingConfirmEmail(booking);
+    } catch {
+      /* no bloquea */
+    }
   }
 
   return { booking, slot };
-}
-
-async function sendBookingConfirmEmail(
-  booking: SalesCallBooking,
-  whenLabel: string,
-  project: CallProject,
-) {
-  const key = (process.env.RESEND_API_KEY || "").trim();
-  if (!key) return;
-  const from =
-    (process.env.RESEND_FROM || "").trim() ||
-    (project === "delfin"
-      ? "Delfín Check-in <hola@delfincheckin.com>"
-      : "NFCTap <hola@nfctap.tech>");
-  const brand = project === "delfin" ? "Delfín Check-in" : "NFCTap";
-  const meet = booking.meetingUrl
-    ? `\nEnlace videollamada: ${booking.meetingUrl}\n`
-    : "\nTe enviaremos el enlace de la videollamada si aún no está en este mail.\n";
-  const text = `Hola ${booking.name},
-
-Tu llamada de ${CALL_DURATION_MIN} minutos con ${brand} quedó reservada:
-
-${whenLabel} (hora de Madrid)
-
-Importante: la hora es fija y no se puede atrasar. Si llegas tarde, es posible que no podamos atenderte porque la agenda va llena.
-${meet}
-Si no pediste esta cita, responde a este correo.
-
-Un saludo,
-${brand}`;
-
-  await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to: [booking.email],
-      subject: `${brand}: llamada ${CALL_DURATION_MIN} min · ${whenLabel}`,
-      text,
-    }),
-  });
 }

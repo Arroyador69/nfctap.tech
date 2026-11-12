@@ -5,6 +5,7 @@
  */
 import { bookSalesCall } from "@/lib/sales-calls/book";
 import type { CallProject } from "@/lib/sales-calls/constants";
+import { callsSyncSecret } from "@/lib/sales-calls/secrets";
 import { listOpenSlots } from "@/lib/sales-calls/slots";
 import { activeBookings, loadSalesCalls } from "@/lib/sales-calls/store";
 import { NextResponse } from "next/server";
@@ -12,7 +13,7 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 function authorized(req: Request) {
-  const secret = process.env.CALLS_SYNC_SECRET?.trim() || process.env.CRON_SECRET?.trim();
+  const secret = callsSyncSecret();
   if (!secret) return false;
   const url = new URL(req.url);
   const auth = req.headers.get("authorization") || "";
