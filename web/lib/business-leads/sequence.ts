@@ -191,6 +191,48 @@ export function selectFollowUpDue(
 }
 
 /**
+ * Si el día va corto y no hay due/cold: adelanta FU programados
+ * (click→open→silencio, los más cercanos a vencer primero).
+ */
+export function selectFollowUpFill(
+  leads: BusinessLead[],
+  n: number,
+  optOut: Set<string>,
+  excludeIds: Set<string>,
+  now = new Date(),
+): BusinessLead[] {
+  if (n <= 0) return [];
+  return leads
+    .filter((l) => {
+      if (excludeIds.has(l.id)) return false;
+      if (optOut.has(l.email.toLowerCase())) return false;
+      if (!isSequenceActive(l) || l.status !== "sent") return false;
+      const kind = l.nextTouchKind;
+      if (!kind || kind === "cold" || !l.nextTouchAt) return false;
+      const touches = l.touchCount || 1;
+      const max =
+        kind === "fu_click"
+          ? NFC_FU_MAX_TOUCHES_CLICK
+          : kind === "fu_open"
+            ? NFC_FU_MAX_TOUCHES_OPEN
+            : NFC_FU_MAX_TOUCHES_SILENT;
+      if (touches >= max) return false;
+      // Solo los que aún no están due (los due ya van en selectFollowUpDue)
+      return new Date(l.nextTouchAt).getTime() > now.getTime();
+    })
+    .sort((a, b) => {
+      const p = followUpPriority(a) - followUpPriority(b);
+      if (p !== 0) return p;
+      return (a.nextTouchAt || "").localeCompare(b.nextTouchAt || "");
+    })
+    .slice(0, Math.max(0, n))
+    .map((l) => ({
+      ...l,
+      nextTouchAt: now.toISOString(),
+    }));
+}
+
+/**
  * Cierra secuencias de emails en baja / compradores (histórico sin patch).
  * Sin esto el panel marca «due» leads que el envío salta por opt-out.
  */
@@ -238,6 +280,37 @@ export function promoteOverdueClickFollowUps(
     return {
       ...lead,
       nextTouchKind: "fu_click" as const,
+      nextTouchAt: new Date().toISOString(),
+      sequenceStatus: "active" as const,
+      touchCount: touches || 1,
+    };
+  });
+  return { leads: out, promoted };
+}
+
+/**
+ * Opens vencidos sin FU → due ahora (detrás de clicks, delante de silencio).
+ */
+export function promoteOverdueOpenFollowUps(
+  leads: BusinessLead[],
+  now = Date.now(),
+): { leads: BusinessLead[]; promoted: number } {
+  let promoted = 0;
+  const out = leads.map((lead) => {
+    if (lead.status !== "sent" || !lead.openedAt || lead.clickedAt) return lead;
+    if (!isSequenceActive(lead)) return lead;
+    const touches = lead.touchCount || 1;
+    if (touches >= NFC_FU_MAX_TOUCHES_OPEN) return lead;
+    if (touches > 1 && lead.lastTouchKind && lead.lastTouchKind !== "cold") return lead;
+    if (lead.nextTouchKind === "fu_click") return lead;
+    const openAge = now - new Date(lead.openedAt).getTime();
+    if (openAge < NFC_FU_OPEN_DELAY_DAYS * 86_400_000) return lead;
+    const dueAt = lead.nextTouchAt ? new Date(lead.nextTouchAt).getTime() : Infinity;
+    if (lead.nextTouchKind === "fu_open" && dueAt <= now) return lead;
+    promoted++;
+    return {
+      ...lead,
+      nextTouchKind: "fu_open" as const,
       nextTouchAt: new Date().toISOString(),
       sequenceStatus: "active" as const,
       touchCount: touches || 1,
