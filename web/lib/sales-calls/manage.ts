@@ -6,6 +6,7 @@ import {
   sendBookingCancelledEmail,
   sendBookingConfirmEmail,
 } from "./mail";
+import { mirrorCancelToPeer } from "./peer-sync";
 import { loadSalesCalls, saveSalesCalls, type SalesCallBooking } from "./store";
 
 export async function findBookingByToken(token: string) {
@@ -25,6 +26,11 @@ export async function cancelBookingByToken(token: string) {
   const next: SalesCallBooking = { ...booking, status: "cancelled" };
   file.bookings[idx] = next;
   await saveSalesCalls(file);
+
+  void mirrorCancelToPeer({
+    remoteId: booking.id,
+    startAt: booking.startsAt,
+  });
 
   const when = formatWhenMadrid(booking.startsAt);
   await notifyTelegram(
@@ -58,6 +64,7 @@ export async function rescheduleBookingByToken(token: string, slotKey: string) {
 
   file.bookings[idx] = { ...prev, status: "cancelled" };
   await saveSalesCalls(file);
+  void mirrorCancelToPeer({ remoteId: prev.id, startAt: prev.startsAt });
 
   const { booking, slot } = await bookSalesCall({
     project: prev.project,

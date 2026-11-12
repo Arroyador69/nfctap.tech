@@ -17,6 +17,8 @@ export type SalesCallBooking = {
   meetingUrl?: string;
   /** Token opaco para cancelar / cambiar hora (mail). */
   manageToken: string;
+  /** Id remoto cuando es espejo del peer (Delfín). */
+  peerMirrorId?: string;
   /** ISO cuando se envió el recordatorio ~1 h antes. */
   reminderSentAt?: string;
   createdAt: string;

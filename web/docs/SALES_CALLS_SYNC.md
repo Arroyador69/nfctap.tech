@@ -1,72 +1,78 @@
-# Calendario de llamadas · hub NFCTap (sync Delfín)
+# Calendario de llamadas · sync NFCTap ↔ Delfín
 
-Fuente de verdad: **nfctap.tech** (Blob `sales-calls-shared.json`).
+Ambos proyectos usan la **misma rejilla** y el protocolo **peer-busy** (el cliente nunca ve sync).
 
 - Llamada: **15 min**
-- Buffer entre citas: **30 min** (inicios cada 45 min)
+- Inicios cada **45 min** (15 + 30 margen) — contrato Delfín
 - Lun–vie Madrid: **09:00–14:00** y **16:00–19:00**
-- UI pública NFCTap: https://nfctap.tech/llamar  
-  (no menciona Delfín ni “calendario compartido”)
+- UI NFCTap: https://nfctap.tech/llamar  
+- UI Delfín: https://delfincheckin.com/reserva-llamada/
+- Detalle: `delfin-check-in/docs/SALES_CALL_SYNC_CONTRACT.md`
 
-## Env (NFCTap · Vercel)
+## Env NFCTap (Vercel)
 
 ```
-SALES_CALL_MEETING_URL=https://zoom.us/j/...
-CALLS_SYNC_SECRET=...                 # MISMO valor en Delfín
+SALES_CALL_MEETING_URL=https://zoom.us/j/2139282300
+CALLS_SYNC_SECRET=...                 # MISMO valor que Delfín SALES_CALL_SYNC_SECRET
 # SALES_CALL_SYNC_SECRET=...          # alias aceptado
+SALES_CALL_PEER_URL=https://admin.delfincheckin.com   # sin slash final
 TELEGRAM_BOT_TOKEN=...
 TELEGRAM_CHAT_ID=...
 BLOB_READ_WRITE_TOKEN=...
-RESEND_API_KEY=...                    # confirmación + recordatorio 1 h
+RESEND_API_KEY=...
 RESEND_FROM=NFCTap <hola@nfctap.tech>
 ```
 
-Confirmación al reservar + recordatorio ~1 h antes (cron) + enlace para cancelar/cambiar hora.
-Los mails salen por **Resend** (no Zoho). Zoho sigue para soporte 1-a-1.
-
-## API para Delfín
-
-Base: `https://nfctap.tech`
-
-### Huecos libres + ocupados
+## Env Delfín
 
 ```
-GET /api/calls/sync?days=10
+SALES_CALL_SYNC_SECRET=...            # mismo secreto
+SALES_CALL_PEER_URL=https://nfctap.tech
+SALES_CALL_MEETING_URL=https://zoom.us/j/2139282300
+```
+
+## Protocolo peer (el que usa Delfín hoy)
+
+Base peer: `https://nfctap.tech` / `https://delfincheckin.com`
+
+Header: `X-Sales-Call-Sync: $SECRET`
+
+### GET ocupados
+
+```
+GET /api/public/sales-calls/peer-busy?from=ISO&to=ISO
+→ { busy: [{ startAt, endAt }] }
+```
+
+### POST espejo (al reservar)
+
+```
+POST /api/public/sales-calls/peer-busy
+{ startAt, endAt, remoteId, name, email, project }
+→ { ok, id }
+```
+
+### DELETE espejo (al cancelar)
+
+```
+DELETE /api/public/sales-calls/peer-busy
+{ remoteId, startAt?, action: "cancel" }
+```
+
+## Hub legacy (opcional)
+
+```
+GET/POST /api/calls/sync
 Authorization: Bearer $CALLS_SYNC_SECRET
 ```
 
-Respuesta: `{ slots, busy, timezone }`.  
-`busy` incluye reservas de **ambos** proyectos (sin enseñarlo al cliente).
+## Público NFCTap
 
-### Reservar desde Delfín
+- `GET /api/calls/slots` — libre local + busy del peer
+- `POST /api/calls/book` — `project: nfctap` + espejo a Delfín
 
-```
-POST /api/calls/sync
-Authorization: Bearer $CALLS_SYNC_SECRET
-Content-Type: application/json
+## Reglas
 
-{
-  "project": "delfin",
-  "slotKey": "2026-11-13T09:00",
-  "name": "...",
-  "email": "...",
-  "phone": optional,
-  "company": optional,
-  "notes": optional
-}
-```
-
-Telegram avisa con prefijo **Delfín** o **NFCTap**.
-
-### Público NFCTap (sin secreto)
-
-- `GET /api/calls/slots`
-- `POST /api/calls/book` → siempre `project: nfctap`
-
-## Qué debe hacer el agente de Delfín
-
-1. Página `/llamar` (o equivalente) con la misma UX (15 min, ventanas, puntualidad).
-2. Cargar slots vía sync API (no un Blob propio).
-3. Reservar con `project: "delfin"`.
-4. CTA en cold/FU de Delfín → su `/llamar`.
-5. **Nunca** texto al usuario sobre sync con NFCTap.
+1. Misma rejilla 30 min en ambos.
+2. Al reservar → mirror al peer; al cancelar → liberar espejo.
+3. **Nunca** texto al usuario sobre sync entre marcas.

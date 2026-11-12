@@ -10,8 +10,18 @@ export const dynamic = "force-dynamic";
  * POST { to, city?, businessName?, telegram?, mail? } — solo admin.
  * Prueba el mail real: la ciudad cambia; sin “Café de prueba”.
  */
+function authorized(req: Request) {
+  const secret = process.env.CRON_SECRET?.trim();
+  const auth = req.headers.get("authorization") || "";
+  const bearer = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  const q = new URL(req.url).searchParams.get("secret") || "";
+  if (secret && (bearer === secret || q === secret)) return true;
+  return false;
+}
+
 export async function POST(req: Request) {
-  if (!(await isAdmin())) {
+  const cronOk = authorized(req);
+  if (!cronOk && !(await isAdmin())) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 

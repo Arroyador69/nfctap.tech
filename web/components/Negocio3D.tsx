@@ -10,10 +10,17 @@ import { ACCENT_HEX, BODY_COLORS } from "@/lib/catalog";
 import type { AccentColor, BodyColor } from "@/lib/types";
 import { ContactShadows, OrbitControls, useGLTF } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import {
+  Component,
+  Suspense,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import * as THREE from "three";
 
-const MODEL = "/models/negocio.glb?v=2";
+const MODEL = "/models/negocio.glb?v=3";
 useGLTF.preload(MODEL, true);
 
 /** Coords de `disenos/generar_negocio_web.py` → negocio-seal.json */
@@ -25,41 +32,62 @@ type Props = {
   logoDataUrl?: string;
 };
 
+class ModelErrorBoundary extends Component<
+  { children: ReactNode; fallback: ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    if (this.state.failed) return this.props.fallback;
+    return this.props.children;
+  }
+}
+
 export function Negocio3D({ bodyColor, accentColor, logoDataUrl = "" }: Props) {
+  const fallback = (
+    <div className="flex h-full items-center justify-center px-6 text-center text-sm text-[#6f675c]">
+      No se pudo cargar el modelo 3D. Puedes seguir el pedido abajo; el logo se aplica en taller.
+    </div>
+  );
   return (
     <div
       className="relative h-[380px] w-full overflow-hidden rounded-[24px] border border-[#e6ddd0] bg-[#f3eee4] sm:h-[480px] lg:h-[560px]"
       style={{ touchAction: "none" }}
       onContextMenu={(e) => e.preventDefault()}
     >
-      <Canvas
-        camera={{ position: [0.02, 0.1, 0.42], fov: 32 }}
-        gl={{ antialias: true }}
-        dpr={[1, 1.75]}
-        style={{ touchAction: "none" }}
-      >
-        <color attach="background" args={["#f3eee4"]} />
-        <ambientLight intensity={1.25} />
-        <spotLight position={[1.8, 3.2, 2.4]} intensity={1.35} angle={0.45} penumbra={0.9} />
-        <directionalLight position={[-1.2, 2.2, 2.4]} intensity={0.7} />
-        <directionalLight position={[0.4, 1.2, 2.8]} intensity={0.55} />
-        <Suspense fallback={null}>
-          <Piece bodyColor={bodyColor} accentColor={accentColor} logoDataUrl={logoDataUrl} />
-        </Suspense>
-        <OrbitControls
-          makeDefault
-          enablePan={false}
-          enableZoom
-          autoRotate
-          autoRotateSpeed={0.35}
-          minDistance={0.26}
-          maxDistance={1.0}
-          minPolarAngle={0.35}
-          maxPolarAngle={Math.PI / 2 + 0.02}
-          target={[0, 0.04, 0]}
-        />
-        <ContactShadows position={[0, -0.02, 0]} opacity={0.22} scale={0.9} blur={2.4} />
-      </Canvas>
+      <ModelErrorBoundary fallback={fallback}>
+        <Canvas
+          camera={{ position: [0.02, 0.1, 0.42], fov: 32 }}
+          gl={{ antialias: true }}
+          dpr={[1, 1.75]}
+          style={{ touchAction: "none" }}
+        >
+          <color attach="background" args={["#f3eee4"]} />
+          <ambientLight intensity={1.25} />
+          <spotLight position={[1.8, 3.2, 2.4]} intensity={1.35} angle={0.45} penumbra={0.9} />
+          <directionalLight position={[-1.2, 2.2, 2.4]} intensity={0.7} />
+          <directionalLight position={[0.4, 1.2, 2.8]} intensity={0.55} />
+          <Suspense fallback={null}>
+            <Piece bodyColor={bodyColor} accentColor={accentColor} logoDataUrl={logoDataUrl} />
+          </Suspense>
+          <OrbitControls
+            makeDefault
+            enablePan={false}
+            enableZoom
+            autoRotate
+            autoRotateSpeed={0.35}
+            minDistance={0.26}
+            maxDistance={1.0}
+            minPolarAngle={0.35}
+            maxPolarAngle={Math.PI / 2 + 0.02}
+            target={[0, 0.04, 0]}
+          />
+          <ContactShadows position={[0, -0.02, 0]} opacity={0.22} scale={0.9} blur={2.4} />
+        </Canvas>
+      </ModelErrorBoundary>
       <p className="pointer-events-none absolute bottom-3 left-0 right-0 text-center text-[11px] text-[#8a8173]">
         Arrastra para girar · tu logo en el círculo
       </p>

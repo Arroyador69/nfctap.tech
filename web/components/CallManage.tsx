@@ -20,10 +20,17 @@ type Slot = {
   label: string;
 };
 
+async function fetchBooking(token: string): Promise<BookingView> {
+  const res = await fetch(`/api/calls/manage?token=${encodeURIComponent(token)}`);
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || "No encontrada");
+  return json.booking as BookingView;
+}
+
 export function CallManage({ token }: { token: string }) {
   const [booking, setBooking] = useState<BookingView | null>(null);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(token.trim()));
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<"view" | "reschedule">("view");
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -31,23 +38,23 @@ export function CallManage({ token }: { token: string }) {
   const [slotKey, setSlotKey] = useState("");
   const [message, setMessage] = useState("");
 
-  async function load() {
-    setLoading(true);
-    setError("");
-    try {
-      const res = await fetch(`/api/calls/manage?token=${encodeURIComponent(token)}`);
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "No encontrada");
-      setBooking(json.booking);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Error");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
-    void load();
+    const t = token.trim();
+    if (!t) return;
+    let dead = false;
+    fetchBooking(t)
+      .then((b) => {
+        if (!dead) setBooking(b);
+      })
+      .catch((e) => {
+        if (!dead) setError(e instanceof Error ? e.message : "Error");
+      })
+      .finally(() => {
+        if (!dead) setLoading(false);
+      });
+    return () => {
+      dead = true;
+    };
   }, [token]);
 
   const byDate = useMemo(() => {
@@ -62,6 +69,18 @@ export function CallManage({ token }: { token: string }) {
   const days = Object.keys(byDate);
   const daySlots = byDate[day] || [];
 
+  async function reload() {
+    setBusy(true);
+    setError("");
+    try {
+      setBooking(await fetchBooking(token));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function cancel() {
     if (!confirm("¿Cancelar esta llamada? Liberamos el hueco.")) return;
     setBusy(true);
@@ -75,7 +94,7 @@ export function CallManage({ token }: { token: string }) {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "No se pudo cancelar");
       setMessage(json.message || "Cancelada.");
-      await load();
+      await reload();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error");
     } finally {
@@ -111,7 +130,7 @@ export function CallManage({ token }: { token: string }) {
       if (!res.ok) throw new Error(json.error || "No se pudo cambiar");
       setMessage(json.message || "Hora cambiada.");
       setMode("view");
-      await load();
+      await reload();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error");
     } finally {
@@ -119,6 +138,9 @@ export function CallManage({ token }: { token: string }) {
     }
   }
 
+  if (!token.trim()) {
+    return <p className="text-[#a33]">Falta el enlace de gestión.</p>;
+  }
   if (loading) return <p className="text-[#6f675c]">Cargando reserva…</p>;
   if (error && !booking) {
     return <p className="text-[#a33]">{error}</p>;

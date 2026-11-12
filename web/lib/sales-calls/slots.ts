@@ -16,7 +16,7 @@ export type CallSlot = {
   timeLabel: string;
 };
 
-function madridParts(d: Date) {
+export function madridParts(d: Date) {
   const fmt = new Intl.DateTimeFormat("en-CA", {
     timeZone: CALL_TZ,
     year: "numeric",
@@ -71,7 +71,14 @@ function todayMadrid() {
   return madridParts(new Date()).date;
 }
 
-function overlapsBusy(startsAt: Date, endsAt: Date, bookings: SalesCallBooking[]) {
+export type BusyIntervalMs = { startMs: number; endMs: number };
+
+function overlapsBusy(
+  startsAt: Date,
+  endsAt: Date,
+  bookings: SalesCallBooking[],
+  extra?: BusyIntervalMs[],
+) {
   const s = startsAt.getTime();
   const e = endsAt.getTime();
   for (const b of bookings) {
@@ -79,6 +86,12 @@ function overlapsBusy(startsAt: Date, endsAt: Date, bookings: SalesCallBooking[]
     // Tras cada llamada hay buffer bloqueado
     const be = new Date(b.endsAt).getTime() + CALL_BUFFER_MIN * 60_000;
     if (s < be && e > bs) return true;
+  }
+  if (extra) {
+    for (const b of extra) {
+      const be = b.endMs + CALL_BUFFER_MIN * 60_000;
+      if (s < be && e > b.startMs) return true;
+    }
   }
   return false;
 }
@@ -107,16 +120,20 @@ function formatSlot(startsAt: Date, endsAt: Date, slotKey: string): CallSlot {
 }
 
 /** Genera huecos libres los próximos `weekdays` días laborables. */
-export function listOpenSlots(file: SalesCallsFile, opts?: { weekdays?: number; now?: Date }) {
-  const weekdaysWanted = Math.min(15, Math.max(1, opts?.weekdays ?? 10));
+export function listOpenSlots(
+  file: SalesCallsFile,
+  opts?: { weekdays?: number; now?: Date; peerBusy?: BusyIntervalMs[] },
+) {
+  const weekdaysWanted = Math.min(20, Math.max(1, opts?.weekdays ?? 14));
   const now = opts?.now ?? new Date();
   const leadMs = 60 * 60_000;
   const busy = activeBookings(file);
+  const peer = opts?.peerBusy || [];
   const out: CallSlot[] = [];
   const start = todayMadrid();
   let weekdaysSeen = 0;
 
-  for (let offset = 0; offset < 30 && weekdaysSeen < weekdaysWanted; offset++) {
+  for (let offset = 0; offset < 45 && weekdaysSeen < weekdaysWanted; offset++) {
     const day = addDays(start, offset);
     if (!isWeekdayMadrid(day)) continue;
     weekdaysSeen++;
@@ -133,7 +150,7 @@ export function listOpenSlots(file: SalesCallsFile, opts?: { weekdays?: number; 
         mins += CALL_SLOT_STEP_MIN;
 
         if (startsAt.getTime() < now.getTime() + leadMs) continue;
-        if (overlapsBusy(startsAt, endsAt, busy)) continue;
+        if (overlapsBusy(startsAt, endsAt, busy, peer)) continue;
         out.push(formatSlot(startsAt, endsAt, slotKey));
       }
     }
@@ -142,6 +159,14 @@ export function listOpenSlots(file: SalesCallsFile, opts?: { weekdays?: number; 
   return out;
 }
 
-export function findSlotByKey(file: SalesCallsFile, slotKey: string, now = new Date()) {
-  return listOpenSlots(file, { weekdays: 15, now }).find((s) => s.slotKey === slotKey) || null;
+export function findSlotByKey(
+  file: SalesCallsFile,
+  slotKey: string,
+  now = new Date(),
+  peerBusy?: BusyIntervalMs[],
+) {
+  return (
+    listOpenSlots(file, { weekdays: 20, now, peerBusy }).find((s) => s.slotKey === slotKey) ||
+    null
+  );
 }

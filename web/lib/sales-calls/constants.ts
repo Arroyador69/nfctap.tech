@@ -1,9 +1,11 @@
 /** Calendario comercial compartido (NFCTap + Delfín). No mencionar Delfín en la UI. */
 
 export const CALL_DURATION_MIN = 15;
-/** Hueco mínimo entre el final de una llamada y el inicio de la siguiente. */
+/**
+ * Misma rejilla que Delfín (contrato SALES_CALL_SYNC):
+ * 15 min llamada + 30 min margen → inicios cada 45 min.
+ */
 export const CALL_BUFFER_MIN = 30;
-/** Intervalo entre inicios = 15 + 30. */
 export const CALL_SLOT_STEP_MIN = CALL_DURATION_MIN + CALL_BUFFER_MIN;
 
 /** Ventanas Europe/Madrid · lun–vie. */

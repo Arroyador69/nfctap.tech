@@ -1,0 +1,25 @@
+media
+comercial
+clientes
+disenos
+nfctap-config
+node_modules
+.git
+**/.next
+**/node_modules
+**/.git
+web/node_modules
+web/.next
+web/.git
+**/*.stl
+**/*.3mf
+**/*.mp4
+**/*.mov
+**/*.wav
+# GLB de producto en web/public/models (necesario para /negocio y Wi‑Fi)
+# No ignorar: web/public/models/*.glb
+**/*.zip
+agent-transcripts
+.cursor
+*.iso
+*.dmg

@@ -6,6 +6,8 @@ import {
   type CallProject,
 } from "./constants";
 import { formatWhenMadrid, manageUrl, sendBookingConfirmEmail } from "./mail";
+import { listOpenSlotsWithPeer } from "./availability";
+import { mirrorBookingToPeer } from "./peer-sync";
 import { findSlotByKey } from "./slots";
 import {
   activeBookings,
@@ -64,7 +66,9 @@ export async function bookSalesCall(input: BookCallInput) {
   if (activeBookings(file).some((b) => b.slotKey === slotKey)) {
     throw new Error("Esa hora ya está ocupada. Elige otra.");
   }
-  const slot = findSlotByKey(file, slotKey);
+  // Revalidar contra peer (Delfín) para no pisar
+  const open = await listOpenSlotsWithPeer({ file, weekdays: 20 });
+  const slot = open.find((s) => s.slotKey === slotKey) || findSlotByKey(file, slotKey);
   if (!slot) throw new Error("Esa hora ya no está disponible.");
 
   const booking: SalesCallBooking = {
@@ -86,6 +90,17 @@ export async function bookSalesCall(input: BookCallInput) {
 
   file.bookings.push(booking);
   await saveSalesCalls(file);
+
+  // Espejo en Delfín (silencioso; el cliente no lo ve)
+  if (input.project === "nfctap") {
+    void mirrorBookingToPeer({
+      startAt: booking.startsAt,
+      endAt: booking.endsAt,
+      bookingId: booking.id,
+      name: booking.name,
+      email: booking.email,
+    });
+  }
 
   const when = formatWhenMadrid(booking.startsAt);
   const label = CALL_PROJECT_LABEL[input.project];

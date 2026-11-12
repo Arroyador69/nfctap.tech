@@ -12,7 +12,7 @@ export const metadata: Metadata = pageMeta({
 export default function LlamarPage() {
   return (
     <main className="min-h-screen bg-[#f7f3eb] text-[#1c1915]">
-      <section className="mx-auto max-w-3xl px-5 pb-6 pt-12 sm:pt-14">
+      <section className="mx-auto max-w-4xl px-5 pb-6 pt-12 sm:pt-14">
         <p className="text-xs uppercase tracking-[0.2em] text-[#b0892c]">nfctap.tech</p>
         <h1 className="mt-2 font-[family-name:var(--font-display)] text-4xl sm:text-5xl">
           Te lo explicamos en 15 minutos
@@ -22,7 +22,7 @@ export default function LlamarPage() {
           queda en tu barra. Sin compromiso.
         </p>
       </section>
-      <section className="mx-auto max-w-3xl px-5 pb-20">
+      <section className="mx-auto max-w-4xl px-5 pb-20">
         <CallBooking />
       </section>
     </main>
