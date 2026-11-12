@@ -15,7 +15,25 @@ export type OutreachVars = {
 
 const FREDDOS = `${BRAND.url}/stock/freddos.jpg`;
 const MARKOS = `${BRAND.url}/stock/markos.jpg`;
-const CTA = `${BRAND.url}/negocio`;
+function ctaForTouch(touch: TouchKind) {
+  const params = new URLSearchParams({
+    utm_source: "outreach",
+    utm_medium: "email",
+    utm_campaign: "nfctap_local_es",
+    utm_content: touch,
+  });
+  return `${BRAND.url}/negocio?${params.toString()}`;
+}
+
+function callCtaForTouch(touch: TouchKind) {
+  const params = new URLSearchParams({
+    utm_source: "outreach",
+    utm_medium: "email",
+    utm_campaign: "nfctap_local_es",
+    utm_content: `call_${touch}`,
+  });
+  return `${BRAND.url}/llamar?${params.toString()}`;
+}
 
 const SOCIAL_LINKS = SOCIALS.map((s) =>
   s.id === "youtube" ? { ...s, href: "https://www.youtube.com/@NFCTap" } : s,
@@ -142,6 +160,8 @@ export function nfctapOutreachSubject(v: OutreachVars, touch: TouchKind = "cold"
 export function nfctapOutreachHtml(v: OutreachVars, touch: TouchKind = "cold") {
   const name = displayName(v);
   const city = displayCity(v);
+  const CTA = ctaForTouch(touch);
+  const CALL = callCtaForTouch(touch);
   const hero = touch === "fu_click" || touch === "fu_silent" ? MARKOS : v.heroImageUrl || FREDDOS;
   const second =
     touch === "cold" ? v.secondImageUrl || MARKOS : touch === "fu_open" ? FREDDOS : "";
@@ -192,6 +212,14 @@ export function nfctapOutreachHtml(v: OutreachVars, touch: TouchKind = "cold") {
           <p style="margin:12px 0 0;font-size:13px;line-height:1.45;color:#8a8173;font-family:Arial,Helvetica,sans-serif;">
             ${CTA.replace("https://", "")} · sin compromiso · ves el diseño antes de pagar
           </p>
+          <p style="margin:18px 0 0;padding:14px 16px;background:#f7f3eb;border-radius:14px;font-size:14px;line-height:1.5;color:#3f3a34;font-family:Arial,Helvetica,sans-serif;">
+            ¿Prefieres que te lo contemos en <strong>15 minutos</strong>? Reserva con atención comercial
+            (lun–vie · mañana o tarde, hora de Madrid). La hora es fija.
+            <br />
+            <a href="${CALL}" style="display:inline-block;margin-top:10px;color:#1c1915;font-weight:700;text-decoration:underline;">
+              Reservar llamada de 15 min →
+            </a>
+          </p>
         </td></tr>
         ${
           second
@@ -227,6 +255,8 @@ export function nfctapOutreachHtml(v: OutreachVars, touch: TouchKind = "cold") {
 export function nfctapOutreachText(v: OutreachVars, touch: TouchKind = "cold") {
   const name = displayName(v);
   const city = displayCity(v);
+  const CTA = ctaForTouch(touch);
+  const CALL = callCtaForTouch(touch);
   const copy = copyForTouch(v, touch);
   const optOut = optOutHref(v);
   const socials = SOCIAL_LINKS.map((s) => `${s.label}: ${s.href}`).join("\n");
@@ -245,6 +275,9 @@ ${plainParas}
 
 ${copy.ctaLabel}
 ${CTA}
+
+¿Prefieres 15 minutos con atención comercial? Reserva aquí (lun–vie, hora Madrid; la hora es fija):
+${CALL}
 
 ${copy.closing.replace(/<[^>]+>/g, "")}
 

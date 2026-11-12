@@ -36,6 +36,9 @@ export function Header() {
           <Link href="/negocio" className="hover:text-[#1c1915]">
             Tu logo
           </Link>
+          <Link href="/llamar" className="hidden hover:text-[#1c1915] sm:inline">
+            Llamada
+          </Link>
           <Link
             href="/personalizar"
             className="rounded-full bg-[#1c1915] px-4 py-2 font-medium text-[#f6f1e7]"

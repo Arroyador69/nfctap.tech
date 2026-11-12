@@ -7,6 +7,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     { url: SITE, lastModified, changeFrequency: "weekly", priority: 1 },
     { url: `${SITE}/personalizar`, lastModified, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${SITE}/negocio`, lastModified, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${SITE}/llamar`, lastModified, changeFrequency: "weekly", priority: 0.85 },
     { url: `${SITE}/wifi`, lastModified, changeFrequency: "weekly", priority: 0.85 },
     { url: `${SITE}/guia`, lastModified, changeFrequency: "weekly", priority: 0.8 },
     ...GUIDES.map((g) => ({
