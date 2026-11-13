@@ -1,3 +1,7 @@
+import {
+  NFC_LEADS_MIN_QUEUED,
+  NFC_LEADS_TARGET_QUEUED,
+} from "@/lib/business-leads/constants";
 import { extractEmailsFromStock } from "@/lib/business-leads/extract-batch";
 import { loadQueue, queueCounts } from "@/lib/business-leads/queue";
 import {
@@ -31,18 +35,23 @@ export async function GET(req: Request) {
 
   const beforeQ = queueCounts((await loadQueue()).leads);
   const beforeS = stockCounts((await loadWebsiteStock()).items);
-  if (beforeQ.queued >= 1000) {
+  if (beforeQ.queued >= NFC_LEADS_TARGET_QUEUED) {
     return NextResponse.json({
       ok: true,
       skipped: true,
       reason: "queue_full",
       queue: beforeQ,
       stock: beforeS,
+      targetQueued: NFC_LEADS_TARGET_QUEUED,
     });
   }
+  const critical = beforeQ.queued < 150;
   let recycled = { recycled: 0, pending: beforeS.pending };
-  if (beforeS.pending < 1 && beforeQ.queued < 500) {
-    recycled = await recycleNoEmailToPending({ max: 320, minAgeDays: 5 });
+  if (beforeS.pending < 1 && beforeQ.queued < NFC_LEADS_MIN_QUEUED) {
+    recycled = await recycleNoEmailToPending({
+      max: critical ? 420 : 320,
+      minAgeDays: critical ? 3 : 5,
+    });
   }
   const stockNow = stockCounts((await loadWebsiteStock()).items);
   if (stockNow.pending < 1) {
@@ -57,8 +66,8 @@ export async function GET(req: Request) {
   }
 
   const result = await extractEmailsFromStock({
-    maxPages: beforeQ.queued < 100 ? 60 : 45,
-    targetQueued: 1000,
+    maxPages: critical ? 70 : beforeQ.queued < NFC_LEADS_MIN_QUEUED ? 60 : 45,
+    targetQueued: NFC_LEADS_TARGET_QUEUED,
   });
 
   return NextResponse.json({

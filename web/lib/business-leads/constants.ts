@@ -25,8 +25,20 @@ export const NFC_LEADS_WAVES_PER_DAY = 10;
 /** Si hay ≥10 pedidos pagados `unica` ese día → stop envíos. */
 export const NFC_SALES_DAILY_GOAL = 10;
 
-/** Cola mínima tras prepare. */
+/**
+ * Cola mínima operativa: por debajo → harvest/extract a tope
+ * (nunca empezar la jornada ni una oleada en seco).
+ */
 export const NFC_LEADS_MIN_QUEUED = 800;
+
+/** Objetivo de cola fría (buffer ~2–3 días de cold 350). */
+export const NFC_LEADS_TARGET_QUEUED = 1200;
+
+/** Stock webs pendientes mínimo antes de forzar cosecha/reciclaje. */
+export const NFC_LEADS_MIN_PENDING = 250;
+
+/** Stock webs objetivo en harvest (combustible para extract). */
+export const NFC_LEADS_TARGET_PENDING = 2000;
 
 /** Delay entre envíos (ms). */
 export const NFC_LEADS_SEND_DELAY_MS = 1800;

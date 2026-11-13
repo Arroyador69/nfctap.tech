@@ -2,7 +2,11 @@ import {
   NFC_LEADS_COLD_DAILY_CAP,
   NFC_LEADS_DAILY_HARD_CAP,
   NFC_LEADS_FU_DAILY_CAP,
+  NFC_LEADS_MIN_PENDING,
+  NFC_LEADS_MIN_QUEUED,
   NFC_LEADS_SEND_DELAY_MS,
+  NFC_LEADS_TARGET_PENDING,
+  NFC_LEADS_TARGET_QUEUED,
   NFC_LEADS_WAVE_MAX,
   NFC_SALES_DAILY_GOAL,
 } from "@/lib/business-leads/constants";
@@ -25,19 +29,20 @@ import {
   patchAfterFollowUpSent,
   patchAfterSale,
   promoteOverdueClickFollowUps,
-  selectFollowUpDue,
+  promoteOverdueOpenFollowUps,
   sequenceCounts,
   syncStopsOnLeads,
 } from "@/lib/business-leads/sequence";
 import { sendNfctapOutreach } from "@/lib/business-leads/send-resend";
-import { bumpDayStats, effectiveColdFu, getDayStats } from "@/lib/business-leads/stats";
+import { bumpDayStats, effectiveColdFu, getDayStats, madridDate } from "@/lib/business-leads/stats";
 import { notifyTelegram, waveTelegramMessage } from "@/lib/business-leads/telegram";
 import { loadWebsiteStock, stockCounts } from "@/lib/business-leads/website-stock";
+import { harvestProgressIndex, planWavePicks } from "@/lib/business-leads/wave-plan";
 import {
+  canSendThisHour,
   expectedSentByNow,
   madridHourNow,
   WAVE_HOUR_END,
-  WAVE_HOUR_START,
 } from "@/lib/business-leads/wave-schedule";
 import { BRAND } from "@/lib/catalog";
 import { NextResponse } from "next/server";
@@ -45,8 +50,12 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-/** ~1,8 s/mail → 50 mails ≈ 90 s. */
+/**
+ * ~1,8 s/mail → 50 ≈ 90 s. No subir a 100: Vercel corta la respuesta
+ * y se pierden el JSON + bumpDayStats aunque los mails ya hayan salido.
+ */
 const MAX_PER_INVOKE = 50;
+const MAX_CATCHUP_PER_INVOKE = 50;
 
 function authorized(req: Request) {
   const url = new URL(req.url);
@@ -94,13 +103,15 @@ export async function GET(req: Request) {
     const { madridDate } = await import("@/lib/business-leads/stats");
     const { put } = await import("@vercel/blob");
     const date = madridDate();
+    const prev = await getDayStats();
     const next = {
       date,
       sent: setSent,
-      failed: 0,
-      coldSent: setSent,
-      fuSent: 0,
-      waves: Math.ceil(setSent / NFC_LEADS_WAVE_MAX),
+      failed: prev.failed || 0,
+      // Conserva split si ya existía; si no, deja cold=sent (migración)
+      coldSent: prev.coldSent || prev.fuSent ? Math.min(setSent, prev.coldSent || 0) : setSent,
+      fuSent: prev.coldSent || prev.fuSent ? Math.min(setSent, prev.fuSent || 0) : 0,
+      waves: Math.max(prev.waves || 0, Math.ceil(setSent / NFC_LEADS_WAVE_MAX)),
       lastWaveAt: new Date().toISOString(),
       lastPlace: "seed_counter",
     };
@@ -137,10 +148,30 @@ export async function GET(req: Request) {
 
   const day = await getDayStats();
   if (day.sent >= NFC_LEADS_DAILY_HARD_CAP) {
+    // dry/force: devolver cola+secuencia aunque el cupo del día esté cerrado
+    if (dry || force) {
+      const q = await loadQueue();
+      const optSkip = await loadOptOut();
+      return NextResponse.json({
+        ok: true,
+        stopped: true,
+        reason: "daily_cap",
+        day,
+        sales,
+        queue: queueCounts(q.leads),
+        sequence: sequenceCounts(q.leads, optSkip),
+        caps: {
+          hard: NFC_LEADS_DAILY_HARD_CAP,
+          cold: NFC_LEADS_COLD_DAILY_CAP,
+          fu: NFC_LEADS_FU_DAILY_CAP,
+        },
+      });
+    }
     return NextResponse.json({ ok: true, stopped: true, reason: "daily_cap", day, sales });
   }
 
-  if (!force && (hour < WAVE_HOUR_START || hour > WAVE_HOUR_END)) {
+  const windowGate = canSendThisHour({ hour, daySent: day.sent, force });
+  if (!windowGate.ok) {
     const q = await loadQueue();
     const optSkip = await loadOptOut();
     return NextResponse.json({
@@ -148,7 +179,7 @@ export async function GET(req: Request) {
       skipped: true,
       reason: "outside_window",
       hourMadrid: hour,
-      window: `${WAVE_HOUR_START}–${WAVE_HOUR_END}`,
+      window: windowGate.window,
       day,
       sales,
       sequence: sequenceCounts(q.leads, optSkip),
@@ -164,21 +195,31 @@ export async function GET(req: Request) {
   const buyers = await paidUnicaEmailSet();
   let qFile = await loadQueue();
 
-  // Mantener categorías al día: baja/compra + backfill + clicks vencidos → due
+  // Mantener categorías al día: baja/compra + backfill + clicks/opens vencidos → due
   const synced = syncStopsOnLeads(qFile.leads, opt, buyers);
   let leads = synced.leads;
   const bf = backfillFollowUpSchedules(leads);
   leads = bf.leads;
-  const promoted = promoteOverdueClickFollowUps(leads);
-  leads = promoted.leads;
+  const promotedClicks = promoteOverdueClickFollowUps(leads);
+  leads = promotedClicks.leads;
+  const promotedOpens = promoteOverdueOpenFollowUps(leads);
+  leads = promotedOpens.leads;
   qFile = { ...qFile, leads };
   const maintenance = {
     stoppedOpt: synced.stoppedOpt,
     stoppedSale: synced.stoppedSale,
     backfill: bf.updated,
-    promotedClicks: promoted.promoted,
+    promotedClicks: promotedClicks.promoted,
+    promotedOpens: promotedOpens.promoted,
   };
-  if (!dry && (synced.stoppedOpt || synced.stoppedSale || bf.updated || promoted.promoted)) {
+  if (
+    !dry &&
+    (synced.stoppedOpt ||
+      synced.stoppedSale ||
+      bf.updated ||
+      promotedClicks.promoted ||
+      promotedOpens.promoted)
+  ) {
     await saveQueue(leads);
   }
 
@@ -187,65 +228,67 @@ export async function GET(req: Request) {
     harvest?: Awaited<ReturnType<typeof harvestWebsitesIntoStock>>;
     extract?: Awaited<ReturnType<typeof extractEmailsFromStock>>;
   } | null;
-  // Cola/stock vivos: cosechar si pending bajo o cola fría; extract si hay pending
+  // Buffer anti-parada: si cola < mínimo, cosecha+extract a tope en la misma oleada
   if (!dry) {
     try {
       const stock = stockCounts((await loadWebsiteStock()).items);
-      const needHarvest = stock.pending < 120 || qBefore.queued < 300;
+      const starved =
+        qBefore.queued < NFC_LEADS_MIN_QUEUED || stock.pending < NFC_LEADS_MIN_PENDING;
+      const critical = qBefore.queued < 150;
+      const needHarvest = starved;
+      const harvestIdx = harvestProgressIndex(day.waves, hour, madridDate());
       const harvest = needHarvest
         ? await harvestWebsitesIntoStock({
-            waveIndex: day.waves + hour,
-            maxCells: 4,
-            searchKeywords: 3,
-            targetPending: 400,
+            waveIndex: harvestIdx,
+            maxCells: critical ? 14 : qBefore.queued < 300 ? 10 : 6,
+            searchKeywords: critical ? 8 : qBefore.queued < 300 ? 5 : 3,
+            targetPending: NFC_LEADS_TARGET_PENDING,
+            enqueueOsmEmails: true,
           })
         : undefined;
       const pendingAfter = harvest?.stock?.pending ?? stock.pending;
       const extract =
-        pendingAfter > 0
+        pendingAfter > 0 || qBefore.queued < NFC_LEADS_MIN_QUEUED
           ? await extractEmailsFromStock({
-              maxPages: 30,
-              targetQueued: 800,
+              maxPages: critical ? 55 : qBefore.queued < 300 ? 40 : 30,
+              targetQueued: NFC_LEADS_TARGET_QUEUED,
             })
           : undefined;
       refill = { harvest, extract };
+      if (extract?.added) {
+        qFile = await loadQueue();
+        leads = qFile.leads;
+      }
     } catch (e) {
       console.error("refill", e);
       refill = {};
     }
   }
 
-  const expected = expectedSentByNow(hour);
+  const expected = expectedSentByNow(Math.min(hour, WAVE_HOUR_END));
   const behind = Math.max(0, expected - day.sent);
   const want = behind > 0 ? behind : NFC_LEADS_WAVE_MAX;
-  const room = Math.min(want, NFC_LEADS_DAILY_HARD_CAP - day.sent, MAX_PER_INVOKE);
+  const perInvoke =
+    behind >= NFC_LEADS_WAVE_MAX * 2 || windowGate.mode === "catchup"
+      ? MAX_CATCHUP_PER_INVOKE
+      : MAX_PER_INVOKE;
+  const room = Math.min(want, NFC_LEADS_DAILY_HARD_CAP - day.sent, perInvoke);
 
   const { coldSent: coldSentDay, fuSent: fuSentDay } = effectiveColdFu(day);
-  let fuRoom = Math.min(room, Math.max(0, NFC_LEADS_FU_DAILY_CAP - fuSentDay));
-  // Si el cold ya está al tope, el resto del hard cap puede ir a FU
-  if (coldSentDay >= NFC_LEADS_COLD_DAILY_CAP) {
-    fuRoom = Math.min(room, Math.max(0, NFC_LEADS_DAILY_HARD_CAP - day.sent));
-  }
-
-  // Prioridad absoluta a FU due (clicks primero)
-  const fuBatch = selectFollowUpDue(leads, fuRoom, opt).filter(
-    (l) => !buyers.has(l.email.toLowerCase()),
-  );
-
-  const afterFu = room - fuBatch.length;
-  // Cold: cupo cold, pero si no hay FU due, usar hueco del día (hasta hard cap)
-  let coldRoom = Math.min(
-    afterFu,
-    Math.max(0, NFC_LEADS_COLD_DAILY_CAP - coldSentDay),
-  );
-  if (fuBatch.length === 0 && afterFu > coldRoom) {
-    coldRoom = Math.min(afterFu, Math.max(0, NFC_LEADS_DAILY_HARD_CAP - day.sent));
-  }
-
-  const coldBatch = (await takeQueued(coldRoom)).filter(
+  const coldCandidates = (await takeQueued(room)).filter(
     (l) => !opt.has(l.email.toLowerCase()) && !buyers.has(l.email.toLowerCase()),
   );
-
+  const planned = planWavePicks({
+    leads,
+    coldCandidates,
+    optOut: opt,
+    buyers,
+    room,
+    coldSentDay,
+    fuSentDay,
+    fillEarly: behind > 0 || windowGate.mode === "catchup",
+  });
+  const picks = planned.picks;
   const seq = sequenceCounts(leads, opt);
 
   if (dry) {
@@ -253,11 +296,12 @@ export async function GET(req: Request) {
       ok: true,
       dry: true,
       hourMadrid: hour,
+      mode: windowGate.mode,
       expected,
       behind,
       room,
-      fuRoom,
-      coldRoom,
+      perInvoke,
+      plan: planned.meta,
       sales,
       day,
       caps: {
@@ -267,24 +311,19 @@ export async function GET(req: Request) {
       },
       sequence: seq,
       maintenance,
-      sampleFu: fuBatch.slice(0, 5).map((l) => ({
-        tier: l.nextTouchKind,
-        city: l.city,
-        name: l.businessName,
-        email: l.email.replace(/(^.).*(@.*$)/, "$1***$2"),
-        nextTouchAt: l.nextTouchAt,
-      })),
-      sampleCold: coldBatch.slice(0, 3).map((l) => ({
-        city: l.city,
-        name: l.businessName,
-        email: l.email.replace(/(^.).*(@.*$)/, "$1***$2"),
+      sample: picks.slice(0, 8).map((p) => ({
+        touch: p.touch,
+        city: p.lead.city,
+        name: p.lead.businessName,
+        email: p.lead.email.replace(/(^.).*(@.*$)/, "$1***$2"),
+        nextTouchAt: p.lead.nextTouchAt,
       })),
       queue: queueCounts(leads),
       refill,
     });
   }
 
-  if (!fuBatch.length && !coldBatch.length) {
+  if (!picks.length) {
     await bumpDayStats({ sent: 0, failed: 0, place: "empty_queue" });
     await notifyTelegram(
       `NFCTap · nada que enviar a las ${hour}:00\nFU due ${seq.dueTotal} · cola ${qBefore.queued}\nExtract +${refill?.extract?.added ?? 0}`,
@@ -329,36 +368,42 @@ export async function GET(req: Request) {
           resendId: r.id || undefined,
           ...patchAfterColdSend(at),
         });
+        // Contador día al vuelo: si el invoke muere a mitad, no perdemos el cupo
+        await bumpDayStats({
+          sent: 1,
+          coldSent: 1,
+          place: lead.city || "cold",
+          bumpWave: false,
+        });
       } else {
         fuSent++;
         await markLead(lead.id, {
           resendId: r.id || undefined,
           ...patchAfterFollowUpSent(lead, touch, at),
         });
+        await bumpDayStats({
+          sent: 1,
+          fuSent: 1,
+          place: `FU · ${lead.city || "—"}`,
+          bumpWave: false,
+        });
       }
     } else {
       failed++;
       await markLead(lead.id, { status: "failed", error: r.error });
+      await bumpDayStats({ failed: 1, place: "fail", bumpWave: false });
     }
     await new Promise((res) => setTimeout(res, NFC_LEADS_SEND_DELAY_MS));
   }
 
-  for (const lead of fuBatch) {
-    const touch = (lead.nextTouchKind || "fu_open") as TouchKind;
-    if (touch === "cold") continue;
-    await sendOne(lead, touch);
-  }
-  for (const lead of coldBatch) {
-    await sendOne(lead, "cold");
+  for (const pick of picks) {
+    await sendOne(pick.lead, pick.touch);
   }
 
   const place = [...cities].slice(0, 4).join(", ") || "—";
+  // Cierre de oleada (+1 wave); los mails ya están contados
   const nextDay = await bumpDayStats({
-    sent,
-    failed,
-    coldSent,
-    fuSent,
-    place: fuSent ? `FU ${fuSent}+cold ${coldSent} · ${place}` : place,
+    place: fuSent || coldSent ? `FU ${fuSent}+cold ${coldSent} · ${place}` : place,
   });
 
   if (firstWaveToday && sent > 0) {
@@ -384,7 +429,10 @@ export async function GET(req: Request) {
     ok: true,
     automatic: true,
     hourMadrid: hour,
+    mode: windowGate.mode,
     expected,
+    behind,
+    plan: planned.meta,
     sent,
     failed,
     coldSent,

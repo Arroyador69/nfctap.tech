@@ -3,11 +3,11 @@
   "crons": [
     {
       "path": "/api/cron/nfctap-leads-harvest",
-      "schedule": "5,35 6-18 * * *"
+      "schedule": "5,35 4-19 * * *"
     },
     {
       "path": "/api/cron/nfctap-leads-extract",
-      "schedule": "20,50 6-18 * * *"
+      "schedule": "20,50 4-19 * * *"
     },
     {
       "path": "/api/cron/nfctap-leads-wave",

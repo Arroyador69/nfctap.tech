@@ -1,3 +1,9 @@
+import {
+  NFC_LEADS_MIN_PENDING,
+  NFC_LEADS_MIN_QUEUED,
+  NFC_LEADS_TARGET_PENDING,
+  NFC_LEADS_TARGET_QUEUED,
+} from "@/lib/business-leads/constants";
 import { harvestWebsitesIntoStock } from "@/lib/business-leads/harvest-websites";
 import { loadQueue, queueCounts } from "@/lib/business-leads/queue";
 import { getDayStats, madridDate } from "@/lib/business-leads/stats";
@@ -40,26 +46,32 @@ export async function GET(req: Request) {
   const hour = madridHourNow();
   const queued = queueCounts((await loadQueue()).leads).queued;
   const pending = stockCounts((await loadWebsiteStock()).items).pending;
-  const starved = queued < 300 || pending < 120;
+  // Buffer diario: nunca por debajo del mínimo operativo
+  const starved =
+    queued < NFC_LEADS_MIN_QUEUED || pending < NFC_LEADS_MIN_PENDING;
+  const critical = queued < 150 || pending < 40;
   const wave = Number.isFinite(waveParam)
     ? waveParam
     : harvestProgressIndex(day.waves, hour, madridDate());
 
   const result = await harvestWebsitesIntoStock({
     waveIndex: wave,
-    maxCells: starved ? 14 : 10,
-    searchKeywords: starved ? 10 : 8,
-    targetPending: 2000,
+    maxCells: critical ? 16 : starved ? 14 : 10,
+    searchKeywords: critical ? 12 : starved ? 10 : 8,
+    targetPending: NFC_LEADS_TARGET_PENDING,
     enqueueOsmEmails: true,
   });
 
   let retry: Awaited<ReturnType<typeof harvestWebsitesIntoStock>> | null = null;
-  if (result.websAdded === 0 && result.emailsQueued === 0 && starved) {
+  if (
+    (result.websAdded === 0 && result.emailsQueued === 0 && starved) ||
+    queueCounts((await loadQueue()).leads).queued < NFC_LEADS_MIN_QUEUED
+  ) {
     retry = await harvestWebsitesIntoStock({
-      waveIndex: wave + 41,
-      maxCells: 14,
-      searchKeywords: 10,
-      targetPending: 2000,
+      waveIndex: wave + 41 + hour,
+      maxCells: 16,
+      searchKeywords: 12,
+      targetPending: NFC_LEADS_TARGET_PENDING,
       enqueueOsmEmails: true,
     });
   }
@@ -68,8 +80,17 @@ export async function GET(req: Request) {
     retry && (retry.websAdded > 0 || retry.emailsQueued > 0) ? retry : result;
 
   let recycled = { recycled: 0, pending: 0 };
-  if (starved && final.websAdded === 0 && final.emailsQueued === 0) {
-    recycled = await recycleNoEmailToPending({ max: 280, minAgeDays: 5 });
+  const queuedAfter = queueCounts((await loadQueue()).leads).queued;
+  const pendingAfter = stockCounts((await loadWebsiteStock()).items).pending;
+  if (
+    (queuedAfter < NFC_LEADS_TARGET_QUEUED || pendingAfter < NFC_LEADS_MIN_PENDING) &&
+    final.websAdded === 0 &&
+    final.emailsQueued === 0
+  ) {
+    recycled = await recycleNoEmailToPending({
+      max: critical ? 420 : 320,
+      minAgeDays: critical ? 3 : 5,
+    });
   }
 
   return NextResponse.json({
