@@ -50,7 +50,47 @@ export function cellsAround(
   return out;
 }
 
-/** Orden de expansión: Fuengirola densificado → vecinos → resto NFC_PLACES. */
+/** Ciudades grandes: anillos densos (antes eran 1 bbox y se agotaban). */
+const BIG_ES = [
+  "Madrid",
+  "Barcelona",
+  "Valencia",
+  "Sevilla",
+  "Zaragoza",
+  "Málaga",
+  "Murcia",
+  "Palma",
+  "Las Palmas",
+  "Bilbao",
+  "Alicante",
+  "Córdoba",
+  "Valladolid",
+  "Vigo",
+  "Gijón",
+  "Granada",
+  "A Coruña",
+  "Vitoria",
+  "Pamplona",
+  "Santander",
+  "Oviedo",
+  "San Sebastián",
+  "Logroño",
+  "Cádiz",
+  "Jerez",
+  "Almería",
+  "Huelva",
+  "Jaén",
+  "Castellón",
+  "Elche",
+  "Cartagena",
+  "Salamanca",
+  "Toledo",
+  "Badajoz",
+  "Santa Cruz Tenerife",
+  "Santiago",
+];
+
+/** Orden de expansión: Fuengirola → Costa → España densificada. */
 export function harvestCellsForWave(waveIndex: number, take = 6): HarvestCell[] {
   const fuengirolaCells = cellsAround(FUENGIROLA, 3, 0.025);
   const costa = [
@@ -73,17 +113,30 @@ export function harvestCellsForWave(waveIndex: number, take = 6): HarvestCell[] 
     })),
   );
 
+  const costaNames = new Set(["Fuengirola", ...costa.map((c) => c.name)]);
+  const bigSet = new Set(BIG_ES);
+
+  const bigCities = NFC_PLACES.filter(
+    (p) => bigSet.has(p.name) && !costaNames.has(p.name),
+  );
+  // rings=2 → 1+6+12 = 19 celdas/ciudad; step ~3,3 km
+  const bigCells: HarvestCell[] = bigCities.flatMap((p, i) =>
+    cellsAround(p, 2, 0.03).map((c) => ({
+      ...c,
+      ring: 40 + i,
+      cellId: `es-${c.cellId}`,
+    })),
+  );
+
   const rest: HarvestCell[] = NFC_PLACES.filter(
-    (p) =>
-      p.name !== "Fuengirola" &&
-      !costa.some((c) => c.name === p.name),
+    (p) => !costaNames.has(p.name) && !bigSet.has(p.name),
   ).map((p, i) => ({
     ...p,
-    ring: 40 + i,
+    ring: 80 + i,
     cellId: `es-${p.name}`,
   }));
 
-  const all = [...fuengirolaCells, ...costaCells, ...rest];
+  const all = [...fuengirolaCells, ...costaCells, ...bigCells, ...rest];
   const start = Math.abs(waveIndex) % all.length;
   const out: HarvestCell[] = [];
   for (let i = 0; i < take && i < all.length; i++) {
